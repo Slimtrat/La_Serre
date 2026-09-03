@@ -68,6 +68,49 @@ def test_job_records_persistent_progress_events(tmp_path: Path) -> None:
     assert "Pose 1/3" in job.log_path.read_text(encoding="utf-8")
 
 
+def test_job_public_exposes_weighted_live_progress() -> None:
+    job = StudioJob(
+        id="job-progress",
+        shot_id="S01E001-S01",
+        mode="all",
+        keyframe_total=3,
+        status="GENERATING",
+    )
+    for stage in ("input", "prompt", "references"):
+        job.stages[stage] = {"status": "completed", "message": "Terminé"}
+    job.stages["keyframe"] = {
+        "status": "running",
+        "message": "Pose 1/3 disponible",
+    }
+    job.media["keyframe_progress"] = {"completed": 1, "total": 3}
+
+    progress = cast(dict[str, object], job.public()["progress"])
+
+    assert progress == {
+        "percent": 56,
+        "completed": 3,
+        "total": 6,
+        "active_stage": "keyframe",
+        "elapsed_seconds": 0,
+        "indeterminate": False,
+    }
+
+
+def test_completed_job_progress_is_always_complete() -> None:
+    job = StudioJob(
+        id="job-complete",
+        shot_id="S01E001-S01",
+        mode="keyframe",
+        status="AWAITING_KEYFRAME_APPROVAL",
+    )
+    job.stages["video"] = {"status": "skipped", "message": "Validation manuelle"}
+
+    progress = cast(dict[str, object], job.public()["progress"])
+
+    assert progress["percent"] == 100
+    assert progress["completed"] == progress["total"]
+
+
 async def test_failed_shot_job_publishes_persistent_error_notification(
     tmp_path: Path,
 ) -> None:

@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="/static/onepage.css" />
     <link rel="stylesheet" href="/static/studio-shell.css" />
     <link rel="stylesheet" href="/static/desktop-workspace.css" />
+    <link rel="stylesheet" href="/static/activity-bar.css" />
   </head>
   <body data-workspace-view="graph">
     <div class="ambient ambient-one"></div>
@@ -24,6 +25,7 @@
         <span class="brand-mark">SV</span>
         <span><strong>La Serre des Venins</strong><small>Studio local</small></span>
       </a>
+      <span id="app-version" class="app-version" title="Version actuelle">v0.2.2</span>
       <nav class="app-nav" aria-label="Espaces du studio" role="tablist">
         <button type="button" role="tab" data-workspace-target="graph" class="selected">Production</button>
         <button type="button" role="tab" data-workspace-target="plan">Plan</button>
@@ -76,7 +78,7 @@
           <span id="episode-state" class="muted">Catalogue local</span>
         </div>
         <details class="episode-details">
-          <summary>Afficher le casting et les plans de l’épisode</summary>
+          <summary>Voir le casting et les plans</summary>
           <div class="episode-details-grid">
             <div>
               <p class="eyebrow">PERSONNAGES CANONIQUES</p>
@@ -407,5 +409,6 @@
     <script src="/static/episode-production.js" defer></script>
     <script src="/static/workspace-shell.js" defer></script>
     <script src="/static/desktop-workspace.js" defer></script>
+    <script src="/static/activity-bar.js" defer></script>
   </body>
 </html>

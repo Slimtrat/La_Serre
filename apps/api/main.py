@@ -33,6 +33,7 @@ from apps.api.schemas import (
 from apps.api.stage_actions import ShotStageService, StageKind
 from apps.api.workflow_graph import WORKFLOW_GRAPH_KINDS, build_workflow_graph
 from apps.api.workflow_setup import WorkflowSetup
+from apps.version import __version__
 from engine.config import Settings
 from engine.generation.comfy.client import ComfyClient
 from engine.generation.comfy.errors import WorkflowConfigurationError
@@ -94,7 +95,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def notifications() -> StudioNotificationLog:
         return StudioNotificationLog(current_settings().output_dir)
 
-    app = FastAPI(title="La Serre des Venins", version="0.2.1")
+    app = FastAPI(title="La Serre des Venins", version=__version__)
     manager = JobManager(current_settings, assets)
     episode_manager = EpisodeJobManager(current_settings)
     stage_service = ShotStageService(current_settings)
@@ -216,6 +217,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         models_ready = all(bool(model["installed"]) for model in models)
         nodes_ready = not missing_nodes
         return {
+            "version": __version__,
             "status": (
                 "ready"
                 if resolved.profiles_configured and comfyui and models_ready and nodes_ready
@@ -395,6 +397,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if not job:
             raise HTTPException(status_code=404, detail="Generation job not found")
         return job.public()
+
+    @app.get("/api/activity")
+    async def current_activity() -> dict[str, object]:
+        shot_job = manager.latest_active()
+        episode_job = episode_manager.latest_active()
+        candidates = [
+            (shot_job.created_at, "shot", shot_job)
+            for shot_job in [shot_job]
+            if shot_job is not None
+        ] + [
+            (episode_job.created_at, "episode", episode_job)
+            for episode_job in [episode_job]
+            if episode_job is not None
+        ]
+        if not candidates:
+            return {"activity": None}
+        _created_at, kind, job = max(candidates, key=lambda candidate: candidate[0])
+        return {"activity": {"kind": kind, **job.public()}}
 
     @app.get("/api/history/{shot_id}")
     def generation_history(shot_id: str) -> dict[str, object]:

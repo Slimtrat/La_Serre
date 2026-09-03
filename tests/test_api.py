@@ -5,6 +5,7 @@ import pytest
 
 from apps.api.job_manager import JobManager
 from apps.api.main import create_app
+from apps.version import __version__
 from engine.config import Settings
 
 
@@ -16,6 +17,17 @@ async def test_health() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+    assert app.version == __version__
+
+
+async def test_activity_endpoint_is_empty_without_active_jobs(tmp_path: Path) -> None:
+    app = create_app(Settings(_env_file=None, output_dir=tmp_path / "output"))
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/activity")
+
+    assert response.status_code == 200
+    assert response.json() == {"activity": None}
 
 
 async def test_hybrid_asset_upload(tmp_path: Path) -> None:

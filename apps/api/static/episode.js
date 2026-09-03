@@ -111,10 +111,28 @@ async function initEpisodeCatalog() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  const details = document.querySelector(".episode-details");
+  if (details) {
+    const summary = details.querySelector("summary");
+    details.addEventListener("toggle", () => {
+      summary?.setAttribute("aria-expanded", String(details.open));
+    });
+    document.addEventListener("pointerdown", (event) => {
+      if (details.open && !details.contains(event.target)) details.open = false;
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && details.open) {
+        details.open = false;
+        summary?.focus();
+      }
+    });
+  }
   await window.SerreProjects?.ready.catch(() => {});
   initEpisodeCatalog().catch((error) => episodeStudio.notify(error.message, true));
 });
 window.addEventListener("studio:project-changed", () => {
   loadedEpisode = null;
+  const details = document.querySelector(".episode-details");
+  if (details) details.open = false;
   initEpisodeCatalog().catch((error) => episodeStudio.notify(error.message, true));
 });

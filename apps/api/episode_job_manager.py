@@ -5,6 +5,7 @@ import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 
 from apps.api.notifications import StudioNotificationLog
 from apps.api.run_history import RunHistory
@@ -32,7 +33,20 @@ class EpisodeStudioJob:
         }
     )
     media: dict[str, str] = field(default_factory=dict)
+    events: list[dict[str, object]] = field(default_factory=list)
+    log_path: Path | None = field(default=None, repr=False)
     notification_log: StudioNotificationLog | None = field(default=None, repr=False)
+
+    def record_event(self, stage: str, status: str, message: str) -> None:
+        event: dict[str, object] = {
+            "timestamp": datetime.now(UTC).isoformat(),
+            "stage": stage,
+            "status": status,
+            "message": message,
+        }
+        self.events.append(event)
+        if self.log_path is not None:
+            RunHistory.append_event(self.log_path, event)
 
     def public(self) -> dict[str, object]:
         return {
@@ -44,6 +58,35 @@ class EpisodeStudioJob:
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
             "stages": [{"id": stage, **self.stages[stage]} for stage in EPISODE_STAGES],
             "media": self.media,
+            "events": self.events,
+            "progress": self.progress(),
+        }
+
+    def progress(self) -> dict[str, object]:
+        total = len(EPISODE_STAGES)
+        completed = sum(
+            stage["status"] == "completed" for stage in self.stages.values()
+        )
+        active_stage = next(
+            (
+                stage
+                for stage in EPISODE_STAGES
+                if self.stages[stage]["status"] in {"running", "failed"}
+            ),
+            None,
+        )
+        terminal = self.status == "FINAL"
+        elapsed_until = self.completed_at or datetime.now(UTC)
+        return {
+            "percent": 100 if terminal else round(100 * completed / total),
+            "completed": total if terminal else completed,
+            "total": total,
+            "active_stage": active_stage,
+            "elapsed_seconds": max(
+                0,
+                round((elapsed_until - self.created_at).total_seconds()),
+            ),
+            "indeterminate": active_stage is not None and self.status == "GENERATING",
         }
 
 
@@ -69,6 +112,8 @@ class EpisodeJobManager:
             job.completed_at = datetime.now(UTC)
             raise
         job.notification_log = StudioNotificationLog(settings.output_dir)
+        job.log_path = RunHistory(settings.output_dir).job_log_path(job.id)
+        job.record_event("job", "queued", job.message)
         task = asyncio.create_task(self._execute(job, settings, request))
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
@@ -80,6 +125,14 @@ class EpisodeJobManager:
     def has_active_jobs(self) -> bool:
         return any(job.status in {"QUEUED", "GENERATING"} for job in self.jobs.values())
 
+    def latest_active(self) -> EpisodeStudioJob | None:
+        active = [
+            job
+            for job in self.jobs.values()
+            if job.status in {"QUEUED", "GENERATING"}
+        ]
+        return max(active, key=lambda job: job.created_at, default=None)
+
     async def _execute(
         self,
         job: EpisodeStudioJob,
@@ -89,6 +142,7 @@ class EpisodeJobManager:
         async with self._montage_slot:
             job.status = "GENERATING"
             job.message = "Préparation de l'épisode"
+            job.record_event("job", "running", job.message)
             try:
                 history = RunHistory(settings.output_dir)
                 archived_master = await asyncio.to_thread(
@@ -144,6 +198,7 @@ class EpisodeJobManager:
                     job.stages[running] = {"status": "failed", "message": str(exc)}
             finally:
                 job.completed_at = datetime.now(UTC)
+                job.record_event("job", job.status.lower(), job.message)
                 if job.notification_log is not None:
                     await asyncio.to_thread(self._notify_completion, job)
 
@@ -174,3 +229,4 @@ class EpisodeJobManager:
         if stage in job.stages:
             job.stages[stage] = {"status": status, "message": message}
         job.message = message
+        job.record_event(stage, status, message)

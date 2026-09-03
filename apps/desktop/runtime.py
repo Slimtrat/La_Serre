@@ -14,8 +14,10 @@ from types import TracebackType
 
 import uvicorn
 
+from apps.version import __version__
+
 APP_NAME = "La Serre des Venins"
-APP_VERSION = "0.2.1"
+APP_VERSION = __version__
 DEFAULT_STARTUP_TIMEOUT_SECONDS = 20.0
 
 
