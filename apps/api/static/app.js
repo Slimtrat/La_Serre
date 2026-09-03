@@ -185,7 +185,8 @@ async function refreshAssets() {
     if (card) $(".stage-status", card).textContent = record.filename + " importé";
   }
   const generated = await api("/api/outputs/" + id);
-  if (generated.keyframe) showImage(generated.keyframe + "?v=" + Date.now());
+  if (generated.keyframes?.length) showKeyframes(generated.keyframes);
+  else if (generated.keyframe) showImage(generated.keyframe + "?v=" + Date.now());
   if (generated.video) showVideo(generated.video + "?v=" + Date.now());
   window.dispatchEvent(
     new CustomEvent("studio:assets", {
@@ -250,11 +251,31 @@ function renderJob(job) {
     if (stage.status !== "pending" && stage.status !== "skipped") card.classList.add(stage.status);
     $(".stage-status", card).textContent = stage.message;
   }
-  if (job.media.keyframe) showImage(`${job.media.keyframe}?v=${Date.now()}`);
+  if (job.media.keyframes?.length) showKeyframes(job.media.keyframes);
+  else if (job.media.keyframe) showImage(`${job.media.keyframe}?v=${Date.now()}`);
   if (job.media.video) showVideo(`${job.media.video}?v=${Date.now()}`);
 }
 
-function showImage(url) { $("#keyframe-preview").src = url; $("#keyframe-preview").classList.remove("hidden"); $("#image-empty").classList.add("hidden"); }
+function showImage(url) {
+  const strip = $("#keyframe-strip");
+  const image = $("#keyframe-preview");
+  strip.replaceChildren(image);
+  image.src = url;
+  strip.classList.remove("hidden");
+  $("#image-empty").classList.add("hidden");
+}
+function showKeyframes(urls) {
+  const strip = $("#keyframe-strip");
+  strip.replaceChildren();
+  for (const [index, url] of urls.entries()) {
+    const image = document.createElement("img");
+    image.src = `${url}?v=${Date.now()}`;
+    image.alt = `Pose d’action ${index + 1} sur ${urls.length}`;
+    strip.append(image);
+  }
+  strip.classList.remove("hidden");
+  $("#image-empty").classList.add("hidden");
+}
 function showVideo(url) { $("#video-preview").src = url; $("#video-preview").classList.remove("hidden"); $("#video-empty").classList.add("hidden"); }
 function showAudio(url) { $("#audio-preview").src = url; $("#audio-preview").classList.remove("hidden"); $("#audio-empty").classList.add("hidden"); }
 function setWorking(value) { $$("#generate-all,#generate-keyframe,#continue-video").forEach((button) => button.disabled = value); }

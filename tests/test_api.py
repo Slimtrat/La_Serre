@@ -61,6 +61,8 @@ async def test_generated_outputs_survive_studio_reload(tmp_path: Path) -> None:
     shot_dir = output / "S01E001-S01"
     shot_dir.mkdir(parents=True)
     (shot_dir / "keyframe.png").write_bytes(b"image")
+    (shot_dir / "keyframe-guide-1.png").write_bytes(b"image-middle")
+    (shot_dir / "keyframe-guide-2.png").write_bytes(b"image-end")
     (shot_dir / "clip.mp4").write_bytes(b"video")
     (shot_dir / "generation.json").write_text(
         '{"status":"GENERATED"}',
@@ -76,5 +78,10 @@ async def test_generated_outputs_survive_studio_reload(tmp_path: Path) -> None:
         "shot_id": "S01E001-S01",
         "status": "GENERATED",
         "keyframe": "/api/media/S01E001-S01/keyframe.png",
+        "keyframes": [
+            "/api/media/S01E001-S01/keyframe.png",
+            "/api/media/S01E001-S01/keyframe-guide-1.png",
+            "/api/media/S01E001-S01/keyframe-guide-2.png",
+        ],
         "video": "/api/media/S01E001-S01/clip.mp4",
     }

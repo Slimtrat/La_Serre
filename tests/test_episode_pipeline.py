@@ -116,6 +116,7 @@ class FakeMedia:
 
 class FakeSpeech:
     name = "fake-speech"
+    output_suffix = ".wav"
 
     def synthesize(self, text: str, destination: Path, preset: VoicePreset) -> None:
         destination.parent.mkdir(parents=True, exist_ok=True)

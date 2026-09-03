@@ -42,6 +42,12 @@ class PromptBuilder:
         dialogue = "No spoken dialogue in this shot."
         if shot.dialogue:
             dialogue = f'{shot.dialogue.speaker} says in French: "{shot.dialogue.text}"'
+            if shot.dialogue.performance:
+                performance = shot.dialogue.performance
+                dialogue += (
+                    f". Acting intention: {performance.intention}. Emotion: "
+                    f"{performance.emotion}, intensity {performance.intensity:.2f}"
+                )
 
         positive = "\n\n".join(
             [

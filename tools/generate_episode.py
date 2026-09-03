@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
-from engine.audio.speech import WindowsSapiSpeechSynthesizer
+from engine.audio.speech import create_speech_synthesizer
 from engine.media.ffmpeg import FFmpegToolchain
 from engine.production.episode_pipeline import EpisodePipeline, EpisodePipelineOptions
 
@@ -23,7 +22,8 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--subtitles", type=Path)
     result.add_argument("--music", type=Path)
     result.add_argument("--ambience", type=Path)
-    result.add_argument("--tts", choices=("auto", "sapi", "none"), default="auto")
+    result.add_argument("--presentation-plan", type=Path)
+    result.add_argument("--tts", choices=("auto", "edge", "sapi", "none"), default="auto")
     result.add_argument("--allow-stills", action="store_true")
     result.add_argument("--width", type=int, default=576)
     result.add_argument("--height", type=int, default=1024)
@@ -37,9 +37,7 @@ def parser() -> argparse.ArgumentParser:
 def main() -> None:
     args = parser().parse_args()
     tts_enabled = args.tts != "none"
-    speech = None
-    if args.tts == "sapi" or (args.tts == "auto" and sys.platform == "win32"):
-        speech = WindowsSapiSpeechSynthesizer()
+    speech = create_speech_synthesizer(args.tts)
     media = FFmpegToolchain(args.ffmpeg, args.ffprobe)
     result = EpisodePipeline(media, speech).run(
         EpisodePipelineOptions(
@@ -50,6 +48,7 @@ def main() -> None:
             subtitles=args.subtitles,
             music=args.music,
             ambience=args.ambience,
+            presentation_plan=args.presentation_plan,
             width=args.width,
             height=args.height,
             fps=args.fps,

@@ -32,7 +32,7 @@ class StudioJob:
             stage: {"status": "pending", "message": "En attente"} for stage in STAGES
         }
     )
-    media: dict[str, str] = field(default_factory=dict)
+    media: dict[str, object] = field(default_factory=dict)
 
     def public(self) -> dict[str, object]:
         return {
@@ -133,6 +133,11 @@ class JobManager:
                 job.status = record.status.value
                 job.message = "Keyframe à valider" if mode == "keyframe" else "Plan généré"
                 job.media["keyframe"] = f"/api/media/{job.shot_id}/keyframe.png"
+                keyframes = [f"/api/media/{job.shot_id}/keyframe.png"]
+                for filename in ("keyframe-guide-1.png", "keyframe-guide-2.png"):
+                    if (settings.output_dir / job.shot_id / filename).is_file():
+                        keyframes.append(f"/api/media/{job.shot_id}/{filename}")
+                job.media["keyframes"] = keyframes
                 if mode != "keyframe":
                     job.media["video"] = f"/api/media/{job.shot_id}/clip.mp4"
             except Exception as exc:

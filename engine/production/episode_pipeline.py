@@ -11,9 +11,12 @@ from pathlib import Path
 from typing import Literal
 
 from engine.audio.models import EpisodeAudioPlan
+from engine.audio.score import ProceduralScoreComposer
 from engine.audio.speech import SpeechSynthesizer
+from engine.director.models import DialoguePerformance
 from engine.media.ffmpeg import AssemblyRequest, MediaToolchain, SegmentInput
 from engine.production.artifacts import sha256_file, write_text_atomic
+from engine.production.presentation import EpisodePresentationPlan
 from engine.world.catalog import EpisodeCatalog
 
 VIDEO_SUFFIXES = {".mp4", ".webm", ".mov", ".mkv"}
@@ -31,6 +34,7 @@ class EpisodePipelineOptions:
     subtitles: Path | None = None
     music: Path | None = None
     ambience: Path | None = None
+    presentation_plan: Path | None = None
     width: int = 576
     height: int = 1024
     fps: int = 24
@@ -54,10 +58,12 @@ class EpisodePipeline:
         self,
         media: MediaToolchain,
         speech: SpeechSynthesizer | None = None,
+        score: ProceduralScoreComposer | None = None,
         on_progress: ProgressCallback | None = None,
     ) -> None:
         self.media = media
         self.speech = speech
+        self.score = score or ProceduralScoreComposer()
         self.on_progress = on_progress
 
     def run(self, options: EpisodePipelineOptions) -> EpisodePipelineResult:
@@ -70,6 +76,8 @@ class EpisodePipeline:
         )
         audio_plan_path = options.audio_plan or episode_dir / "audio-plan.json"
         plan = EpisodeAudioPlan.load(audio_plan_path)
+        presentation_path = options.presentation_plan or episode_dir / "presentation-plan.json"
+        presentation = EpisodePresentationPlan.load(presentation_path)
         subtitles = self._optional_file(options.subtitles or episode_dir / "subtitles.fr.srt")
         music = self._optional_file(options.music or episode_dir / "music.wav")
         ambience = self._optional_file(options.ambience or episode_dir / "ambience.wav")
@@ -85,11 +93,20 @@ class EpisodePipeline:
         created_at = datetime.now(UTC)
         with tempfile.TemporaryDirectory(prefix=".episode-build-", dir=destination) as temporary:
             workspace = Path(temporary)
+            generated_music = music is None
+            if generated_music:
+                music = workspace / "music.wav"
+                self.score.compose(
+                    music,
+                    package.episode.duration_target,
+                    seed=package.episode.season * 10_000 + package.episode.episode,
+                )
             segments: list[SegmentInput] = []
             source_records: list[dict[str, object]] = []
             generated_voices: list[tuple[str, Path]] = []
             self._notify("voice", "running", "Résolution et génération des voix")
             for shot in package.shots:
+                caption, caption_position = presentation.caption_for(shot.id)
                 visual, visual_kind, visual_source = self._resolve_visual(
                     options.output_root,
                     shot.id,
@@ -101,18 +118,25 @@ class EpisodePipeline:
                     shot.id,
                     shot.dialogue.speaker if shot.dialogue else None,
                     shot.dialogue.text if shot.dialogue else None,
+                    shot.dialogue.performance if shot.dialogue else None,
                     workspace,
                 )
                 cue = plan.cue_for(shot.id)
-                if audio and audio_source == "sapi":
+                performance_delay = (
+                    shot.dialogue.performance.pause_before_seconds
+                    if shot.dialogue and shot.dialogue.performance
+                    else 0
+                )
+                audio_offset = cue.offset_seconds + performance_delay
+                if audio and self.speech is not None and audio_source == self.speech.name:
                     generated_voices.append((shot.id, audio))
                 if audio:
                     audio_duration = self.media.duration(audio)
-                    if audio_duration + cue.offset_seconds > shot.duration + 0.05:
+                    if audio_duration + audio_offset > shot.duration + 0.05:
                         raise ValueError(
                             f"La voix de {shot.id} dure {audio_duration:.2f}s et dépasse le plan "
                             f"de {shot.duration:.2f}s après son décalage de "
-                            f"{cue.offset_seconds:.2f}s."
+                            f"{audio_offset:.2f}s."
                         )
                 segments.append(
                     SegmentInput(
@@ -121,14 +145,22 @@ class EpisodePipeline:
                         visual_kind=visual_kind,
                         duration=shot.duration,
                         audio=audio,
-                        audio_offset=cue.offset_seconds,
+                        audio_offset=audio_offset,
                         audio_gain_db=cue.gain_db,
+                        overlay=presentation.frame_for(shot.id),
+                        caption=caption,
+                        caption_position=caption_position,
                     )
                 )
                 audio_record = self._source_record(audio, audio_source) if audio else None
-                if audio_record is not None and audio_source == "sapi":
+                if (
+                    audio_record is not None
+                    and audio is not None
+                    and self.speech is not None
+                    and audio_source == self.speech.name
+                ):
                     audio_record["path"] = str(
-                        (destination / "voices" / f"{shot.id}.wav").resolve()
+                        (destination / "voices" / f"{shot.id}{audio.suffix}").resolve()
                     )
                 source_records.append(
                     {
@@ -174,6 +206,10 @@ class EpisodePipeline:
                 height=options.height,
             )
             temporary_video.replace(final_video)
+            final_music: Path | None = None
+            if generated_music and music is not None:
+                final_music = destination / "music.wav"
+                self._copy_atomic(music, final_music)
 
             final_subtitles: Path | None = None
             if subtitles:
@@ -181,7 +217,7 @@ class EpisodePipeline:
                 self._copy_atomic(subtitles, final_subtitles)
             voices_dir = destination / "voices"
             for shot_id, voice in generated_voices:
-                self._copy_atomic(voice, voices_dir / f"{shot_id}.wav")
+                self._copy_atomic(voice, voices_dir / f"{shot_id}{voice.suffix}")
 
             record: dict[str, object] = {
                 "schema_version": 1,
@@ -206,11 +242,20 @@ class EpisodePipeline:
                     "episode": str((episode_dir / "episode.json").resolve()),
                     "shots": source_records,
                     "subtitles": self._source_record(subtitles, "episode") if subtitles else None,
-                    "music": self._source_record(music, "episode") if music else None,
+                    "music": (
+                        self._source_record(final_music, self.score.name)
+                        if final_music
+                        else self._source_record(music, "episode") if music else None
+                    ),
                     "ambience": self._source_record(ambience, "episode") if ambience else None,
                     "audio_plan": (
                         self._source_record(audio_plan_path, "episode")
                         if audio_plan_path.is_file()
+                        else None
+                    ),
+                    "presentation_plan": (
+                        self._source_record(presentation_path, "episode")
+                        if presentation_path.is_file()
                         else None
                     ),
                 },
@@ -258,6 +303,7 @@ class EpisodePipeline:
         shot_id: str,
         speaker: str | None,
         text: str | None,
+        performance: DialoguePerformance | None,
         workspace: Path,
     ) -> tuple[Path | None, str | None]:
         imported = self._first_media(
@@ -278,9 +324,27 @@ class EpisodePipeline:
             raise RuntimeError(
                 f"Dialogue sans synthétiseur pour {shot_id}. Configure SAPI ou importe une voix."
             )
-        destination = workspace / "voices" / f"{shot_id}.wav"
-        self.speech.synthesize(text, destination, plan.voice_for(speaker))
-        return destination, "sapi"
+        suffix = getattr(self.speech, "output_suffix", ".wav")
+        destination = workspace / "voices" / f"{shot_id}{suffix}"
+        preset = plan.voice_for(speaker)
+        if performance is not None:
+            preset = preset.model_copy(
+                update={
+                    "rate": self._clamp(preset.rate + round(performance.pace * 4), -10, 10),
+                    "pitch_hz": self._clamp(
+                        preset.pitch_hz + round(performance.pitch * 40), -100, 100
+                    ),
+                    "volume": self._clamp(
+                        preset.volume + round(performance.volume * 15), 0, 100
+                    ),
+                }
+            )
+        self.speech.synthesize(text, destination, preset)
+        return destination, self.speech.name
+
+    @staticmethod
+    def _clamp(value: int, minimum: int, maximum: int) -> int:
+        return min(maximum, max(minimum, value))
 
     @classmethod
     def _resolve_visual(

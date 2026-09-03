@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import asyncio
-import sys
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from apps.api.schemas import EpisodeGenerationRequest
-from engine.audio.speech import WindowsSapiSpeechSynthesizer
+from engine.audio.speech import create_speech_synthesizer
 from engine.config import Settings
 from engine.media.ffmpeg import FFmpegToolchain
 from engine.production.episode_pipeline import EpisodePipeline, EpisodePipelineOptions
@@ -77,11 +76,7 @@ class EpisodeJobManager:
             job.message = "Préparation de l'épisode"
             try:
                 settings = await asyncio.to_thread(self.settings_provider)
-                speech = None
-                if request.tts == "sapi" or (
-                    request.tts == "auto" and sys.platform == "win32"
-                ):
-                    speech = await asyncio.to_thread(WindowsSapiSpeechSynthesizer)
+                speech = await asyncio.to_thread(create_speech_synthesizer, request.tts)
                 media = await asyncio.to_thread(FFmpegToolchain)
                 pipeline = EpisodePipeline(
                     media,

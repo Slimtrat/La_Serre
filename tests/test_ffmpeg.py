@@ -20,6 +20,8 @@ def test_ffmpeg_command_builds_timed_mix_and_soft_subtitles(tmp_path: Path) -> N
                 visual=tmp_path / "keyframe.png",
                 visual_kind="image",
                 duration=4,
+                overlay=tmp_path / "cadre-des-venins.png",
+                caption="MINUIT : la serre respire.",
             ),
             SegmentInput(
                 shot_id="S01E001-S02",
@@ -38,12 +40,20 @@ def test_ffmpeg_command_builds_timed_mix_and_soft_subtitles(tmp_path: Path) -> N
         subtitles=tmp_path / "subtitles.fr.srt",
         music=tmp_path / "music.wav",
         ambience=tmp_path / "ambience.wav",
+        caption_font=Path("C:/fonts/georgia.ttf"),
     )
 
     command = toolchain().build_command(request)
     rendered = " ".join(command)
 
     assert "-loop 1" in rendered
+    assert "overlay=0:0" in rendered
+    assert "drawtext=" in rendered
+    assert "fontfile='C\\:/fonts/georgia.ttf'" in rendered
+    assert "subtitles=filename=" in rendered
+    assert "[episode_video_burned]" in rendered
+    assert "-map [episode_video_burned]" in rendered
+    assert r"MINUIT \: la serre respire." in rendered
     assert "concat=n=2:v=1:a=1" in rendered
     assert "adelay=500|500" in rendered
     assert "sidechaincompress" in rendered

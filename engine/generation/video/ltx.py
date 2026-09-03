@@ -20,7 +20,15 @@ class LTXVideoGenerator(VideoGenerator):
 
     async def generate(self, request: VideoGenerationRequest) -> VideoGenerationResult:
         uploaded = await self.client.upload_image(request.keyframe)
-        context = {**request.context, "reference_image": uploaded.workflow_reference}
+        context = {
+            **request.context,
+            "reference_image": uploaded.workflow_reference,
+            "reference_image_guide_1": uploaded.workflow_reference,
+            "reference_image_guide_2": uploaded.workflow_reference,
+        }
+        for index, guide in enumerate(request.guide_keyframes, start=1):
+            uploaded_guide = await self.client.upload_image(guide)
+            context[f"reference_image_guide_{index}"] = uploaded_guide.workflow_reference
         execution = await self.executor.execute(
             request.profile_path,
             context,
