@@ -13,6 +13,7 @@ async function refreshNarrativeStatus() {
   const label = document.querySelector("#ollama-state");
   try {
     const status = await narrativeRequest("/api/narrative/status");
+    window.dispatchEvent(new CustomEvent("studio:narrative-status", { detail: status }));
     select.replaceChildren();
     if (!status.ready || !status.models.length) {
       select.append(new Option("Ollama hors ligne", ""));
@@ -28,6 +29,7 @@ async function refreshNarrativeStatus() {
     button.disabled = false;
     label.textContent = status.models.length + " modèle(s) local(aux) disponible(s)";
   } catch (error) {
+    window.dispatchEvent(new CustomEvent("studio:narrative-status", { detail: { ready: false } }));
     button.disabled = true;
     label.textContent = error.message;
   }
@@ -49,6 +51,7 @@ async function draftShot() {
   }
   button.disabled = true;
   button.textContent = "Director en cours…";
+  window.dispatchEvent(new CustomEvent("studio:narrative-job", { detail: { state: "running" } }));
   try {
     const result = await narrativeRequest("/api/narrative/shot", {
       method: "POST",
@@ -67,8 +70,10 @@ async function draftShot() {
     card.classList.add("completed");
     card.querySelector(".stage-status").textContent =
       "Shot proposé par " + result.model + " · " + result.attempts + " essai(s)";
+    window.dispatchEvent(new CustomEvent("studio:narrative-job", { detail: { state: "ready" } }));
     narrativeStudio.notify("Shot proposé et validé. Tu peux encore tout modifier.");
   } catch (error) {
+    window.dispatchEvent(new CustomEvent("studio:narrative-job", { detail: { state: "failed" } }));
     narrativeStudio.notify(error.message, true);
   } finally {
     button.disabled = false;

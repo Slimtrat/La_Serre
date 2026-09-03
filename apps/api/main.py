@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import re
 from dataclasses import asdict
 from pathlib import Path
@@ -242,6 +243,31 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="Media not found")
         media_type = "video/mp4" if filename.endswith(".mp4") else None
         return FileResponse(path, media_type=media_type)
+
+    @app.get("/api/outputs/{shot_id}")
+    def outputs(shot_id: str) -> dict[str, object]:
+        if not SHOT_ID.fullmatch(shot_id):
+            raise HTTPException(status_code=404, detail="Shot not found")
+        destination = current_settings().output_dir / shot_id
+        result: dict[str, object] = {
+            "shot_id": shot_id,
+            "status": None,
+            "keyframe": None,
+            "video": None,
+        }
+        if (destination / "keyframe.png").is_file():
+            result["keyframe"] = f"/api/media/{shot_id}/keyframe.png"
+        if (destination / "clip.mp4").is_file():
+            result["video"] = f"/api/media/{shot_id}/clip.mp4"
+        manifest = destination / "generation.json"
+        if manifest.is_file():
+            try:
+                payload = json.loads(manifest.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                payload = {}
+            if isinstance(payload, dict):
+                result["status"] = payload.get("status")
+        return result
 
     return app
 

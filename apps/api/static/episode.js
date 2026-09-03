@@ -44,6 +44,11 @@ function selectEpisodeShot(shotId) {
   const index = loadedEpisode.episode.shot_order.indexOf(shotId) + 1;
   document.querySelector("#episode-state").textContent =
     "Plan " + index + " sur " + loadedEpisode.shots.length + " · prêt à générer";
+  window.dispatchEvent(
+    new CustomEvent("studio:shot-selected", {
+      detail: { episode: loadedEpisode.episode, shot: selected, index },
+    }),
+  );
   episodeStudio.refreshAssets().catch(() => {});
 }
 
@@ -73,6 +78,9 @@ async function loadEpisode(episodeId) {
     episode.duration_target + " secondes · " + loadedEpisode.shots.length + " plans";
   renderCast(loadedEpisode.characters);
   renderShotStrip(loadedEpisode);
+  window.dispatchEvent(
+    new CustomEvent("studio:episode-loaded", { detail: loadedEpisode }),
+  );
   selectEpisodeShot(episode.shot_order[0]);
 }
 

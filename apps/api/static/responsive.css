@@ -1,0 +1,83 @@
+@media (max-width: 720px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .topbar {
+    gap: 10px;
+  }
+
+  .brand {
+    min-width: 0;
+  }
+
+  .brand strong {
+    overflow: hidden;
+    font-size: 13px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  #settings-toggle {
+    max-width: 112px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .shell {
+    width: calc(100% - 24px);
+  }
+
+  .hero,
+  .hero-copy,
+  .episode-panel,
+  .graph-workbench {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .hero-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    min-width: 0;
+  }
+
+  .hero-actions .button {
+    width: 100%;
+  }
+
+  .episode-panel .panel-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .episode-logline {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .episode-meta {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .episode-details summary {
+    width: auto;
+    padding-left: 2px;
+  }
+
+  .graph-toolbar h2 {
+    font-size: 24px;
+  }
+
+  .graph-controls {
+    display: grid;
+    grid-template-columns: 40px 54px 40px 1fr;
+    width: 100%;
+  }
+
+  #graph-reset {
+    grid-column: 1 / -1;
+  }
+}

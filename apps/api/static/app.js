@@ -50,6 +50,7 @@ async function refreshStatus() {
     renderModels(status.models || []);
     $("#downloads-location").textContent = "Téléchargements : " + status.downloads_dir;
     if (!ready) $("#settings-panel").classList.remove("hidden");
+    window.dispatchEvent(new CustomEvent("studio:status", { detail: status }));
     return status;
   } catch (error) {
     $("#connection-dot").className = "dot error";
@@ -132,6 +133,7 @@ async function buildWorkflows() {
 
 function setSource(slot, value) {
   sources[slot] = value;
+  window.dispatchEvent(new CustomEvent("studio:source", { detail: { slot, value } }));
   const group = $(`.segmented[data-source="${slot}"]`);
   $$('button', group).forEach((button) => button.classList.toggle("selected", button.dataset.value === value));
   const dropzone = $(`[data-dropzone="${slot}"]`);
@@ -153,6 +155,9 @@ async function uploadAsset(slot, file) {
   if (slot === "story") $("#story-editor").value = await file.text();
   const card = $('.segmented[data-source="' + slot + '"]')?.closest(".stage-card");
   if (card) $(".stage-status", card).textContent = result.filename + " importé";
+  window.dispatchEvent(
+    new CustomEvent("studio:asset", { detail: { slot, record: result } }),
+  );
   notify(`${file.name} branché sur l’étape ${slot}.`);
 }
 
@@ -179,6 +184,14 @@ async function refreshAssets() {
     const card = $('.segmented[data-source="' + slot + '"]')?.closest(".stage-card");
     if (card) $(".stage-status", card).textContent = record.filename + " importé";
   }
+  const generated = await api("/api/outputs/" + id);
+  if (generated.keyframe) showImage(generated.keyframe + "?v=" + Date.now());
+  if (generated.video) showVideo(generated.video + "?v=" + Date.now());
+  window.dispatchEvent(
+    new CustomEvent("studio:assets", {
+      detail: { shotId: id, assets, outputs: generated },
+    }),
+  );
 }
 
 function bindDropzone(zone) {
@@ -227,6 +240,7 @@ async function pollJob() {
 }
 
 function renderJob(job) {
+  window.dispatchEvent(new CustomEvent("studio:job", { detail: job }));
   $("#job-badge").textContent = job.status.replaceAll("_", " ");
   $("#job-message").textContent = job.message;
   for (const stage of job.stages) {
@@ -274,5 +288,14 @@ async function init() {
   window.setInterval(() => !document.hidden && refreshStatus(), 15000);
 }
 
-window.SerreStudio = { api, notify, refreshAssets, shot, validateEditor };
+window.SerreStudio = {
+  api,
+  notify,
+  refreshAssets,
+  setSource,
+  shot,
+  startJob,
+  uploadAsset,
+  validateEditor,
+};
 document.addEventListener("DOMContentLoaded", () => init().catch((error) => notify(error.message, true)));

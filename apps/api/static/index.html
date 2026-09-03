@@ -6,6 +6,8 @@
     <title>La Serre des Venins — Studio</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="stylesheet" href="/static/graph.css" />
+    <link rel="stylesheet" href="/static/responsive.css" />
   </head>
   <body>
     <div class="ambient ambient-one"></div>
@@ -48,14 +50,133 @@
           <span id="episode-duration" class="badge">—</span>
           <span id="episode-state" class="muted">Catalogue local</span>
         </div>
-        <div>
-          <p class="eyebrow">PERSONNAGES CANONIQUES</p>
-          <div id="episode-cast" class="character-cast"></div>
+        <details class="episode-details">
+          <summary>Afficher le casting et les plans de l’épisode</summary>
+          <div class="episode-details-grid">
+            <div>
+              <p class="eyebrow">PERSONNAGES CANONIQUES</p>
+              <div id="episode-cast" class="character-cast"></div>
+            </div>
+            <div>
+              <p class="eyebrow">PLANS</p>
+              <div id="episode-shots" class="shot-strip"></div>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="graph-workbench panel" aria-labelledby="graph-title">
+        <header class="graph-toolbar">
+          <div>
+            <p class="eyebrow">CANVAS DE PRODUCTION</p>
+            <h2 id="graph-title">Du récit au plan final</h2>
+            <p class="graph-subtitle">Déplace le canvas, zoome et ouvre un nœud pour agir.</p>
+          </div>
+          <div class="graph-controls" aria-label="Navigation du graphe">
+            <button id="graph-zoom-out" class="button ghost" type="button" aria-label="Dézoomer">−</button>
+            <output id="graph-zoom-label" aria-live="polite">75 %</output>
+            <button id="graph-zoom-in" class="button ghost" type="button" aria-label="Zoomer">+</button>
+            <button id="graph-fit" class="button secondary" type="button">Tout voir</button>
+            <button id="graph-reset" class="button ghost" type="button">Réinitialiser</button>
+          </div>
+        </header>
+
+        <div class="graph-layout">
+          <div id="graph-viewport" class="graph-viewport" aria-label="Graphe de production interactif">
+            <div id="graph-world" class="graph-world">
+              <svg id="graph-links" class="graph-links" width="2440" height="900" aria-hidden="true">
+                <defs>
+                  <marker id="graph-arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+                    <path d="M 0 0 L 10 5 L 0 10 z"></path>
+                  </marker>
+                </defs>
+              </svg>
+
+              <button class="graph-node state-ready selected" type="button" data-node-id="story" data-x="80" data-y="340">
+                <span class="graph-node-index">01</span><span class="graph-node-type">ENTRÉE</span>
+                <strong>Histoire</strong><small>Texte ou import</small>
+                <span class="graph-node-status">Source chargée</span>
+              </button>
+              <button class="graph-node state-idle" type="button" data-node-id="director" data-x="380" data-y="340">
+                <span class="graph-node-index">02</span><span class="graph-node-type">OLLAMA</span>
+                <strong>Director</strong><small>Découpage créatif</small>
+                <span class="graph-node-status">Disponible</span>
+              </button>
+              <button class="graph-node state-ready" type="button" data-node-id="shot" data-x="680" data-y="340">
+                <span class="graph-node-index">03</span><span class="graph-node-type">CONTRAT</span>
+                <strong>Shot JSON</strong><small>Plan validé</small>
+                <span class="graph-node-status">Prêt</span>
+              </button>
+              <button class="graph-node state-ready graph-node-branch" type="button" data-node-id="cast" data-x="390" data-y="80">
+                <span class="graph-node-index">C</span><span class="graph-node-type">BIBLE</span>
+                <strong>Personnages</strong><small>Identités privées</small>
+                <span class="graph-node-status">Canon verrouillé</span>
+              </button>
+              <button class="graph-node state-pending" type="button" data-node-id="keyframe" data-x="980" data-y="120">
+                <span class="graph-node-index">04</span><span class="graph-node-type">SDXL / IMPORT</span>
+                <strong>Keyframe</strong><small>Composition & identité</small>
+                <span class="graph-node-status">À produire</span>
+              </button>
+              <button class="graph-node state-pending" type="button" data-node-id="review" data-x="1270" data-y="120">
+                <span class="graph-node-index">✓</span><span class="graph-node-type">HUMAIN</span>
+                <strong>Validation</strong><small>Approuver ou reroll</small>
+                <span class="graph-node-status">En attente</span>
+              </button>
+              <button class="graph-node state-pending" type="button" data-node-id="motion" data-x="1560" data-y="120">
+                <span class="graph-node-index">05</span><span class="graph-node-type">LTX / IMPORT</span>
+                <strong>Mouvement</strong><small>Image vers vidéo</small>
+                <span class="graph-node-status">En attente</span>
+              </button>
+              <button class="graph-node state-optional graph-node-branch" type="button" data-node-id="voice" data-x="980" data-y="570">
+                <span class="graph-node-index">A</span><span class="graph-node-type">AUDIO</span>
+                <strong>Voix & son</strong><small>TTS ou import</small>
+                <span class="graph-node-status">Optionnel</span>
+              </button>
+              <button class="graph-node state-future graph-node-branch" type="button" data-node-id="mix" data-x="1270" data-y="570">
+                <span class="graph-node-index">M</span><span class="graph-node-type">MIXAGE</span>
+                <strong>Synchronisation</strong><small>Voix, musique, SFX</small>
+                <span class="graph-node-status">À venir</span>
+              </button>
+              <button class="graph-node state-future" type="button" data-node-id="montage" data-x="1840" data-y="340">
+                <span class="graph-node-index">06</span><span class="graph-node-type">FFMPEG</span>
+                <strong>Montage</strong><small>Plans approuvés</small>
+                <span class="graph-node-status">À venir</span>
+              </button>
+              <button class="graph-node state-future" type="button" data-node-id="export" data-x="2130" data-y="340">
+                <span class="graph-node-index">07</span><span class="graph-node-type">9:16</span>
+                <strong>Épisode final</strong><small>1080 × 1920</small>
+                <span class="graph-node-status">À venir</span>
+              </button>
+            </div>
+
+            <div id="graph-minimap" class="graph-minimap" aria-hidden="true">
+              <div id="graph-minimap-world" class="graph-minimap-world"></div>
+              <div id="graph-minimap-window" class="graph-minimap-window"></div>
+            </div>
+          </div>
+
+          <aside id="graph-inspector" class="graph-inspector" aria-live="polite">
+            <div class="graph-inspector-heading">
+              <span id="graph-inspector-index">01</span>
+              <div><small id="graph-inspector-type">ENTRÉE</small><h3 id="graph-inspector-title">Histoire</h3></div>
+            </div>
+            <p id="graph-inspector-description">Le brief narratif du plan sélectionné.</p>
+            <dl class="graph-inspector-facts">
+              <div><dt>Moteur</dt><dd id="graph-inspector-provider">Ollama ou import</dd></div>
+              <div><dt>État</dt><dd id="graph-inspector-status">Source chargée</dd></div>
+            </dl>
+            <div id="graph-inspector-preview" class="graph-inspector-preview hidden"></div>
+            <div id="graph-inspector-actions" class="graph-inspector-actions"></div>
+            <p id="graph-inspector-drop" class="graph-inspector-drop hidden">Dépose un fichier directement sur ce nœud.</p>
+          </aside>
         </div>
-        <div>
-          <p class="eyebrow">PLANS</p>
-          <div id="episode-shots" class="shot-strip"></div>
-        </div>
+
+        <footer class="graph-hints">
+          <span>Glisser le fond pour se déplacer</span>
+          <span>Molette pour zoomer</span>
+          <span>Glisser un nœud pour réorganiser</span>
+          <span id="graph-position">x 0 · y 0</span>
+        </footer>
       </section>
 
       <section id="settings-panel" class="panel setup hidden">
@@ -88,7 +209,7 @@
         </details>
       </section>
 
-      <section class="pipeline-map panel">
+      <section class="pipeline-map panel hidden">
         <div class="panel-heading compact-heading">
           <div><p class="eyebrow">VISION PRODUIT</p><h2>Chaîne de production hybride</h2></div>
           <span class="badge">3 étapes actives</span>
@@ -167,7 +288,7 @@
         </div>
       </section>
 
-      <section class="panel preview-panel">
+      <section id="preview-panel" class="panel preview-panel">
         <div class="panel-heading compact-heading"><div><p class="eyebrow">SORTIES</p><h2>Contrôle humain</h2></div><span id="job-badge" class="badge">Aucun rendu</span></div>
         <div class="previews">
           <div class="preview-frame"><span class="preview-label">KEYFRAME</span><div id="image-empty" class="empty-preview">L’image apparaîtra ici</div><img id="keyframe-preview" class="hidden" alt="Keyframe générée ou importée" /></div>
@@ -181,5 +302,6 @@
     <script src="/static/app.js" defer></script>
     <script src="/static/narrative.js" defer></script>
     <script src="/static/episode.js" defer></script>
+    <script src="/static/graph.js" defer></script>
   </body>
 </html>

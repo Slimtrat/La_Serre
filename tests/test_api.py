@@ -54,3 +54,27 @@ async def test_install_completed_model_download(tmp_path: Path) -> None:
     assert response.json()["restart_required"] is True
     assert response.json()["installed"][0]["filename"] == filename
     assert (models / "checkpoints" / filename).read_bytes() == b"completed-model"
+
+
+async def test_generated_outputs_survive_studio_reload(tmp_path: Path) -> None:
+    output = tmp_path / "output"
+    shot_dir = output / "S01E001-S01"
+    shot_dir.mkdir(parents=True)
+    (shot_dir / "keyframe.png").write_bytes(b"image")
+    (shot_dir / "clip.mp4").write_bytes(b"video")
+    (shot_dir / "generation.json").write_text(
+        '{"status":"GENERATED"}',
+        encoding="utf-8",
+    )
+    app = create_app(Settings(_env_file=None, output_dir=output))
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/outputs/S01E001-S01")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "shot_id": "S01E001-S01",
+        "status": "GENERATED",
+        "keyframe": "/api/media/S01E001-S01/keyframe.png",
+        "video": "/api/media/S01E001-S01/clip.mp4",
+    }
