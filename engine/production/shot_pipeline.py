@@ -66,7 +66,12 @@ class ShotPipeline:
         prompt = self.prompt_builder.build(shot)
         self._notify("prompt", "completed", "Prompt positif et négatif prêts")
         destination = options.output_root / shot.id
-        self._prepare_destination(destination, options.force, options.from_keyframe)
+        self._prepare_destination(
+            destination,
+            options.force,
+            options.from_keyframe,
+            options.guide_keyframes,
+        )
         destination.mkdir(parents=True, exist_ok=True)
         prompt_text = prompt.positive + "\n\nNEGATIVE:\n" + prompt.negative + "\n"
         write_text_atomic(destination / "prompt.txt", prompt_text)
@@ -340,7 +345,12 @@ class ShotPipeline:
         )
 
     @staticmethod
-    def _prepare_destination(destination: Path, force: bool, from_keyframe: Path | None) -> None:
+    def _prepare_destination(
+        destination: Path,
+        force: bool,
+        from_keyframe: Path | None,
+        guide_keyframes: tuple[Path, ...] = (),
+    ) -> None:
         if not destination.exists():
             return
         harmless_files = {"dry-run", "imports"}
@@ -357,14 +367,15 @@ class ShotPipeline:
         if from_keyframe and existing <= allowed_resume_files | harmless_files:
             return
         if force:
-            preserved_keyframe = (
-                from_keyframe
-                and from_keyframe.resolve() == (destination / "keyframe.png").resolve()
-            )
+            preserved_sources = {
+                source.resolve()
+                for source in ((from_keyframe,) + guide_keyframes)
+                if source is not None
+            }
             for name in allowed_resume_files | {"clip.mp4"}:
-                if preserved_keyframe and name == "keyframe.png":
-                    continue
                 candidate = destination / name
+                if candidate.resolve() in preserved_sources:
+                    continue
                 if candidate.is_file():
                     candidate.unlink()
             return

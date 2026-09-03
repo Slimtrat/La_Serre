@@ -5,11 +5,14 @@ import os
 import shutil
 import subprocess
 import sys
+import wave
+from array import array
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Protocol
 
 from engine.audio.models import VoicePreset
+from engine.director.models import DialoguePerformance
 
 ProcessRunner = Callable[..., subprocess.CompletedProcess[str]]
 
@@ -44,6 +47,10 @@ class WindowsSapiSpeechSynthesizer:
             "$s.Volume=[int]$p.volume",
             "$s.SetOutputToWaveFile([string]$p.output)",
             "$escaped=[System.Security.SecurityElement]::Escape([string]$p.text)",
+            (
+                "$escaped=$escaped.Replace([string][char]0x2026, "
+                "'<break time=\"350ms\"/>')"
+            ),
             "$ratePercent=[int]$p.rate*5",
             "$pitchHz=[int]$p.pitch_hz",
             (
@@ -115,6 +122,7 @@ class WindowsSapiSpeechSynthesizer:
             raise RuntimeError(f"La synthèse vocale SAPI a échoué : {detail[-1200:]}")
         if not destination.is_file() or destination.stat().st_size == 0:
             raise RuntimeError("La synthèse vocale SAPI n'a produit aucun fichier audio")
+        _trim_pcm_silence(destination)
 
 
 class EdgeNeuralSpeechSynthesizer:
@@ -177,3 +185,68 @@ def create_speech_synthesizer(mode: str) -> SpeechSynthesizer | None:
     if mode == "sapi" or (mode == "auto" and sys.platform == "win32"):
         return WindowsSapiSpeechSynthesizer()
     return None
+
+
+def voice_preset_for_performance(
+    preset: VoicePreset,
+    performance: DialoguePerformance | None,
+) -> VoicePreset:
+    if performance is None:
+        return preset
+    return preset.model_copy(
+        update={
+            "rate": min(10, max(-10, preset.rate + round(performance.pace * 4))),
+            "pitch_hz": min(
+                100,
+                max(-100, preset.pitch_hz + round(performance.pitch * 40)),
+            ),
+            "volume": min(
+                100,
+                max(0, preset.volume + round(performance.volume * 15)),
+            ),
+        }
+    )
+
+
+def _trim_pcm_silence(path: Path, *, margin_seconds: float = 0.08) -> None:
+    """Remove SAPI's variable edge silence while preserving pauses inside a line."""
+    try:
+        with wave.open(str(path), "rb") as source:
+            params = source.getparams()
+            if params.sampwidth != 2 or params.nframes == 0:
+                return
+            content = source.readframes(params.nframes)
+    except (EOFError, wave.Error):
+        return
+    samples = array("h")
+    samples.frombytes(content)
+    if sys.byteorder != "little":
+        samples.byteswap()
+    channels = params.nchannels
+    frame_count = len(samples) // channels
+    peak = max((abs(sample) for sample in samples), default=0)
+    if peak == 0:
+        return
+    threshold = max(96, int(peak * 0.012))
+
+    def audible(frame: int) -> bool:
+        start = frame * channels
+        return any(abs(samples[start + channel]) > threshold for channel in range(channels))
+
+    first = next((frame for frame in range(frame_count) if audible(frame)), None)
+    if first is None:
+        return
+    last = next(frame for frame in range(frame_count - 1, -1, -1) if audible(frame))
+    margin = round(params.framerate * margin_seconds)
+    start_frame = max(0, first - margin)
+    end_frame = min(frame_count, last + margin + 1)
+    if start_frame == 0 and end_frame == frame_count:
+        return
+    trimmed = samples[start_frame * channels : end_frame * channels]
+    if sys.byteorder != "little":
+        trimmed.byteswap()
+    temporary = path.with_suffix(path.suffix + ".trimmed")
+    with wave.open(str(temporary), "wb") as destination:
+        destination.setparams(params)
+        destination.writeframes(trimmed.tobytes())
+    temporary.replace(path)

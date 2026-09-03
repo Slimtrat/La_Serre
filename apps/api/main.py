@@ -15,14 +15,22 @@ from apps.api.episode_job_manager import EpisodeJobManager
 from apps.api.episode_routes import create_episode_router
 from apps.api.job_manager import JobManager
 from apps.api.narrative_routes import create_narrative_router
+from apps.api.notifications import StudioNotificationLog
+from apps.api.projects import ProjectRegistry
+from apps.api.run_history import RUN_FILES, RunHistory
 from apps.api.schemas import (
     EpisodeGenerationRequest,
     GenerationRequest,
+    NotificationCreateRequest,
+    NotificationReadRequest,
+    ProjectCreateRequest,
+    StageGenerationRequest,
     StudioConfigRequest,
     WorkflowImportRequest,
     WorkflowKind,
     WorkflowProfileRequest,
 )
+from apps.api.stage_actions import ShotStageService, StageKind
 from apps.api.workflow_graph import WORKFLOW_GRAPH_KINDS, build_workflow_graph
 from apps.api.workflow_setup import WorkflowSetup
 from engine.config import Settings
@@ -42,27 +50,56 @@ MEDIA_FILES = {
     "clip.mp4",
     "generation.json",
     "prompt.txt",
+    "voice.wav",
+    "voice.mp3",
 }
 EPISODE_MEDIA_FILES = {
     "episode.mp4": "video/mp4",
     "episode-generation.json": "application/json",
     "subtitles.fr.srt": "application/x-subrip",
+    "music.wav": "audio/wav",
 }
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     fixed_settings = settings
 
-    def current_settings() -> Settings:
+    def base_settings() -> Settings:
         return fixed_settings or Settings.load()
 
-    app = FastAPI(title="La Serre des Venins", version="0.2.0")
-    assets = AssetStore(current_settings().output_dir)
+    initial = base_settings()
+    project_registry = ProjectRegistry(
+        initial,
+        config_path=(
+            initial.output_dir / ".studio" / "projects.json"
+            if fixed_settings is not None
+            else Path("workflows/local/studio-projects.json")
+        ),
+        projects_root=(
+            initial.output_dir.parent / "projects"
+            if fixed_settings is not None
+            else Path("projects")
+        ),
+    )
+
+    def current_settings() -> Settings:
+        return project_registry.settings(base_settings())
+
+    def assets() -> AssetStore:
+        return AssetStore(current_settings().output_dir)
+
+    def catalog() -> EpisodeCatalog:
+        return EpisodeCatalog(current_settings().private_content_dir)
+
+    def notifications() -> StudioNotificationLog:
+        return StudioNotificationLog(current_settings().output_dir)
+
+    app = FastAPI(title="La Serre des Venins", version="0.2.1")
     manager = JobManager(current_settings, assets)
     episode_manager = EpisodeJobManager(current_settings)
+    stage_service = ShotStageService(current_settings)
     setup = WorkflowSetup()
     factory = WorkflowFactory()
-    catalog = EpisodeCatalog(current_settings().private_content_dir)
 
     def model_installer() -> ModelInstaller:
         resolved = current_settings()
@@ -75,6 +112,76 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     app.include_router(create_episode_router(catalog))
     app.include_router(create_narrative_router(current_settings, assets))
+
+    @app.get("/api/projects")
+    def list_projects() -> dict[str, object]:
+        return project_registry.listing()
+
+    @app.post("/api/projects", status_code=201)
+    def create_project(payload: ProjectCreateRequest) -> dict[str, object]:
+        if (
+            manager.has_active_jobs()
+            or episode_manager.has_active_jobs()
+            or stage_service.has_active_operations()
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="Attends la fin des générations avant de créer un projet.",
+            )
+        try:
+            project = project_registry.create(
+                payload.name,
+                clone_content=payload.clone_content,
+            )
+        except (OSError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        notifications().publish(
+            "success",
+            "Projet créé",
+            f"{project.name} est maintenant le projet actif.",
+            source="projects",
+        )
+        return project_registry.listing()
+
+    @app.post("/api/projects/{project_id}/activate")
+    def activate_project(project_id: str) -> dict[str, object]:
+        if (
+            manager.has_active_jobs()
+            or episode_manager.has_active_jobs()
+            or stage_service.has_active_operations()
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="Attends la fin des générations avant de changer de projet.",
+            )
+        try:
+            project = project_registry.activate(project_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="Projet introuvable") from exc
+        notifications().publish(
+            "info",
+            "Projet actif",
+            f"Le Studio travaille maintenant dans {project.name}.",
+            source="projects",
+        )
+        return project_registry.listing()
+
+    @app.get("/api/notifications")
+    def list_notifications(limit: int = 100) -> dict[str, object]:
+        return notifications().listing(limit=max(1, min(limit, 200)))
+
+    @app.post("/api/notifications", status_code=201)
+    def create_notification(payload: NotificationCreateRequest) -> dict[str, object]:
+        return notifications().publish(
+            payload.level,
+            payload.title,
+            payload.message,
+            source=payload.source,
+        )
+
+    @app.post("/api/notifications/read")
+    def read_notifications(payload: NotificationReadRequest) -> dict[str, object]:
+        return notifications().mark_read(payload.ids)
 
     @app.get("/", include_in_schema=False)
     def studio() -> FileResponse:
@@ -166,7 +273,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.post("/api/config")
     async def save_config(payload: StudioConfigRequest) -> dict[str, str]:
-        resolved = await asyncio.to_thread(current_settings)
+        resolved = await asyncio.to_thread(base_settings)
         updated = resolved.model_copy(update={"comfyui_url": payload.comfyui_url})
         path = await asyncio.to_thread(updated.save_local)
         return {"status": "saved", "path": str(path)}
@@ -219,10 +326,31 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         return job.public()
 
+    @app.post("/api/stages/{kind}")
+    async def generate_stage(
+        kind: StageKind,
+        payload: StageGenerationRequest,
+    ) -> dict[str, object]:
+        shot_id = str(payload.shot.get("id", ""))
+        if manager.active_for_shot(shot_id):
+            raise HTTPException(
+                status_code=409,
+                detail="Une génération GPU est déjà active pour ce plan.",
+            )
+        try:
+            return await asyncio.to_thread(
+                stage_service.generate,
+                kind,
+                payload.shot,
+                tts=payload.tts,
+            )
+        except (OSError, RuntimeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
     @app.get("/api/assets/{shot_id}")
     def list_assets(shot_id: str) -> dict[str, object]:
         try:
-            return assets.list(shot_id)
+            return assets().list(shot_id)
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -236,7 +364,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         content = await request.body()
         try:
             record = await asyncio.to_thread(
-                assets.put,
+                assets().put,
                 shot_id,
                 slot,
                 filename,
@@ -253,7 +381,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/assets/{shot_id}/{slot}/content")
     def get_asset(shot_id: str, slot: AssetSlot) -> FileResponse:
         try:
-            found = assets.get(shot_id, slot)
+            found = assets().get(shot_id, slot)
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         if not found:
@@ -267,6 +395,38 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if not job:
             raise HTTPException(status_code=404, detail="Generation job not found")
         return job.public()
+
+    @app.get("/api/history/{shot_id}")
+    def generation_history(shot_id: str) -> dict[str, object]:
+        try:
+            runs = RunHistory(current_settings().output_dir).list_runs(shot_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return {"shot_id": shot_id, "runs": runs}
+
+    @app.post("/api/history/{shot_id}/{run_id}/restore")
+    def restore_generation(shot_id: str, run_id: str) -> dict[str, object]:
+        try:
+            return RunHistory(current_settings().output_dir).restore(shot_id, run_id)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Version not found") from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.get("/api/history-media/{shot_id}/{run_id}/{filename}")
+    def history_media(shot_id: str, run_id: str, filename: str) -> FileResponse:
+        if filename not in RUN_FILES:
+            raise HTTPException(status_code=404, detail="History media not found")
+        try:
+            path = RunHistory(current_settings().output_dir).media_path(
+                shot_id, run_id, filename
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail="History media not found") from exc
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="History media not found")
+        media_type = "video/mp4" if filename.endswith(".mp4") else None
+        return FileResponse(path, media_type=media_type, filename=filename)
 
     @app.get("/api/media/{shot_id}/{filename}")
     def media(shot_id: str, filename: str) -> FileResponse:

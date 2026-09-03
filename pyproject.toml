@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "serre-des-venins"
-version = "0.2.0"
+version = "0.2.1"
 description = "Studio local de production narrative assistée par IA"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -20,6 +20,12 @@ dependencies = [
 voice = [
   "edge-tts>=7.2,<8",
 ]
+desktop = [
+  "pywebview>=5.4,<7",
+]
+build = [
+  "pyinstaller>=6.11,<7",
+]
 dev = [
   "mypy>=1.14,<2",
   "pytest>=8.3,<9",
@@ -32,6 +38,7 @@ dev = [
 generate-episode = "tools.generate_episode:main"
 generate-shot = "tools.generate_shot:main"
 serre-studio = "tools.run_studio:main"
+serre-desktop = "apps.desktop.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["apps", "engine", "tools"]

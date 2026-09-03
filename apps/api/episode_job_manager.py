@@ -6,6 +6,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
+from apps.api.notifications import StudioNotificationLog
+from apps.api.run_history import RunHistory
 from apps.api.schemas import EpisodeGenerationRequest
 from engine.audio.speech import create_speech_synthesizer
 from engine.config import Settings
@@ -30,6 +32,7 @@ class EpisodeStudioJob:
         }
     )
     media: dict[str, str] = field(default_factory=dict)
+    notification_log: StudioNotificationLog | None = field(default=None, repr=False)
 
     def public(self) -> dict[str, object]:
         return {
@@ -58,7 +61,15 @@ class EpisodeJobManager:
     ) -> EpisodeStudioJob:
         job = EpisodeStudioJob(id=uuid.uuid4().hex, episode_id=episode_id)
         self.jobs[job.id] = job
-        task = asyncio.create_task(self._execute(job, request))
+        try:
+            settings = await asyncio.to_thread(self.settings_provider)
+        except Exception:
+            job.status = "FAILED"
+            job.message = "Impossible de résoudre le projet actif"
+            job.completed_at = datetime.now(UTC)
+            raise
+        job.notification_log = StudioNotificationLog(settings.output_dir)
+        task = asyncio.create_task(self._execute(job, settings, request))
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
         return job
@@ -66,16 +77,23 @@ class EpisodeJobManager:
     def get(self, job_id: str) -> EpisodeStudioJob | None:
         return self.jobs.get(job_id)
 
+    def has_active_jobs(self) -> bool:
+        return any(job.status in {"QUEUED", "GENERATING"} for job in self.jobs.values())
+
     async def _execute(
         self,
         job: EpisodeStudioJob,
+        settings: Settings,
         request: EpisodeGenerationRequest,
     ) -> None:
         async with self._montage_slot:
             job.status = "GENERATING"
             job.message = "Préparation de l'épisode"
             try:
-                settings = await asyncio.to_thread(self.settings_provider)
+                history = RunHistory(settings.output_dir)
+                archived_master = await asyncio.to_thread(
+                    history.archive_master, job.episode_id
+                )
                 speech = await asyncio.to_thread(create_speech_synthesizer, request.tts)
                 media = await asyncio.to_thread(FFmpegToolchain)
                 pipeline = EpisodePipeline(
@@ -96,7 +114,7 @@ class EpisodeJobManager:
                         fps=request.fps,
                         tts_enabled=request.tts != "none",
                         allow_stills=request.allow_stills,
-                        force=request.force,
+                        force=request.force or archived_master is not None,
                     ),
                 )
                 job.status = "FINAL"
@@ -126,6 +144,25 @@ class EpisodeJobManager:
                     job.stages[running] = {"status": "failed", "message": str(exc)}
             finally:
                 job.completed_at = datetime.now(UTC)
+                if job.notification_log is not None:
+                    await asyncio.to_thread(self._notify_completion, job)
+
+    @staticmethod
+    def _notify_completion(job: EpisodeStudioJob) -> None:
+        if job.notification_log is None:
+            return
+        failed = job.status == "FAILED"
+        job.notification_log.publish(
+            "error" if failed else "success",
+            "Échec du montage" if failed else "Épisode finalisé",
+            job.message,
+            source="episode-job",
+            context={
+                "job_id": job.id,
+                "episode_id": job.episode_id,
+                "status": job.status,
+            },
+        )
 
     @staticmethod
     def _progress(

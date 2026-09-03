@@ -1,6 +1,19 @@
+import json
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any, cast
 
+import pytest
+
+from apps.api.assets import AssetStore
 from apps.api.job_manager import JobManager, StudioJob
+from apps.api.notifications import StudioNotificationLog
+from engine.config import Settings
+
+
+def shot_payload() -> dict[str, object]:
+    payload = json.loads(Path("examples/shot.json").read_text(encoding="utf-8"))
+    return cast(dict[str, object], payload)
 
 
 def test_job_media_exposes_keyframes_and_clip_progressively(tmp_path: Path) -> None:
@@ -43,3 +56,104 @@ def test_previous_shot_pose_prefers_the_final_guide(tmp_path: Path) -> None:
 
     assert JobManager._previous_shot_pose(tmp_path, "S01E001-S05") == final
     assert JobManager._previous_shot_pose(tmp_path, "S01E001-S01") is None
+
+
+def test_job_records_persistent_progress_events(tmp_path: Path) -> None:
+    job = StudioJob(id="job-1", shot_id="S01E001-S01", mode="all")
+    job.log_path = tmp_path / "job-1.jsonl"
+
+    JobManager._progress(job, tmp_path, "keyframe", "running", "Pose 1/3 disponible")
+
+    assert job.events[-1]["stage"] == "keyframe"
+    assert "Pose 1/3" in job.log_path.read_text(encoding="utf-8")
+
+
+async def test_failed_shot_job_publishes_persistent_error_notification(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "output"
+    settings = Settings(
+        _env_file=None,
+        output_dir=output,
+        keyframe_workflow_profile=None,
+        keyframe_guide_workflow_profile=None,
+        video_workflow_profile=None,
+    )
+    manager = JobManager(lambda: settings, lambda: AssetStore(output))
+    payload = shot_payload()
+
+    job = await manager.start(payload, "all", False)
+    await _wait_for_tasks(manager)
+
+    notifications = cast(
+        list[dict[str, Any]],
+        StudioNotificationLog(output).listing()["notifications"],
+    )
+    item = notifications[0]
+    assert job.status == "FAILED"
+    assert item["level"] == "error"
+    assert item["title"] == "Échec de génération du plan"
+    assert item["source"] == "shot-job"
+    assert item["context"]["job_id"] == job.id
+    assert item["context"]["shot_id"] == "S01E001-S01"
+
+
+async def test_successful_shot_job_publishes_persistent_success_notification(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeComfyClient:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            pass
+
+        async def __aenter__(self) -> "FakeComfyClient":
+            return self
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+    class FakePipeline:
+        def __init__(
+            self,
+            _client: object,
+            on_progress: Callable[[str, str, str], None],
+        ) -> None:
+            self.on_progress = on_progress
+
+        async def run(self, _options: object) -> object:
+            self.on_progress("artifacts", "completed", "Artefacts prêts")
+            status = type("Status", (), {"value": "GENERATED"})()
+            return type("Record", (), {"status": status})()
+
+    output = tmp_path / "output"
+    profile = tmp_path / "profile.json"
+    profile.write_text("{}", encoding="utf-8")
+    settings = Settings(
+        _env_file=None,
+        output_dir=output,
+        keyframe_workflow_profile=profile,
+        keyframe_guide_workflow_profile=profile,
+        video_workflow_profile=profile,
+    )
+    monkeypatch.setattr("apps.api.job_manager.ComfyClient", FakeComfyClient)
+    monkeypatch.setattr("apps.api.job_manager.ShotPipeline", FakePipeline)
+    manager = JobManager(lambda: settings, lambda: AssetStore(output))
+    payload = shot_payload()
+
+    job = await manager.start(payload, "all", False)
+    await _wait_for_tasks(manager)
+
+    notifications = cast(
+        list[dict[str, Any]],
+        StudioNotificationLog(output).listing()["notifications"],
+    )
+    item = notifications[0]
+    assert job.status == "GENERATED"
+    assert item["level"] == "success"
+    assert item["title"] == "Plan généré"
+    assert item["context"]["status"] == "GENERATED"
+
+
+async def _wait_for_tasks(manager: JobManager) -> None:
+    while manager._tasks:
+        await next(iter(manager._tasks))

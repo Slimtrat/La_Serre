@@ -1,17 +1,19 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from fastapi import APIRouter, HTTPException
 
 from engine.world.catalog import EpisodeCatalog
 
 
-def create_episode_router(catalog: EpisodeCatalog) -> APIRouter:
+def create_episode_router(catalog_provider: Callable[[], EpisodeCatalog]) -> APIRouter:
     router = APIRouter(prefix="/api/episodes", tags=["episodes"])
 
     @router.get("")
     def list_episodes() -> dict[str, object]:
         try:
-            episodes = catalog.list_episodes()
+            episodes = catalog_provider().list_episodes()
         except (OSError, ValueError) as exc:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
         return {"episodes": [episode.model_dump(mode="json") for episode in episodes]}
@@ -19,7 +21,7 @@ def create_episode_router(catalog: EpisodeCatalog) -> APIRouter:
     @router.get("/{episode_id}")
     def get_episode(episode_id: str) -> dict[str, object]:
         try:
-            package = catalog.load(episode_id)
+            package = catalog_provider().load(episode_id)
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=f"Episode not found: {episode_id}") from exc
         except ValueError as exc:
