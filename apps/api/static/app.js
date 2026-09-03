@@ -292,7 +292,7 @@ async function init() {
   validateEditor();
   $("#shot-editor").addEventListener("input", validateEditor);
   $("#shot-editor").addEventListener("blur", () => refreshAssets().catch(() => {}));
-  $("#settings-toggle").addEventListener("click", () => $("#settings-panel").classList.toggle("hidden"));
+  $("#settings-toggle").addEventListener("click", () => window.SerreWorkspace?.show("settings"));
   $("#save-config").addEventListener("click", () => saveConfig().catch((e) => notify(e.message, true)));
   $("#build-workflows").addEventListener("click", buildWorkflows);
   $("#install-downloads").addEventListener("click", installDownloads);

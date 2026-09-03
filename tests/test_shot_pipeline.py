@@ -87,20 +87,28 @@ async def test_pipeline_produces_traceable_keyframe_and_clip(tmp_path: Path) -> 
     shot_path = tmp_path / "shot.json"
     shot_path.write_text(json.dumps(shot_payload), encoding="utf-8")
     keyframe_profile = _write_profile(tmp_path, "keyframe", video=False)
+    keyframe_guide_profile = _write_profile(tmp_path, "keyframe-guide", video=True)
     video_profile = _write_profile(tmp_path, "video", video=True)
     imports = tmp_path / "output" / "S01E001-S01" / "imports"
     imports.mkdir(parents=True)
     (imports / "story.md").write_text("Brief importé", encoding="utf-8")
+    progress: list[tuple[str, str, str]] = []
     async with ComfyClient(
         "http://comfy.test",
         transport=httpx.MockTransport(handler),
         poll_interval_seconds=0.001,
     ) as client:
-        record = await ShotPipeline(client).run(
+        record = await ShotPipeline(
+            client,
+            on_progress=lambda stage, status, message: progress.append(
+                (stage, status, message)
+            ),
+        ).run(
             ShotPipelineOptions(
                 shot_path=shot_path,
                 output_root=tmp_path / "output",
                 keyframe_profile=keyframe_profile,
+                keyframe_guide_profile=keyframe_guide_profile,
                 video_profile=video_profile,
             )
         )
@@ -119,4 +127,13 @@ async def test_pipeline_produces_traceable_keyframe_and_clip(tmp_path: Path) -> 
         "keyframe-middle-job",
         "keyframe-end-job",
         "video-job",
+    ]
+    assert [
+        message
+        for stage, status, message in progress
+        if stage == "keyframe" and status == "running" and "disponible" in message
+    ] == [
+        "Pose 1/3 disponible",
+        "Pose 2/3 disponible",
+        "Pose 3/3 disponible",
     ]

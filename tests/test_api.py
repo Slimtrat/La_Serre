@@ -85,3 +85,27 @@ async def test_generated_outputs_survive_studio_reload(tmp_path: Path) -> None:
         ],
         "video": "/api/media/S01E001-S01/clip.mp4",
     }
+
+
+async def test_workflow_graph_endpoint_exposes_comfy_subgraph(tmp_path: Path) -> None:
+    workflow_root = tmp_path / "workflows" / "local"
+    from engine.generation.comfy.workflow_factory import WorkflowFactory
+
+    WorkflowFactory().write(workflow_root)
+    app = create_app(Settings(_env_file=None))
+    transport = httpx.ASGITransport(app=app)
+    original = Path.cwd()
+    try:
+        import os
+
+        os.chdir(tmp_path)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/api/workflow-graphs/video")
+    finally:
+        os.chdir(original)
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["kind"] == "video"
+    assert any(node["class_type"] == "LTXVAddGuide" for node in payload["nodes"])
+    assert any(edge["target_input"] == "image" for edge in payload["edges"])

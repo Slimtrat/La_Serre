@@ -7,11 +7,13 @@
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/static/styles.css" />
     <link rel="stylesheet" href="/static/graph.css" />
+    <link rel="stylesheet" href="/static/workflow-graph.css" />
     <link rel="stylesheet" href="/static/responsive.css" />
     <link rel="stylesheet" href="/static/episode-canvas.css" />
     <link rel="stylesheet" href="/static/episode-production.css" />
+    <link rel="stylesheet" href="/static/onepage.css" />
   </head>
-  <body>
+  <body data-workspace-view="graph">
     <div class="ambient ambient-one"></div>
     <div class="ambient ambient-two"></div>
     <header class="topbar">
@@ -19,6 +21,12 @@
         <span class="brand-mark">SV</span>
         <span><strong>La Serre des Venins</strong><small>Studio local</small></span>
       </a>
+      <nav class="app-nav" aria-label="Espaces du studio">
+        <button type="button" data-workspace-target="graph" class="selected">Production</button>
+        <button type="button" data-workspace-target="plan">Plan</button>
+        <button type="button" data-workspace-target="outputs">Sorties</button>
+        <button type="button" data-workspace-target="settings">Réglages</button>
+      </nav>
       <div class="connection"><span id="connection-dot" class="dot"></span><span id="connection-label">Connexion…</span></div>
       <button id="settings-toggle" class="button ghost">Réglages ComfyUI</button>
     </header>
@@ -197,7 +205,7 @@
         </footer>
       </section>
 
-      <section id="settings-panel" class="panel setup hidden">
+      <section id="settings-panel" class="panel setup">
         <div class="panel-heading">
           <div><p class="eyebrow">CONFIGURATION GUIDÉE</p><h2>ComfyUI sans JSON à bricoler</h2></div>
           <span id="setup-badge" class="badge warn">À configurer</span>
@@ -320,8 +328,45 @@
     <script src="/static/app.js" defer></script>
     <script src="/static/narrative.js" defer></script>
     <script src="/static/episode.js" defer></script>
+    <dialog id="workflow-graph-dialog" class="workflow-graph-dialog" aria-labelledby="workflow-graph-title">
+      <section class="workflow-graph-shell">
+        <header class="workflow-graph-toolbar">
+          <div>
+            <p class="eyebrow">SOUS-WORKFLOW COMFYUI</p>
+            <h2 id="workflow-graph-title">Graphe d’exécution</h2>
+            <p id="workflow-graph-profile">Chargement du profil…</p>
+          </div>
+          <nav id="workflow-graph-tabs" aria-label="Sous-workflows">
+            <button type="button" data-workflow-kind="keyframe">Pose initiale</button>
+            <button type="button" data-workflow-kind="keyframe-guide">Continuité</button>
+            <button type="button" data-workflow-kind="video">Mouvement</button>
+          </nav>
+          <div class="workflow-graph-controls">
+            <button id="workflow-graph-zoom-out" class="button ghost" type="button" aria-label="Dézoomer">−</button>
+            <output id="workflow-graph-zoom-label">100 %</output>
+            <button id="workflow-graph-zoom-in" class="button ghost" type="button" aria-label="Zoomer">+</button>
+            <button id="workflow-graph-fit" class="button secondary" type="button">Tout voir</button>
+            <button id="workflow-graph-close" class="button ghost" type="button">Fermer</button>
+          </div>
+        </header>
+        <div id="workflow-graph-viewport" class="workflow-graph-viewport">
+          <div id="workflow-graph-world" class="workflow-graph-world">
+            <svg id="workflow-graph-links" class="workflow-graph-links" aria-hidden="true"></svg>
+            <div id="workflow-graph-nodes"></div>
+          </div>
+        </div>
+        <footer class="workflow-graph-legend">
+          <span><i class="binding"></i> Paramètre injecté par le Studio</span>
+          <span><i class="output"></i> Sortie enregistrée</span>
+          <strong id="workflow-graph-live">Inactif</strong>
+        </footer>
+      </section>
+    </dialog>
+
     <script src="/static/graph.js" defer></script>
+    <script src="/static/workflow-graph.js" defer></script>
     <script src="/static/episode-canvas.js" defer></script>
     <script src="/static/episode-production.js" defer></script>
+    <script src="/static/workspace-shell.js" defer></script>
   </body>
 </html>

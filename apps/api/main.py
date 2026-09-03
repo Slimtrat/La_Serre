@@ -23,6 +23,7 @@ from apps.api.schemas import (
     WorkflowKind,
     WorkflowProfileRequest,
 )
+from apps.api.workflow_graph import WORKFLOW_GRAPH_KINDS, build_workflow_graph
 from apps.api.workflow_setup import WorkflowSetup
 from engine.config import Settings
 from engine.generation.comfy.client import ComfyClient
@@ -122,6 +123,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "keyframe_profile": bool(
                 resolved.keyframe_workflow_profile and resolved.keyframe_workflow_profile.is_file()
             ),
+            "keyframe_guide_profile": bool(
+                resolved.keyframe_guide_workflow_profile
+                and resolved.keyframe_guide_workflow_profile.is_file()
+            ),
             "video_profile": bool(
                 resolved.video_workflow_profile and resolved.video_workflow_profile.is_file()
             ),
@@ -153,6 +158,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "status": "generated",
             "preset": generated.preset,
             "keyframe_workflow": "workflows/local/keyframe.api.json",
+            "keyframe_guide_workflow": "workflows/local/keyframe-guide.api.json",
             "video_workflow": "workflows/local/video.api.json",
             "missing_nodes": missing_nodes,
             "models": models,
@@ -172,6 +178,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/workflows/{kind}")
     def inspect_workflow(kind: WorkflowKind) -> dict[str, object]:
         return setup.inspect_saved(kind)
+
+    @app.get("/api/workflow-graphs/{kind}")
+    def workflow_graph(kind: str) -> dict[str, object]:
+        if kind not in WORKFLOW_GRAPH_KINDS:
+            raise HTTPException(status_code=404, detail="Workflow not found")
+        workflow_path = Path("workflows/local") / f"{kind}.api.json"
+        profile_path = Path("workflows/local") / f"{kind}.profile.json"
+        if not workflow_path.is_file():
+            raise HTTPException(status_code=404, detail="Workflow not configured")
+        try:
+            return build_workflow_graph(kind, workflow_path, profile_path)
+        except (OSError, ValueError, WorkflowConfigurationError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     @app.post("/api/workflows/import")
     def import_workflow(payload: WorkflowImportRequest) -> dict[str, object]:

@@ -28,6 +28,15 @@ python -m tools.generate_shot plan.json `
   --guide-keyframe fin.png
 ```
 
+Le preset local renforcé ne génère plus ces images indépendamment. La pose du milieu est
+une passe SDXL img2img dérivée de la pose initiale, puis la pose finale dérive de celle du
+milieu. Quand le plan précédent existe, sa dernière pose amorce aussi le plan suivant. Le
+décor, la palette et l’identité restent donc dans une même chaîne visuelle. LTX reçoit ensuite
+les trois poses avec un guidage spatio-temporel actif et une adhérence forte aux images.
+
+Pendant le calcul, l’API publie chaque image dès son téléchargement. Le nœud actif du graphe
+affiche ainsi `1/3`, `2/3`, `3/3`, puis remplace le filmstrip par le clip final.
+
 ## Direction d’acteur par réplique
 
 Le champ `performance` conserve l’intention littéraire et expose des paramètres mesurables

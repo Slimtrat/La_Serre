@@ -45,18 +45,18 @@ const studioGraph = (() => {
       description: "L’image maîtresse fixe l’identité, la composition et la lumière avant l’animation.",
       provider: "SDXL ou image importée",
       slot: "keyframe",
-      actions: [["Générer la keyframe", "generate-keyframe"], ["Importer une image", "import-keyframe"]],
+      actions: [["Générer les poses", "generate-keyframe"], ["Voir le sous-workflow", "workflow-keyframe"], ["Importer une image", "import-keyframe"]],
     },
     review: {
       description: "Le contrôle humain valide la silhouette, le visage, la botanique et la composition.",
       provider: "Validation créative",
-      actions: [["Voir les sorties", "previews"], ["Régénérer", "generate-keyframe"]],
+      actions: [["Voir les sorties", "previews"], ["Voir la continuité", "workflow-keyframe-guide"], ["Régénérer", "generate-keyframe"]],
     },
     motion: {
       description: "La keyframe approuvée devient un clip, tout en conservant l’identité du personnage.",
       provider: "LTX Video ou vidéo importée",
       slot: "video",
-      actions: [["Animer la keyframe", "generate-video"], ["Importer une vidéo", "import-video"]],
+      actions: [["Animer les poses", "generate-video"], ["Voir le sous-workflow", "workflow-video"], ["Importer une vidéo", "import-video"]],
     },
     voice: {
       description: "Une piste de voix, d’ambiance ou d’effets peut être créée ailleurs puis déposée ici.",
@@ -87,11 +87,20 @@ const studioGraph = (() => {
     ["review", "motion"], ["shot", "voice"], ["voice", "mix"],
     ["motion", "montage"], ["mix", "montage"], ["montage", "export"],
   ];
+  const stageNodeById = {
+    input: "shot",
+    prompt: "director",
+    references: "cast",
+    keyframe: "keyframe",
+    video: "motion",
+    artifacts: "export",
+  };
 
   const defaultView = { x: 24, y: 8, scale: 0.68 };
   let view = { ...defaultView };
   let selectedId = "story";
   let outputs = {};
+  let liveJobId = null;
   let draggingNode = null;
   let panning = null;
 
@@ -218,6 +227,104 @@ const studioGraph = (() => {
     updateMinimap();
   }
 
+  function cacheBusted(url, jobId, suffix = "") {
+    if (!url) return "";
+    return url + (url.includes("?") ? "&" : "?") + "job=" + encodeURIComponent(jobId) + suffix;
+  }
+
+  function clearLivePreviews(exceptId = null) {
+    nodes.forEach((node) => {
+      if (node.dataset.nodeId === exceptId) return;
+      node.querySelector(".graph-node-live-preview")?.remove();
+      node.classList.remove("has-live-preview");
+    });
+  }
+
+  function previewTarget(job) {
+    const stages = job.stages || [];
+    const active = stages.find((stage) => stage.status === "running")
+      || stages.find((stage) => stage.status === "failed");
+    if (active) return stageNodeById[active.id || active.name];
+    if (job.status === "AWAITING_KEYFRAME_APPROVAL") return "keyframe";
+    if (job.media?.video || job.status === "GENERATED") return "motion";
+    if (job.mode === "video") return "motion";
+    return "keyframe";
+  }
+
+  function renderLivePreview(job) {
+    if (!job?.id) return;
+    if (liveJobId !== job.id) {
+      clearLivePreviews();
+      liveJobId = job.id;
+    }
+    const targetId = previewTarget(job);
+    const node = nodeById[targetId];
+    if (!node) return;
+    clearLivePreviews(targetId);
+    let overlay = node.querySelector(".graph-node-live-preview");
+    if (!overlay) {
+      overlay = document.createElement("span");
+      overlay.className = "graph-node-live-preview";
+      overlay.setAttribute("aria-live", "polite");
+      node.appendChild(overlay);
+    }
+    node.classList.add("has-live-preview");
+    overlay.replaceChildren();
+
+    const media = job.media || {};
+    const keyframes = media.keyframes || (media.keyframe ? [media.keyframe] : []);
+    const progress = media.keyframe_progress || { completed: keyframes.length, total: Math.max(1, keyframes.length) };
+    const head = document.createElement("span");
+    head.className = "graph-node-live-head";
+    const shot = document.createElement("strong");
+    shot.textContent = job.shot_id || "Plan en cours";
+    const badge = document.createElement("small");
+    badge.textContent = media.video
+      ? "CLIP PRÊT"
+      : progress.total > 1
+        ? progress.completed + "/" + progress.total + " POSES"
+        : job.status.replaceAll("_", " ");
+    head.append(shot, badge);
+    overlay.append(head);
+
+    const mediaBox = document.createElement("span");
+    mediaBox.className = "graph-node-live-media";
+    if (media.video) {
+      const video = document.createElement("video");
+      video.src = cacheBusted(media.video, job.id);
+      video.muted = true;
+      video.loop = true;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.setAttribute("aria-label", "Clip généré pour " + (job.shot_id || "le plan"));
+      mediaBox.append(video);
+      video.play().catch(() => {});
+    } else if (progress.total > 0) {
+      for (let index = 0; index < progress.total; index += 1) {
+        if (keyframes[index]) {
+          const image = document.createElement("img");
+          image.src = cacheBusted(keyframes[index], job.id, "&pose=" + index);
+          image.alt = "Pose " + (index + 1) + " sur " + progress.total;
+          mediaBox.append(image);
+        } else {
+          const waiting = document.createElement("span");
+          waiting.className = "graph-node-live-waiting";
+          waiting.textContent = String(index + 1);
+          mediaBox.append(waiting);
+        }
+      }
+    }
+    overlay.append(mediaBox);
+    const message = document.createElement("span");
+    message.className = "graph-node-live-message";
+    message.textContent = job.message || "Production en cours…";
+    overlay.append(message);
+    requestAnimationFrame(() => {
+      drawEdges();
+      updateMinimap();
+    });
+  }
+
   function inspectorPreview(id) {
     const container = document.querySelector("#graph-inspector-preview");
     container.innerHTML = "";
@@ -247,6 +354,8 @@ const studioGraph = (() => {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
       if (typeof element.focus === "function") element.focus({ preventScroll: true });
     };
+    if (["story", "shot", "audio"].includes(action)) window.SerreWorkspace?.show("plan");
+    if (["previews", "artifacts"].includes(action)) window.SerreWorkspace?.show("outputs");
     if (action === "story") scrollTo("#story-editor");
     if (action === "shot") scrollTo("#shot-editor");
     if (action === "episode") scrollTo("#episode-title");
@@ -257,6 +366,9 @@ const studioGraph = (() => {
     if (action === "generate-keyframe") studio?.startJob("keyframe");
     if (action === "generate-video") studio?.startJob("video");
     if (action === "generate-all") studio?.startJob("all");
+    if (action.startsWith("workflow-")) {
+      window.SerreWorkflowGraph?.open(action.replace("workflow-", ""));
+    }
     if (action.startsWith("import-")) {
       const slot = action.replace("import-", "");
       document.querySelector("[data-dropzone='" + slot + "'] input")?.click();
@@ -489,9 +601,9 @@ const studioGraph = (() => {
   window.addEventListener("studio:job", (event) => {
     const job = event.detail?.job || event.detail;
     if (!job) return;
-    const mapping = { input: "shot", prompt: "director", references: "cast", keyframe: "keyframe", video: "motion", artifacts: "export" };
+    outputs = { ...outputs, ...(job.media || {}) };
     (job.stages || []).forEach((stage) => {
-      const id = mapping[stage.id || stage.name];
+      const id = stageNodeById[stage.id || stage.name];
       if (!id) return;
       const state = stage.status === "completed" ? "ready" : stage.status === "running" ? "running" : stage.status === "failed" ? "failed" : "pending";
       const label = stage.status === "completed" ? "Terminé" : stage.status === "running" ? "En cours…" : stage.status === "failed" ? "Échec" : "En attente";
@@ -499,6 +611,7 @@ const studioGraph = (() => {
     });
     if (job.status === "AWAITING_KEYFRAME_APPROVAL") nodeState("review", "running", "Décision requise");
     if (job.status === "GENERATED") nodeState("review", "ready", "Plan généré");
+    renderLivePreview(job);
   });
   window.addEventListener("studio:status", (event) => {
     const available = Boolean(event.detail?.comfyui);

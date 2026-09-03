@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     comfyui_timeout_seconds: float = Field(default=1800, gt=0)
     comfyui_poll_interval_seconds: float = Field(default=1, gt=0)
     keyframe_workflow_profile: Path | None = Path("workflows/local/keyframe.profile.json")
+    keyframe_guide_workflow_profile: Path | None = Path(
+        "workflows/local/keyframe-guide.profile.json"
+    )
     video_workflow_profile: Path | None = Path("workflows/local/video.profile.json")
     output_dir: Path = Path("output")
     private_content_dir: Path = Path(".private")
@@ -49,6 +52,9 @@ class Settings(BaseSettings):
             "keyframe_workflow_profile": str(self.keyframe_workflow_profile)
             if self.keyframe_workflow_profile
             else None,
+            "keyframe_guide_workflow_profile": str(self.keyframe_guide_workflow_profile)
+            if self.keyframe_guide_workflow_profile
+            else None,
             "video_workflow_profile": str(self.video_workflow_profile)
             if self.video_workflow_profile
             else None,
@@ -63,6 +69,8 @@ class Settings(BaseSettings):
         return bool(
             self.keyframe_workflow_profile
             and self.keyframe_workflow_profile.is_file()
+            and self.keyframe_guide_workflow_profile
+            and self.keyframe_guide_workflow_profile.is_file()
             and self.video_workflow_profile
             and self.video_workflow_profile.is_file()
         )
