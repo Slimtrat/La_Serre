@@ -12,7 +12,7 @@ from typing import Literal
 
 from engine.audio.models import EpisodeAudioPlan
 from engine.audio.score import ProceduralScoreComposer
-from engine.audio.speech import SpeechSynthesizer
+from engine.audio.speech import SpeechSynthesizer, voice_preset_for_performance
 from engine.director.models import DialoguePerformance
 from engine.media.ffmpeg import AssemblyRequest, MediaToolchain, SegmentInput
 from engine.production.artifacts import sha256_file, write_text_atomic
@@ -79,7 +79,11 @@ class EpisodePipeline:
         presentation_path = options.presentation_plan or episode_dir / "presentation-plan.json"
         presentation = EpisodePresentationPlan.load(presentation_path)
         subtitles = self._optional_file(options.subtitles or episode_dir / "subtitles.fr.srt")
-        music = self._optional_file(options.music or episode_dir / "music.wav")
+        music = self._optional_file(options.music)
+        if music is None:
+            music = self._optional_file(options.output_root / package.episode.id / "music.wav")
+        if music is None:
+            music = self._optional_file(episode_dir / "music.wav")
         ambience = self._optional_file(options.ambience or episode_dir / "ambience.wav")
 
         destination = options.output_root / package.episode.id
@@ -129,6 +133,11 @@ class EpisodePipeline:
                 )
                 audio_offset = cue.offset_seconds + performance_delay
                 audio_fit_speed = 1.0
+                generated_voice = bool(
+                    audio
+                    and self.speech is not None
+                    and audio_source in {self.speech.name, "studio-voice"}
+                )
                 if audio:
                     audio_duration = self.media.duration(audio)
                     pause_after = (
@@ -143,8 +152,7 @@ class EpisodePipeline:
                         )
                     if (
                         audio_duration > available_duration + 0.05
-                        and self.speech is not None
-                        and audio_source == self.speech.name
+                        and generated_voice
                     ):
                         fitted = workspace / "voices" / f"{shot.id}.fitted.wav"
                         audio_fit_speed = self.media.fit_audio(
@@ -166,7 +174,7 @@ class EpisodePipeline:
                             f"de {shot.duration:.2f}s (fenêtre disponible : "
                             f"{available_duration:.2f}s)."
                         )
-                if audio and self.speech is not None and audio_source == self.speech.name:
+                if audio and generated_voice:
                     generated_voices.append((shot.id, audio))
                 segments.append(
                     SegmentInput(
@@ -188,8 +196,7 @@ class EpisodePipeline:
                 if (
                     audio_record is not None
                     and audio is not None
-                    and self.speech is not None
-                    and audio_source == self.speech.name
+                    and generated_voice
                 ):
                     audio_record["path"] = str(
                         (destination / "voices" / f"{shot.id}{audio.suffix}").resolve()
@@ -345,6 +352,13 @@ class EpisodePipeline:
         )
         if imported:
             return imported, "manual"
+        generated = self._first_media(
+            options.output_root / shot_id,
+            "voice",
+            AUDIO_SUFFIXES,
+        )
+        if generated:
+            return generated, "studio-voice"
         if text is None or speaker is None:
             return None, None
         if not options.tts_enabled:
@@ -358,25 +372,9 @@ class EpisodePipeline:
             )
         suffix = getattr(self.speech, "output_suffix", ".wav")
         destination = workspace / "voices" / f"{shot_id}{suffix}"
-        preset = plan.voice_for(speaker)
-        if performance is not None:
-            preset = preset.model_copy(
-                update={
-                    "rate": self._clamp(preset.rate + round(performance.pace * 4), -10, 10),
-                    "pitch_hz": self._clamp(
-                        preset.pitch_hz + round(performance.pitch * 40), -100, 100
-                    ),
-                    "volume": self._clamp(
-                        preset.volume + round(performance.volume * 15), 0, 100
-                    ),
-                }
-            )
+        preset = voice_preset_for_performance(plan.voice_for(speaker), performance)
         self.speech.synthesize(text, destination, preset)
         return destination, self.speech.name
-
-    @staticmethod
-    def _clamp(value: int, minimum: int, maximum: int) -> int:
-        return min(maximum, max(minimum, value))
 
     @classmethod
     def _resolve_visual(

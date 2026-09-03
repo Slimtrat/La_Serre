@@ -8,10 +8,13 @@
     <link rel="stylesheet" href="/static/styles.css" />
     <link rel="stylesheet" href="/static/graph.css" />
     <link rel="stylesheet" href="/static/workflow-graph.css" />
+    <link rel="stylesheet" href="/static/output-console.css" />
     <link rel="stylesheet" href="/static/responsive.css" />
     <link rel="stylesheet" href="/static/episode-canvas.css" />
     <link rel="stylesheet" href="/static/episode-production.css" />
     <link rel="stylesheet" href="/static/onepage.css" />
+    <link rel="stylesheet" href="/static/studio-shell.css" />
+    <link rel="stylesheet" href="/static/desktop-workspace.css" />
   </head>
   <body data-workspace-view="graph">
     <div class="ambient ambient-one"></div>
@@ -21,15 +24,27 @@
         <span class="brand-mark">SV</span>
         <span><strong>La Serre des Venins</strong><small>Studio local</small></span>
       </a>
-      <nav class="app-nav" aria-label="Espaces du studio">
-        <button type="button" data-workspace-target="graph" class="selected">Production</button>
-        <button type="button" data-workspace-target="plan">Plan</button>
-        <button type="button" data-workspace-target="outputs">Sorties</button>
-        <button type="button" data-workspace-target="settings">Réglages</button>
+      <nav class="app-nav" aria-label="Espaces du studio" role="tablist">
+        <button type="button" role="tab" data-workspace-target="graph" class="selected">Production</button>
+        <button type="button" role="tab" data-workspace-target="plan">Plan</button>
+        <button type="button" role="tab" data-workspace-target="outputs">Sorties</button>
+        <button type="button" role="tab" data-workspace-target="settings">Réglages</button>
       </nav>
+      <label class="project-switcher" title="Changer de projet">
+        <span>Projet</span>
+        <select id="project-select" aria-label="Projet actif"><option>Chargement…</option></select>
+      </label>
+      <button id="project-create-open" class="topbar-icon" type="button" title="Créer un projet" aria-label="Créer un projet">＋</button>
       <div class="connection"><span id="connection-dot" class="dot"></span><span id="connection-label">Connexion…</span></div>
+      <button id="notification-toggle" class="notification-toggle" type="button" aria-expanded="false" aria-controls="notification-panel">
+        <span>Journal</span><strong id="notification-badge" class="hidden">0</strong>
+      </button>
       <button id="settings-toggle" class="button ghost">Réglages ComfyUI</button>
     </header>
+    <aside id="notification-panel" class="notification-panel hidden" aria-label="Journal du projet">
+      <header><div><small>PROJET ACTIF</small><strong>Journal d’activité</strong></div><button id="notification-read-all" type="button">Tout marquer comme lu</button></header>
+      <ol id="notification-list"><li class="empty">Aucune notification.</li></ol>
+    </aside>
 
     <main class="shell">
       <section class="hero">
@@ -257,7 +272,7 @@
             <label class="mini-upload">Déposer JSON<input id="shot-file" type="file" accept="application/json,.json" /></label>
           </div>
           <textarea id="shot-editor" spellcheck="false" aria-label="Shot JSON"></textarea>
-          <div class="editor-footer"><span id="json-state">Chargement…</span><label><input id="force-output" type="checkbox" /> Remplacer la sortie existante</label></div>
+          <div class="editor-footer"><span id="json-state">Chargement…</span><span>Chaque régénération conserve la version précédente.</span></div>
         </div>
 
         <div class="stages">
@@ -276,10 +291,10 @@
             </div>
           </article>
           <article class="stage-card" data-job-stage="input">
-            <div class="stage-number">01</div><div class="stage-body"><strong>Validation</strong><p>Schéma Pydantic strict</p><small class="stage-status">En attente</small></div>
+            <div class="stage-number">01</div><div class="stage-body"><strong>Validation</strong><p>Schéma Pydantic strict</p><small class="stage-status">En attente</small><button class="stage-run" type="button" data-stage-action="validate">Valider ce plan</button></div>
           </article>
           <article class="stage-card" data-job-stage="prompt">
-            <div class="stage-number">02</div><div class="stage-body"><strong>Prompt</strong><p>Sémantique → instructions visuelles</p><small class="stage-status">En attente</small></div>
+            <div class="stage-number">02</div><div class="stage-body"><strong>Prompt</strong><p>Sémantique → instructions visuelles</p><small class="stage-status">En attente</small><button class="stage-run" type="button" data-stage-action="prompt">Construire le prompt</button></div>
           </article>
           <article class="stage-card source-card" data-job-stage="keyframe">
             <div class="stage-number">03</div>
@@ -288,15 +303,17 @@
               <div class="segmented" data-source="keyframe"><button class="selected" data-value="model">Modèle SDXL</button><button data-value="manual">Importer</button></div>
               <label class="dropzone hidden" data-dropzone="keyframe">Glisse une image ici<input type="file" accept="image/png,image/jpeg,image/webp" /></label>
               <small class="stage-status">En attente</small>
+              <button class="stage-run" type="button" data-stage-action="keyframe">Générer les 3 poses</button>
             </div>
           </article>
           <article class="stage-card source-card audio-card">
             <div class="stage-number">04</div>
             <div class="stage-body">
-              <strong>Voix / son</strong><p>Slot prêt pour TTS ou mix externe</p>
-              <div class="segmented" data-source="audio"><button disabled data-value="model">Modèle TTS</button><button class="selected" data-value="manual">Importer</button></div>
-              <label class="dropzone" data-dropzone="audio">Glisse un son ici<input type="file" accept="audio/*" /></label>
-              <small class="stage-status">Optionnel pour cette milestone</small>
+              <strong>Voix / son</strong><p>Interprétation locale et musique de fond</p>
+              <div class="segmented" data-source="audio"><button class="selected" data-value="model">Générer</button><button data-value="manual">Importer</button></div>
+              <label class="dropzone hidden" data-dropzone="audio">Glisse un son ici<input type="file" accept="audio/*" /></label>
+              <small class="stage-status">Prêt à générer</small>
+              <div class="stage-run-group"><button class="stage-run" type="button" data-stage-action="voice">Générer la voix</button><button class="stage-run" type="button" data-stage-action="music">Musique de fond</button></div>
             </div>
           </article>
           <article class="stage-card source-card" data-job-stage="video">
@@ -306,28 +323,49 @@
               <div class="segmented" data-source="video"><button class="selected" data-value="model">Modèle LTX</button><button data-value="manual">Importer</button></div>
               <label class="dropzone hidden" data-dropzone="video">Glisse une vidéo ici<input type="file" accept="video/*" /></label>
               <small class="stage-status">En attente</small>
+              <button class="stage-run" type="button" data-stage-action="video">Générer le clip</button>
             </div>
           </article>
           <article class="stage-card" data-job-stage="artifacts">
-            <div class="stage-number">06</div><div class="stage-body"><strong>Traçabilité</strong><p>Seeds, checksums et manifeste</p><small class="stage-status">En attente</small></div>
+            <div class="stage-number">06</div><div class="stage-body"><strong>Traçabilité</strong><p>Seeds, checksums et manifeste</p><small class="stage-status">En attente</small><button class="stage-run" type="button" data-stage-action="history">Ouvrir l’historique</button></div>
           </article>
         </div>
       </section>
 
       <section id="preview-panel" class="panel preview-panel">
-        <div class="panel-heading compact-heading"><div><p class="eyebrow">SORTIES</p><h2>Contrôle humain</h2></div><span id="job-badge" class="badge">Aucun rendu</span></div>
-        <div class="previews">
-          <div class="preview-frame"><span class="preview-label">POSES D’ACTION</span><div id="image-empty" class="empty-preview">Les poses début, milieu et fin apparaîtront ici</div><div id="keyframe-strip" class="keyframe-strip hidden"><img id="keyframe-preview" alt="Pose initiale générée ou importée" /></div></div>
-          <div class="preview-frame"><span class="preview-label">CLIP</span><div id="video-empty" class="empty-preview">La vidéo apparaîtra ici</div><video id="video-preview" class="hidden" controls loop></video></div>
-          <div class="preview-frame audio-preview"><span class="preview-label">AUDIO</span><div id="audio-empty" class="empty-preview">Aucun son importé</div><audio id="audio-preview" class="hidden" controls></audio></div>
+        <div class="panel-heading compact-heading output-heading">
+          <div><p class="eyebrow">SORTIES</p><h2>Contrôle humain</h2></div>
+          <div class="output-history-controls"><label>Version<select id="run-history-select" aria-label="Version générée"><option>Aucun rendu</option></select></label><button id="restore-run" class="button ghost" type="button" disabled>Restaurer</button><span id="job-badge" class="badge">Aucun rendu</span></div>
+        </div>
+        <div class="output-layout">
+          <div class="previews">
+            <div class="preview-frame pose-preview"><span class="preview-label">POSES D’ACTION</span><div id="image-empty" class="empty-preview">Les poses début, milieu et fin apparaîtront ici</div><div id="keyframe-strip" class="frame-browser hidden"><img id="keyframe-preview" alt="Pose générée sélectionnée" /><div class="frame-controls"><button id="frame-prev" type="button" aria-label="Pose précédente">←</button><span id="frame-counter">1 / 1</span><button id="frame-next" type="button" aria-label="Pose suivante">→</button></div><div id="frame-picker" class="frame-picker"></div></div></div>
+            <div class="preview-frame"><span class="preview-label">CLIP</span><div id="video-empty" class="empty-preview">La vidéo apparaîtra ici</div><video id="video-preview" class="hidden" controls loop></video></div>
+            <div class="preview-frame audio-preview"><span class="preview-label">VOIX / MUSIQUE</span><div id="audio-empty" class="empty-preview">Aucune piste générée</div><audio id="audio-preview" class="hidden" controls></audio></div>
+          </div>
+          <aside class="output-sidebar">
+            <section class="scene-context"><p class="eyebrow">SCÈNE EN COURS</p><h3 id="scene-title">Sélectionne un plan</h3><p id="scene-source" class="scene-source"></p><dl><div><dt>Action</dt><dd id="scene-action">—</dd></div><div><dt>Caméra</dt><dd id="scene-camera">—</dd></div></dl><div id="scene-dialogue" class="scene-dialogue"></div><ol id="scene-beats" class="scene-beats"></ol></section>
+            <section class="run-log"><div><p class="eyebrow">JOURNAL</p><strong id="run-log-title">Aucune exécution</strong></div><ol id="run-log"></ol></section>
+          </aside>
         </div>
         <div class="bottom-actions"><p id="job-message">Configure ComfyUI, puis lance une génération.</p><button id="continue-video" class="button secondary">Animer la keyframe</button></div>
       </section>
     </main>
     <div id="toast" class="toast hidden"></div>
+    <dialog id="project-create-dialog" class="project-create-dialog" aria-labelledby="project-create-title">
+      <form id="project-create-form">
+        <header><div><p class="eyebrow">NOUVEL ESPACE ISOLÉ</p><h2 id="project-create-title">Créer un projet</h2></div><button id="project-create-close" class="button ghost" type="button">Fermer</button></header>
+        <p>Le scénario courant est dupliqué comme base. Les images, voix, clips, historiques et masters repartent dans un dossier de sortie vide.</p>
+        <label>Nom du projet<input id="project-create-name" name="name" maxlength="80" required placeholder="Version alternative" /></label>
+        <footer><button class="button primary" type="submit">Créer et ouvrir</button></footer>
+      </form>
+    </dialog>
+    <script src="/static/notifications.js" defer></script>
+    <script src="/static/projects.js" defer></script>
     <script src="/static/app.js" defer></script>
     <script src="/static/narrative.js" defer></script>
     <script src="/static/episode.js" defer></script>
+    <script src="/static/output-console.js" defer></script>
     <dialog id="workflow-graph-dialog" class="workflow-graph-dialog" aria-labelledby="workflow-graph-title">
       <section class="workflow-graph-shell">
         <header class="workflow-graph-toolbar">
@@ -368,5 +406,6 @@
     <script src="/static/episode-canvas.js" defer></script>
     <script src="/static/episode-production.js" defer></script>
     <script src="/static/workspace-shell.js" defer></script>
+    <script src="/static/desktop-workspace.js" defer></script>
   </body>
 </html>

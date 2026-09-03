@@ -35,6 +35,27 @@ class GenerationRequest(StrictRequest):
     force: bool = False
 
 
+class StageGenerationRequest(StrictRequest):
+    shot: dict[str, Any]
+    tts: TtsMode = "auto"
+
+
+class ProjectCreateRequest(StrictRequest):
+    name: str = Field(min_length=1, max_length=80)
+    clone_content: bool = True
+
+
+class NotificationCreateRequest(StrictRequest):
+    level: Literal["info", "success", "warning", "error"] = "error"
+    title: str = Field(min_length=1, max_length=120)
+    message: str = Field(min_length=1, max_length=2000)
+    source: str = Field(default="client", min_length=1, max_length=80)
+
+
+class NotificationReadRequest(StrictRequest):
+    ids: list[str] | None = None
+
+
 class EpisodeGenerationRequest(StrictRequest):
     tts: TtsMode = "auto"
     allow_stills: bool = False

@@ -36,6 +36,40 @@ Lancez l'interface :
 python -m tools.run_studio
 ```
 
+### Application Windows native
+
+Le shell desktop ouvre le Studio dans une fenêtre native WebView2, sans onglet de
+navigateur. Il réserve automatiquement un port local libre, démarre FastAPI en
+arrière-plan puis arrête proprement le serveur lorsque la dernière fenêtre est
+fermée. Les panneaux peuvent ensuite être détachés dans de vraies fenêtres via
+l'API locale `pywebview.api.open_panel(...)` exposée au front.
+
+```powershell
+python -m pip install -e ".[desktop]"
+python -m apps.desktop
+# ou, après installation : serre-desktop
+```
+
+En développement, les projets restent dans le dossier courant. L'EXE utilise
+`%LOCALAPPDATA%\SerreStudio` pour les projets, sorties, workflows, préférences
+WebView2 et journaux (`logs\desktop.log`). Un emplacement isolé peut être choisi
+avec `--data-dir C:\chemin\studio`. `--port 0` est la valeur par défaut et évite
+les collisions avec un ancien serveur sur le port 8000.
+
+La construction locale de l'EXE nécessite l'extra `build`; l'installateur exige
+également Inno Setup 6 :
+
+```powershell
+python -m pip install -e ".[desktop,build]"
+python -m tools.build_desktop
+python -m tools.build_desktop --installer
+```
+
+Le workflow **Windows desktop** vérifie le projet, produit
+`SerreStudio.exe`, une archive portable, un installateur utilisateur et leurs
+sommes SHA-256. Chaque exécution publie un artefact téléchargeable; un tag `v*`
+publie aussi ces fichiers dans une GitHub Release.
+
 Dans **Réglages ComfyUI**, cliquez sur **Créer mes workflows**, téléchargez les
 modèles affichés puis utilisez **Installer les téléchargements terminés**. Dans
 l'étape Histoire, choisissez un modèle Ollama et cliquez sur **Proposer le
@@ -92,6 +126,15 @@ Le serveur peut également être lancé sans ouverture automatique du navigateur
 ```powershell
 python -m tools.run_studio --no-browser
 ```
+
+Une release locale versionnée peut être construite et publiée sur le Bureau avec :
+
+```powershell
+python -m tools.build_desktop --publish-desktop
+```
+
+La copie courante est `La Serre des Venins/SerreStudio.exe`; les releases immuables
+sont rangées dans `versions/<version>` et l’ancien patch courant dans `versions-old`.
 
 - `GET /health` : processus disponible ;
 - `GET /ready` : workflows, nœuds et modèles ComfyUI vérifiés ;

@@ -137,3 +137,26 @@ async def test_pipeline_produces_traceable_keyframe_and_clip(tmp_path: Path) -> 
         "Pose 2/3 disponible",
         "Pose 3/3 disponible",
     ]
+
+
+def test_force_resume_preserves_all_three_input_poses(tmp_path: Path) -> None:
+    destination = tmp_path / "S01E001-S01"
+    destination.mkdir()
+    start = destination / "keyframe.png"
+    middle = destination / "keyframe-guide-1.png"
+    end = destination / "keyframe-guide-2.png"
+    for path in (start, middle, end):
+        path.write_bytes(path.name.encode())
+    (destination / "clip.mp4").write_bytes(b"old-video")
+
+    ShotPipeline._prepare_destination(
+        destination,
+        True,
+        start,
+        (middle, end),
+    )
+
+    assert start.is_file()
+    assert middle.is_file()
+    assert end.is_file()
+    assert not (destination / "clip.mp4").exists()

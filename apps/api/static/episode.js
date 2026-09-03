@@ -1,5 +1,6 @@
 const episodeStudio = window.SerreStudio;
 let loadedEpisode = null;
+let catalogBound = false;
 
 async function episodeRequest(path) {
   const response = await fetch(path);
@@ -92,15 +93,28 @@ async function initEpisodeCatalog() {
     select.append(new Option("Aucun épisode", ""));
     select.disabled = true;
     document.querySelector("#episode-state").textContent = "Catalogue vide";
+    document.querySelector("#episode-title").textContent = "Projet sans épisode";
+    document.querySelector("#episode-logline").textContent = "Ajoute un épisode au contenu privé de ce projet.";
+    document.querySelector("#episode-shots").replaceChildren();
+    document.querySelector("#episode-cast").replaceChildren();
+    window.dispatchEvent(new CustomEvent("studio:episode-cleared"));
     return;
   }
   for (const episode of listing.episodes) {
     select.append(new Option(episode.id + " — " + episode.title, episode.id));
   }
-  select.addEventListener("change", () => loadEpisode(select.value));
+  if (!catalogBound) {
+    select.addEventListener("change", () => loadEpisode(select.value));
+    catalogBound = true;
+  }
   await loadEpisode(select.value);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  await window.SerreProjects?.ready.catch(() => {});
+  initEpisodeCatalog().catch((error) => episodeStudio.notify(error.message, true));
+});
+window.addEventListener("studio:project-changed", () => {
+  loadedEpisode = null;
   initEpisodeCatalog().catch((error) => episodeStudio.notify(error.message, true));
 });

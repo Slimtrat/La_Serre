@@ -15,7 +15,7 @@ from engine.narrative.shot_director import OllamaShotDirector
 
 def create_narrative_router(
     settings_provider: Callable[[], Settings],
-    assets: AssetStore,
+    assets_provider: Callable[[], AssetStore],
 ) -> APIRouter:
     router = APIRouter(prefix="/api/narrative", tags=["narrative"])
 
@@ -58,7 +58,7 @@ def create_narrative_router(
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
         content = result.shot.model_dump_json(indent=2).encode("utf-8")
-        record = assets.put_model(
+        record = assets_provider().put_model(
             result.shot.id,
             "shot",
             "shot.json",
