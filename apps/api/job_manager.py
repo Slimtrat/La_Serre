@@ -67,6 +67,50 @@ class StudioJob:
             "media": self.media,
             "events": self.events,
             "archived_run_id": self.archived_run_id,
+            "progress": self.progress(),
+        }
+
+    def progress(self) -> dict[str, object]:
+        stages = [
+            (stage_id, self.stages[stage_id])
+            for stage_id in STAGES
+            if self.stages[stage_id]["status"] != "skipped"
+        ]
+        total = len(stages)
+        completed = sum(
+            stage["status"] == "completed" for _stage_id, stage in stages
+        )
+        active_stage = next(
+            (
+                stage_id
+                for stage_id, stage in stages
+                if stage["status"] in {"running", "failed"}
+            ),
+            None,
+        )
+        equivalent = float(completed)
+        indeterminate = active_stage is not None
+        if active_stage == "keyframe":
+            keyframes = self.media.get("keyframe_progress")
+            if isinstance(keyframes, dict):
+                done = keyframes.get("completed")
+                expected = keyframes.get("total")
+                if isinstance(done, int) and isinstance(expected, int) and expected > 0:
+                    equivalent += min(done / expected, 0.99)
+                    indeterminate = False
+        terminal = self.status in {"GENERATED", "AWAITING_KEYFRAME_APPROVAL"}
+        percent = 100 if terminal else round(100 * equivalent / max(1, total))
+        elapsed_until = self.completed_at or datetime.now(UTC)
+        return {
+            "percent": min(100, max(0, percent)),
+            "completed": total if terminal else completed,
+            "total": total,
+            "active_stage": active_stage,
+            "elapsed_seconds": max(
+                0,
+                round((elapsed_until - self.created_at).total_seconds()),
+            ),
+            "indeterminate": indeterminate and self.status == "GENERATING",
         }
 
 
@@ -135,6 +179,14 @@ class JobManager:
 
     def has_active_jobs(self) -> bool:
         return any(job.status in {"QUEUED", "GENERATING"} for job in self.jobs.values())
+
+    def latest_active(self) -> StudioJob | None:
+        active = [
+            job
+            for job in self.jobs.values()
+            if job.status in {"QUEUED", "GENERATING"}
+        ]
+        return max(active, key=lambda job: job.created_at, default=None)
 
     async def _execute(
         self,

@@ -48,6 +48,7 @@ function validateEditor() {
 async function refreshStatus() {
   try {
     const status = await api("/api/status");
+    $("#app-version").textContent = "v" + status.version;
     $("#comfy-url").value = status.comfyui_url;
     const ready = status.status === "ready";
     $("#connection-dot").className = `dot ${status.comfyui ? "ready" : "error"}`;
@@ -393,6 +394,16 @@ async function runStage(kind, button) {
   }
   button.disabled = true;
   button.classList.add("running");
+  const activityId = "stage-" + kind + "-" + Date.now();
+  window.dispatchEvent(new CustomEvent("studio:stage-job", {
+    detail: {
+      id: activityId,
+      kind,
+      status: "GENERATING",
+      message: "Génération de l’étape " + kind,
+      created_at: new Date().toISOString(),
+    },
+  }));
   try {
     const result = await api("/api/stages/" + kind, {
       method: "POST",
@@ -402,7 +413,20 @@ async function runStage(kind, button) {
     if (result.media?.audio) showAudio(versioned(result.media.audio));
     notify(result.message);
     window.dispatchEvent(new CustomEvent("studio:stage", { detail: result }));
+    window.dispatchEvent(new CustomEvent("studio:stage-job", {
+      detail: { ...result, id: activityId, kind, status: "COMPLETED" },
+    }));
     await refreshAssets();
+  } catch (error) {
+    window.dispatchEvent(new CustomEvent("studio:stage-job", {
+      detail: {
+        id: activityId,
+        kind,
+        status: "FAILED",
+        message: error.message,
+      },
+    }));
+    throw error;
   } finally {
     button.disabled = false;
     button.classList.remove("running");

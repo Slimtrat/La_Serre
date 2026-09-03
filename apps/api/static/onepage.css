@@ -88,9 +88,61 @@ body[data-workspace-view="outputs"] .episode-panel {
 .episode-panel .panel-heading h2 { font-size: 18px; }
 .episode-panel .episode-picker { min-width: 210px; }
 .episode-panel .episode-picker select { margin-top: 0; }
-.episode-panel .episode-logline,
-.episode-panel .episode-details { display: none; }
+.episode-panel .episode-logline { display: none; }
 .episode-panel .episode-meta { grid-column: 1 / -1; }
+.episode-panel .episode-details {
+  display: block;
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.episode-panel .episode-details summary {
+  width: max-content;
+  padding: 5px 9px;
+  border: 1px solid rgba(143, 207, 157, .2);
+  border-radius: 8px;
+  background: rgba(143, 207, 157, .06);
+  font-size: 10px;
+  list-style-position: inside;
+}
+.episode-panel .episode-details[open] {
+  position: relative;
+  z-index: 90;
+}
+.episode-panel .episode-details[open]::before {
+  position: fixed;
+  z-index: 88;
+  inset: 62px 0 0;
+  background: rgba(3, 7, 4, .72);
+  backdrop-filter: blur(3px);
+  pointer-events: none;
+  content: "";
+}
+.episode-panel .episode-details[open] > summary {
+  position: relative;
+  z-index: 90;
+  border-color: var(--green);
+  color: var(--text);
+}
+.episode-panel .episode-details[open] .episode-details-grid {
+  position: fixed;
+  z-index: 89;
+  top: 86px;
+  left: 50%;
+  width: min(960px, calc(100vw - 32px));
+  max-height: calc(100vh - 118px);
+  margin: 0;
+  padding: 24px;
+  overflow: auto;
+  border: 1px solid rgba(143, 207, 157, .3);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 80% 0, rgba(116, 81, 151, .18), transparent 35%),
+    #101813;
+  box-shadow: 0 30px 100px #000d;
+  transform: translateX(-50%);
+}
 
 body[data-workspace-view="graph"] .graph-workbench {
   display: grid;
@@ -160,4 +212,10 @@ body[data-workspace-view="settings"] .setup { display: block; flex: 1 1 auto; ov
   body[data-workspace-view="outputs"] .episode-panel { grid-template-columns: 1fr; }
   .episode-panel .episode-meta { display: none; }
   .episode-panel .episode-picker { min-width: 0; }
+  .episode-panel .episode-details[open]::before { inset-block-start: 58px; }
+  .episode-panel .episode-details[open] .episode-details-grid {
+    top: 72px;
+    max-height: calc(100vh - 88px);
+    padding: 16px;
+  }
 }

@@ -18,6 +18,13 @@ const studioGraph = (() => {
   const LAYOUT_KEY = "serre-studio-graph-layout-v1";
   const VIEW_KEY = "serre-studio-graph-view-v1";
   const nodeById = Object.fromEntries(nodes.map((node) => [node.dataset.nodeId, node]));
+  const edgeTooltip = document.createElement("aside");
+  edgeTooltip.className = "graph-edge-tooltip hidden";
+  edgeTooltip.setAttribute("role", "tooltip");
+  const edgeTooltipRoute = document.createElement("strong");
+  const edgeTooltipDescription = document.createElement("span");
+  edgeTooltip.append(edgeTooltipRoute, edgeTooltipDescription);
+  viewport.append(edgeTooltip);
 
   const definitions = {
     story: {
@@ -87,6 +94,20 @@ const studioGraph = (() => {
     ["review", "motion"], ["shot", "voice"], ["voice", "mix"],
     ["motion", "montage"], ["mix", "montage"], ["montage", "export"],
   ];
+  const edgeDescriptions = {
+    "story>director": "Le texte fournit l’intention narrative à mettre en scène.",
+    "cast>director": "Le casting contraint les personnages et leur identité visuelle.",
+    "director>shot": "La mise en scène devient un contrat de plan reproductible.",
+    "shot>keyframe": "Le cadrage, l’action et la lumière pilotent les images clés.",
+    "cast>keyframe": "Les références du casting maintiennent la continuité des personnages.",
+    "keyframe>review": "Les trois poses sont soumises à la validation créative.",
+    "review>motion": "Les poses approuvées guident l’animation vidéo.",
+    "shot>voice": "Le dialogue et son intention pilotent la synthèse vocale.",
+    "voice>mix": "La voix rejoint la musique et l’ambiance dans le mix.",
+    "motion>montage": "Le clip animé devient une source du montage final.",
+    "mix>montage": "La bande-son mixée est synchronisée avec les plans.",
+    "montage>export": "Le montage validé est encodé avec ses sous-titres et son manifeste.",
+  };
   const stageNodeById = {
     input: "shot",
     prompt: "director",
@@ -94,6 +115,7 @@ const studioGraph = (() => {
     keyframe: "keyframe",
     video: "motion",
     artifacts: "export",
+    music: "mix",
   };
 
   const defaultView = { x: 24, y: 8, scale: 0.68 };
@@ -101,6 +123,7 @@ const studioGraph = (() => {
   let selectedId = "story";
   let outputs = {};
   let liveJobId = null;
+  let activityNodeId = null;
   let draggingNode = null;
   let panning = null;
 
@@ -166,7 +189,7 @@ const studioGraph = (() => {
   }
 
   function drawEdges() {
-    Array.from(links.querySelectorAll(".graph-link")).forEach((path) => path.remove());
+    Array.from(links.querySelectorAll(".graph-link,.graph-link-hit")).forEach((path) => path.remove());
     edges.forEach(([from, to]) => {
       const source = nodeById[from];
       const target = nodeById[to];
@@ -177,8 +200,54 @@ const studioGraph = (() => {
       path.setAttribute("class", "graph-link link-" + (target.dataset.state || "idle"));
       path.dataset.from = from;
       path.dataset.to = to;
+      if (activityNodeId && (from === activityNodeId || to === activityNodeId)) {
+        path.classList.add("activity-link");
+      }
       links.appendChild(path);
+      const hit = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      hit.setAttribute("d", path.getAttribute("d"));
+      hit.setAttribute("class", "graph-link-hit");
+      hit.dataset.from = from;
+      hit.dataset.to = to;
+      hit.addEventListener("pointerenter", (event) => showEdgeTooltip(event, from, to, path));
+      hit.addEventListener("pointermove", positionEdgeTooltip);
+      hit.addEventListener("pointerleave", () => hideEdgeTooltip(path));
+      links.appendChild(hit);
     });
+  }
+
+  function positionEdgeTooltip(event) {
+    const viewportBounds = viewport.getBoundingClientRect();
+    const tooltipBounds = edgeTooltip.getBoundingClientRect();
+    const x = clamp(
+      event.clientX - viewportBounds.left + 14,
+      8,
+      Math.max(8, viewportBounds.width - tooltipBounds.width - 8),
+    );
+    const y = clamp(
+      event.clientY - viewportBounds.top + 14,
+      8,
+      Math.max(8, viewportBounds.height - tooltipBounds.height - 8),
+    );
+    edgeTooltip.style.left = x + "px";
+    edgeTooltip.style.top = y + "px";
+  }
+
+  function showEdgeTooltip(event, from, to, path) {
+    edgeTooltipRoute.textContent = nodeTitle(from) + " → " + nodeTitle(to);
+    edgeTooltipDescription.textContent = edgeDescriptions[from + ">" + to]
+      || "Dépendance du pipeline de production.";
+    edgeTooltip.classList.remove("hidden");
+    path.classList.add("connection-hover");
+    nodeById[from]?.classList.add("connection-hover");
+    nodeById[to]?.classList.add("connection-hover");
+    positionEdgeTooltip(event);
+  }
+
+  function hideEdgeTooltip(path) {
+    edgeTooltip.classList.add("hidden");
+    path.classList.remove("connection-hover");
+    nodes.forEach((node) => node.classList.remove("connection-hover"));
   }
 
   function buildMinimap() {
@@ -225,6 +294,39 @@ const studioGraph = (() => {
     if (id === selectedId) renderInspector(id);
     drawEdges();
     updateMinimap();
+  }
+
+  function nodeTitle(id) {
+    return nodeById[id]?.querySelector("strong")?.textContent || id;
+  }
+
+  function connectionsForStage(stageId) {
+    const nodeId = stageNodeById[stageId] || stageId;
+    if (!nodeById[nodeId]) return [];
+    return edges
+      .filter(([from, to]) => from === nodeId || to === nodeId)
+      .map(([from, to]) => ({
+        direction: to === nodeId ? "Entrée" : "Sortie",
+        from,
+        to,
+        fromLabel: nodeTitle(from),
+        toLabel: nodeTitle(to),
+        description: edgeDescriptions[from + ">" + to] || "Dépendance du pipeline de production.",
+      }));
+  }
+
+  function focusActivityStage(stageId) {
+    activityNodeId = stageNodeById[stageId] || stageId || null;
+    nodes.forEach((node) => {
+      const nodeId = node.dataset.nodeId;
+      const related = activityNodeId && edges.some(
+        ([from, to]) => (from === activityNodeId && to === nodeId)
+          || (to === activityNodeId && from === nodeId),
+      );
+      node.classList.toggle("activity-focus", nodeId === activityNodeId);
+      node.classList.toggle("activity-related", Boolean(related));
+    });
+    drawEdges();
   }
 
   function cacheBusted(url, jobId, suffix = "") {
@@ -644,5 +746,7 @@ const studioGraph = (() => {
   });
   renderInspector(selectedId);
 
-  return { fitGraph, selectNode, nodeState };
+  return { fitGraph, selectNode, nodeState, connectionsForStage, focusActivityStage };
 })();
+
+window.SerreGraph = studioGraph;

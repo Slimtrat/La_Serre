@@ -4,7 +4,7 @@ from typing import Any, cast
 
 import pytest
 
-from apps.api.episode_job_manager import EpisodeJobManager
+from apps.api.episode_job_manager import EpisodeJobManager, EpisodeStudioJob
 from apps.api.notifications import StudioNotificationLog
 from apps.api.schemas import EpisodeGenerationRequest
 from engine.config import Settings
@@ -23,6 +23,27 @@ class FailingEpisodePipeline(SuccessfulEpisodePipeline):
     def run(self, _options: object) -> SimpleNamespace:
         self.on_progress("montage", "running", "Montage")
         raise RuntimeError("ffmpeg indisponible")
+
+
+def test_episode_job_exposes_progress_and_activity_events(tmp_path: Path) -> None:
+    job = EpisodeStudioJob(
+        id="episode-progress",
+        episode_id="S01E001",
+        status="GENERATING",
+    )
+    job.log_path = tmp_path / "episode-progress.jsonl"
+    EpisodeJobManager._progress(job, "voice", "completed", "Voix prêtes")
+    EpisodeJobManager._progress(job, "mix", "running", "Mixage en cours")
+
+    payload = job.public()
+    progress = cast(dict[str, object], payload["progress"])
+
+    assert progress["percent"] == 25
+    assert progress["completed"] == 1
+    assert progress["active_stage"] == "mix"
+    assert progress["indeterminate"] is True
+    assert [event["stage"] for event in job.events] == ["voice", "mix"]
+    assert "Mixage en cours" in job.log_path.read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize(
