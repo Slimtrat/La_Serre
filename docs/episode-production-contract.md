@@ -55,6 +55,9 @@ au moteur de voix :
 `pace`, `pitch` et `volume` vont de `-1` à `1`. Le mode `auto` reste local et utilise
 SAPI sous Windows. Le backend neural est volontaire (`--tts edge`) car il transmet le
 texte au service de synthèse correspondant ; il n’est jamais sélectionné automatiquement.
+Les voix trop longues sont accélérées sans modifier leur hauteur, jusqu’à la limite qualité
+`max_time_fit_speed` du plan audio (1,65× par défaut). Au-delà, le build échoue et demande
+un retiming au lieu de livrer une voix précipitée.
 
 ## Cadre fantasy et cartons
 

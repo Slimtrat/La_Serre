@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from engine.audio.models import VoicePreset
 from engine.media.ffmpeg import AssemblyRequest
 from engine.production.episode_pipeline import EpisodePipeline, EpisodePipelineOptions
@@ -236,3 +238,31 @@ def test_generated_voice_is_time_fitted_to_the_shot(tmp_path: Path) -> None:
     assert (output / "S01E001/voices/S01E001-S01.wav").read_bytes() == b"fitted-voice"
     manifest = json.loads(result.manifest.read_text(encoding="utf-8"))
     assert manifest["inputs"]["shots"][0]["audio"]["fit_speed"] == 1.43
+
+
+def test_voice_time_fit_above_quality_limit_is_rejected(tmp_path: Path) -> None:
+    class ExcessiveFitMedia(FakeMedia):
+        def duration(self, path: Path) -> float:
+            return 3.0 if path.name.endswith(".fitted.wav") else 6.0
+
+        def fit_audio(self, source: Path, destination: Path, duration: float) -> float:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(b"over-fitted")
+            return 1.9
+
+    private = tmp_path / "private"
+    output = tmp_path / "output"
+    seed_episode(private)
+    keyframe = output / "S01E001-S01" / "keyframe.png"
+    keyframe.parent.mkdir(parents=True)
+    keyframe.write_bytes(b"image")
+
+    with pytest.raises(ValueError, match="limite qualité"):
+        EpisodePipeline(ExcessiveFitMedia(), FakeSpeech()).run(
+            EpisodePipelineOptions(
+                episode_id="S01E001",
+                private_root=private,
+                output_root=output,
+                allow_stills=True,
+            )
+        )

@@ -29,6 +29,7 @@ class EpisodeAudioPlan(StrictAudioModel):
     cues: dict[str, DialogueCue] = Field(default_factory=dict)
     music_gain_db: float = Field(default=-16, ge=-60, le=6)
     ambience_gain_db: float = Field(default=-26, ge=-60, le=6)
+    max_time_fit_speed: float = Field(default=1.65, ge=1, le=3)
 
     @classmethod
     def load(cls, path: Path | None) -> EpisodeAudioPlan:
