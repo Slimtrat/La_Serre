@@ -1,13 +1,13 @@
 # La Serre des Venins
 
-Studio local hybride de production narrative assistée par IA. La première
-tranche verticale transforme un `Shot` sémantique en keyframe puis en clip LTX
-via une instance ComfyUI externe. Chaque étape est conçue pour accepter soit un
-modèle local, soit un artefact texte, image, audio ou vidéo préparé ailleurs.
+Studio local hybride de production narrative assistée par IA. Une source texte
+devient un `Shot` modifiable grâce à un modèle Ollama local, puis une keyframe et
+un clip LTX via une instance ComfyUI externe. Chaque étape accepte soit un modèle
+local, soit un artefact texte, image, audio ou vidéo préparé ailleurs.
 
 ```text
-shot.json -> Pydantic -> PromptBuilder -> ComfyUI keyframe
-          -> validation possible -> ComfyUI/LTX i2v -> clip.mp4
+source texte -> Ollama Director -> Shot JSON validé -> ComfyUI keyframe
+              -> validation humaine -> ComfyUI/LTX i2v -> clip.mp4
 ```
 
 Le moteur narratif, le Director, les workflows de génération et la
@@ -16,9 +16,10 @@ embarqué dans ce dépôt.
 
 ## Installation
 
-Prérequis : Python 3.12+ et ComfyUI accessible localement. Aucun workflow n'est
-à construire manuellement : le Studio génère les graphes SDXL et LTX avec les
-nœuds natifs de ComfyUI, puis indique les modèles manquants.
+Prérequis : Python 3.12+, ComfyUI accessible localement et, pour le Director,
+Ollama avec au moins un modèle installé. Aucun workflow n'est à construire
+manuellement : le Studio génère les graphes SDXL et LTX avec les nœuds natifs de
+ComfyUI, puis indique et installe les téléchargements de modèles terminés.
 
 ```powershell
 python -m venv .venv
@@ -35,8 +36,10 @@ python -m tools.run_studio
 ```
 
 Dans **Réglages ComfyUI**, cliquez sur **Créer mes workflows**, téléchargez les
-modèles affichés dans les dossiers indiqués, puis choisissez pour chaque étape
-entre génération locale et drag-and-drop.
+modèles affichés puis utilisez **Installer les téléchargements terminés**. Dans
+l'étape Histoire, choisissez un modèle Ollama et cliquez sur **Proposer le
+Shot**. Le JSON reste éditable avant toute génération. Chaque étape peut aussi
+basculer vers le drag-and-drop.
 
 La commande sans interface reste disponible :
 
@@ -82,6 +85,9 @@ python -m tools.run_studio --no-browser
 - `GET /health` : processus disponible ;
 - `GET /ready` : workflows, nœuds et modèles ComfyUI vérifiés ;
 - `POST /api/workflows/generate` : création des graphes privés ;
+- `GET /api/narrative/status` : modèles Ollama disponibles ;
+- `POST /api/narrative/shot` : proposition et stockage d'un Shot validé ;
+- `POST /api/models/install` : déplacement contrôlé des modèles téléchargés ;
 - `PUT /api/assets/{shot}/{slot}` : branchement d'un artefact manuel ;
 - `POST /api/jobs` : génération asynchrone suivie étape par étape.
 

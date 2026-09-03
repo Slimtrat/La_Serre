@@ -21,3 +21,8 @@ toujours `model` ou `manual`; elle ne modifie pas le contrat aval. C'est ce qui
 permet d'utiliser un LLM local pour un scénario, une image créée à la main, un
 son enregistré ailleurs ou un clip généré par un autre moteur dans le même
 épisode.
+
+Le Director Ollama local est actif dans le Studio : une source texte produit une
+proposition de Shot modifiable. Le modèle choisit les éléments créatifs ; le
+code normalise et valide ensuite les identifiants, le seed, le format vertical,
+le nombre d'images LTX et la provenance de l'artefact.

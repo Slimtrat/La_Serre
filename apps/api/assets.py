@@ -28,6 +28,8 @@ class AssetRecord:
     bytes: int
     sha256: str
     updated_at: str
+    provider: str | None = None
+    model: str | None = None
 
 
 class AssetStore:
@@ -41,6 +43,42 @@ class AssetStore:
         filename: str,
         media_type: str,
         content: bytes,
+    ) -> AssetRecord:
+        return self._put(shot_id, slot, filename, media_type, content, source="manual")
+
+    def put_model(
+        self,
+        shot_id: str,
+        slot: AssetSlot,
+        filename: str,
+        media_type: str,
+        content: bytes,
+        *,
+        provider: str,
+        model: str,
+    ) -> AssetRecord:
+        return self._put(
+            shot_id,
+            slot,
+            filename,
+            media_type,
+            content,
+            source="model",
+            provider=provider,
+            model=model,
+        )
+
+    def _put(
+        self,
+        shot_id: str,
+        slot: AssetSlot,
+        filename: str,
+        media_type: str,
+        content: bytes,
+        *,
+        source: str,
+        provider: str | None = None,
+        model: str | None = None,
     ) -> AssetRecord:
         self._validate_shot_id(shot_id)
         suffix = Path(filename).suffix.lower()
@@ -61,12 +99,14 @@ class AssetStore:
 
         record = AssetRecord(
             slot=slot,
-            source="manual",
+            source=source,
             filename=destination.name,
             media_type=media_type or "application/octet-stream",
             bytes=len(content),
             sha256=hashlib.sha256(content).hexdigest(),
             updated_at=datetime.now(UTC).isoformat(),
+            provider=provider,
+            model=model,
         )
         manifest = self._manifest(shot_id)
         manifest[slot] = asdict(record)

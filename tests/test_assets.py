@@ -29,3 +29,21 @@ def test_asset_store_rejects_wrong_media_extension(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="refusée"):
         store.put("S01E001-S01", "audio", "voice.exe", "application/octet-stream", b"x")
+
+
+def test_asset_store_records_model_provenance(tmp_path: Path) -> None:
+    store = AssetStore(tmp_path)
+
+    record = store.put_model(
+        "S01E001-S01",
+        "shot",
+        "shot.json",
+        "application/json",
+        b"{}",
+        provider="ollama",
+        model="director:latest",
+    )
+
+    assert record.source == "model"
+    assert record.provider == "ollama"
+    assert record.model == "director:latest"

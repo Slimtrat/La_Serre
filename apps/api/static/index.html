@@ -68,7 +68,7 @@
           <span class="badge">3 étapes actives</span>
         </div>
         <div class="roadmap">
-          <div class="road-node future"><span>01</span><strong>Histoire</strong><small>texte / LLM</small></div>
+          <div class="road-node active"><span>01</span><strong>Histoire</strong><small>texte / Ollama</small></div>
           <i>→</i><div class="road-node active"><span>02</span><strong>Shot</strong><small>JSON validé</small></div>
           <i>→</i><div class="road-node active"><span>03</span><strong>Keyframe</strong><small>SDXL / import</small></div>
           <i>→</i><div class="road-node future"><span>04</span><strong>Voix</strong><small>TTS / import</small></div>
@@ -92,9 +92,14 @@
             <div class="stage-number">00</div>
             <div class="stage-body">
               <strong>Histoire / texte</strong><p>Brief, scénario ou sortie préparée ailleurs</p>
-              <div class="segmented" data-source="story"><button disabled data-value="model">Modèle narratif</button><button class="selected" data-value="manual">Importer</button></div>
-              <label class="dropzone" data-dropzone="story">Glisse un texte ici<input type="file" accept="text/plain,text/markdown,.txt,.md" /></label>
-              <small class="stage-status">Le moteur narratif viendra se brancher sur ce slot</small>
+              <div class="segmented" data-source="story"><button class="selected" data-value="model">Ollama Director</button><button data-value="manual">Importer</button></div>
+              <textarea id="story-editor" class="narrative-input" placeholder="Écris une situation, ou importe un scénario…"></textarea>
+              <label class="dropzone hidden" data-dropzone="story">Glisse un texte ici<input type="file" accept="text/plain,text/markdown,.txt,.md" /></label>
+              <div class="narrative-controls">
+                <select id="ollama-model" aria-label="Modèle Ollama"><option>Détection d’Ollama…</option></select>
+                <button id="draft-shot" class="button secondary" disabled>Proposer le Shot</button>
+              </div>
+              <small id="ollama-state" class="stage-status">Connexion au Director local…</small>
             </div>
           </article>
           <article class="stage-card" data-job-stage="input">
@@ -148,5 +153,6 @@
     </main>
     <div id="toast" class="toast hidden"></div>
     <script src="/static/app.js" defer></script>
+    <script src="/static/narrative.js" defer></script>
   </body>
 </html>

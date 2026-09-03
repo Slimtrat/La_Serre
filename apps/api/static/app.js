@@ -1,6 +1,6 @@
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
-const sources = { story: "manual", keyframe: "model", audio: "manual", video: "model" };
+const sources = { story: "model", keyframe: "model", audio: "manual", video: "model" };
 let currentJob = null;
 let pollTimer = null;
 
@@ -150,6 +150,7 @@ async function uploadAsset(slot, file) {
   if (slot === "keyframe") showImage(url);
   if (slot === "video") showVideo(url);
   if (slot === "audio") showAudio(url);
+  if (slot === "story") $("#story-editor").value = await file.text();
   const card = $('.segmented[data-source="' + slot + '"]')?.closest(".stage-card");
   if (card) $(".stage-status", card).textContent = result.filename + " importé";
   notify(`${file.name} branché sur l’étape ${slot}.`);
@@ -159,14 +160,22 @@ async function refreshAssets() {
   if (!validateEditor()) return;
   const id = shot().id;
   const assets = await api("/api/assets/" + id);
-  for (const slot of ["story", "keyframe", "audio", "video"]) {
+  for (const slot of ["story", "shot", "keyframe", "audio", "video"]) {
     const record = assets[slot];
     if (!record) continue;
-    setSource(slot, "manual");
+    if (slot !== "shot") setSource(slot, "manual");
     const url = "/api/assets/" + id + "/" + slot + "/content?v=" + Date.now();
+    if (slot === "shot") {
+      const importedShot = await fetch(url).then((response) => response.json());
+      $("#shot-editor").value = JSON.stringify(importedShot, null, 2);
+      validateEditor();
+    }
     if (slot === "keyframe") showImage(url);
     if (slot === "video") showVideo(url);
     if (slot === "audio") showAudio(url);
+    if (slot === "story") {
+      $("#story-editor").value = await fetch(url).then((response) => response.text());
+    }
     const card = $('.segmented[data-source="' + slot + '"]')?.closest(".stage-card");
     if (card) $(".stage-status", card).textContent = record.filename + " importé";
   }
@@ -265,4 +274,5 @@ async function init() {
   window.setInterval(() => !document.hidden && refreshStatus(), 15000);
 }
 
+window.SerreStudio = { api, notify, shot, validateEditor };
 document.addEventListener("DOMContentLoaded", () => init().catch((error) => notify(error.message, true)));

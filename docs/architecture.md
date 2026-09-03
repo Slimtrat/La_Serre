@@ -3,6 +3,8 @@
 ## Frontières
 
 - `engine.director` porte le contrat sémantique `Shot` et construit les prompts.
+- `engine.narrative` transforme une source texte en proposition créative via
+  Ollama ; le code impose ensuite les identifiants, seeds et paramètres de rendu.
 - `engine.generation.comfy` connaît l'API ComfyUI et les graphes API-format, mais
   ne connaît pas Belladone ni l'histoire.
 - `engine.generation.video` expose `VideoGenerator`; LTX n'est qu'un adaptateur.
@@ -33,6 +35,6 @@ humaine sans ajouter prématurément une base ou une interface.
 
 ## Décisions différées
 
-Le world state, le moteur narratif, le montage d'épisodes, la base de données et
-le studio React sont hors de cette tranche. Leur ajout ne demandera pas de
-modifier `ComfyClient` ni le contrat `VideoGenerator`.
+Le world state, le montage d'épisodes, la synthèse vocale et la base de données
+restent hors de cette tranche. Leur ajout ne demandera pas de modifier
+`ComfyClient` ni le contrat `VideoGenerator`.

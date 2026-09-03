@@ -34,5 +34,12 @@ class GenerationRequest(StrictRequest):
     force: bool = False
 
 
+class ShotDraftRequest(StrictRequest):
+    source_text: str = Field(min_length=20, max_length=50_000)
+    shot_id: str = Field(pattern=r"^S\d{2}E\d{3}-S\d{2}$")
+    duration: float = Field(default=4.0, gt=0, le=12)
+    model: str | None = Field(default=None, min_length=1)
+
+
 class JobIdentifier(BaseModel):
     id: str = Field(min_length=1)

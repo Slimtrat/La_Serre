@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 from apps.api.assets import AssetSlot, AssetStore
 from apps.api.job_manager import JobManager
+from apps.api.narrative_routes import create_narrative_router
 from apps.api.schemas import (
     GenerationRequest,
     StudioConfigRequest,
@@ -51,6 +52,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    app.include_router(create_narrative_router(current_settings, assets))
 
     @app.get("/", include_in_schema=False)
     def studio() -> FileResponse:
