@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     keyframe_workflow_profile: Path | None = Path("workflows/local/keyframe.profile.json")
     video_workflow_profile: Path | None = Path("workflows/local/video.profile.json")
     output_dir: Path = Path("output")
+    private_content_dir: Path = Path(".private")
     comfyui_models_dir: Path | None = None
     downloads_dir: Path = Path.home() / "Downloads"
     default_video_backend: str = "ltx"
@@ -42,6 +43,7 @@ class Settings(BaseSettings):
         payload = {
             "comfyui_url": str(self.comfyui_url),
             "output_dir": str(self.output_dir),
+            "private_content_dir": str(self.private_content_dir),
             "comfyui_models_dir": str(self.comfyui_models_dir) if self.comfyui_models_dir else None,
             "downloads_dir": str(self.downloads_dir),
             "keyframe_workflow_profile": str(self.keyframe_workflow_profile)

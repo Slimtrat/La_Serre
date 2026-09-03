@@ -76,6 +76,10 @@ d'artefact traçable. Les keyframes et clips importés peuvent donc remplacer le
 générations sans modifier les étapes suivantes. Les imports et workflows locaux
 sont stockés sous des chemins ignorés par Git.
 
+Le contenu créatif (personnages, relations, secrets et épisodes) vit dans
+`.private/`, ignoré par le dépôt public. Le Studio charge automatiquement ce
+catalogue local. Ce dossier peut être son propre dépôt Git privé ou local.
+
 Le serveur peut également être lancé sans ouverture automatique du navigateur :
 
 ```powershell
@@ -87,6 +91,8 @@ python -m tools.run_studio --no-browser
 - `POST /api/workflows/generate` : création des graphes privés ;
 - `GET /api/narrative/status` : modèles Ollama disponibles ;
 - `POST /api/narrative/shot` : proposition et stockage d'un Shot validé ;
+- `GET /api/episodes` : catalogue local lu depuis `.private/` ;
+- `GET /api/episodes/{id}` : épisode, casting canonique et plans validés ;
 - `POST /api/models/install` : déplacement contrôlé des modèles téléchargés ;
 - `PUT /api/assets/{shot}/{slot}` : branchement d'un artefact manuel ;
 - `POST /api/jobs` : génération asynchrone suivie étape par étape.

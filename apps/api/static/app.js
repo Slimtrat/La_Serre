@@ -274,5 +274,5 @@ async function init() {
   window.setInterval(() => !document.hidden && refreshStatus(), 15000);
 }
 
-window.SerreStudio = { api, notify, shot, validateEditor };
+window.SerreStudio = { api, notify, refreshAssets, shot, validateEditor };
 document.addEventListener("DOMContentLoaded", () => init().catch((error) => notify(error.message, true)));

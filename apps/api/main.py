@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from apps.api.assets import AssetSlot, AssetStore
+from apps.api.episode_routes import create_episode_router
 from apps.api.job_manager import JobManager
 from apps.api.narrative_routes import create_narrative_router
 from apps.api.schemas import (
@@ -25,6 +26,7 @@ from engine.generation.comfy.client import ComfyClient
 from engine.generation.comfy.errors import WorkflowConfigurationError
 from engine.generation.comfy.model_installer import ModelInstaller
 from engine.generation.comfy.workflow_factory import WorkflowFactory
+from engine.world.catalog import EpisodeCatalog
 
 STATIC_DIR = Path(__file__).with_name("static")
 SHOT_ID = re.compile(r"^S\d{2}E\d{3}-S\d{2}$")
@@ -42,6 +44,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     manager = JobManager(current_settings, assets)
     setup = WorkflowSetup()
     factory = WorkflowFactory()
+    catalog = EpisodeCatalog(current_settings().private_content_dir)
 
     def model_installer() -> ModelInstaller:
         resolved = current_settings()
@@ -52,6 +55,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    app.include_router(create_episode_router(catalog))
     app.include_router(create_narrative_router(current_settings, assets))
 
     @app.get("/", include_in_schema=False)

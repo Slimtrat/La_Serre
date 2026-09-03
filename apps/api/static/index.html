@@ -32,6 +32,32 @@
         </div>
       </section>
 
+      <section class="panel episode-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">ÉPISODE EN PRODUCTION</p>
+            <h2 id="episode-title">Chargement de l’épisode…</h2>
+          </div>
+          <label class="episode-picker">
+            Épisode
+            <select id="episode-select" aria-label="Épisode"></select>
+          </label>
+        </div>
+        <p id="episode-logline" class="episode-logline"></p>
+        <div class="episode-meta">
+          <span id="episode-duration" class="badge">—</span>
+          <span id="episode-state" class="muted">Catalogue local</span>
+        </div>
+        <div>
+          <p class="eyebrow">PERSONNAGES CANONIQUES</p>
+          <div id="episode-cast" class="character-cast"></div>
+        </div>
+        <div>
+          <p class="eyebrow">PLANS</p>
+          <div id="episode-shots" class="shot-strip"></div>
+        </div>
+      </section>
+
       <section id="settings-panel" class="panel setup hidden">
         <div class="panel-heading">
           <div><p class="eyebrow">CONFIGURATION GUIDÉE</p><h2>ComfyUI sans JSON à bricoler</h2></div>
@@ -154,5 +180,6 @@
     <div id="toast" class="toast hidden"></div>
     <script src="/static/app.js" defer></script>
     <script src="/static/narrative.js" defer></script>
+    <script src="/static/episode.js" defer></script>
   </body>
 </html>

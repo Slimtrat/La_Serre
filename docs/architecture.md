@@ -5,6 +5,8 @@
 - `engine.director` porte le contrat sémantique `Shot` et construit les prompts.
 - `engine.narrative` transforme une source texte en proposition créative via
   Ollama ; le code impose ensuite les identifiants, seeds et paramètres de rendu.
+- `engine.world` charge le catalogue `.private/` et refuse les dérives de
+  visage, costume, accessoires ou décor entre la bible et les plans.
 - `engine.generation.comfy` connaît l'API ComfyUI et les graphes API-format, mais
   ne connaît pas Belladone ni l'histoire.
 - `engine.generation.video` expose `VideoGenerator`; LTX n'est qu'un adaptateur.
