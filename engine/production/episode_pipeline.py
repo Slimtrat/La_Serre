@@ -1,0 +1,348 @@
+from __future__ import annotations
+
+import json
+import shutil
+import tempfile
+import uuid
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Literal
+
+from engine.audio.models import EpisodeAudioPlan
+from engine.audio.speech import SpeechSynthesizer
+from engine.media.ffmpeg import AssemblyRequest, MediaToolchain, SegmentInput
+from engine.production.artifacts import sha256_file, write_text_atomic
+from engine.world.catalog import EpisodeCatalog
+
+VIDEO_SUFFIXES = {".mp4", ".webm", ".mov", ".mkv"}
+IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
+AUDIO_SUFFIXES = {".wav", ".mp3", ".flac", ".ogg", ".m4a"}
+ProgressCallback = Callable[[str, str, str], None]
+
+
+@dataclass(frozen=True, slots=True)
+class EpisodePipelineOptions:
+    episode_id: str
+    private_root: Path = Path(".private")
+    output_root: Path = Path("output")
+    audio_plan: Path | None = None
+    subtitles: Path | None = None
+    music: Path | None = None
+    ambience: Path | None = None
+    width: int = 576
+    height: int = 1024
+    fps: int = 24
+    tts_enabled: bool = True
+    allow_stills: bool = False
+    force: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class EpisodePipelineResult:
+    episode_id: str
+    video: Path
+    manifest: Path
+    subtitles: Path | None
+    duration: float
+    verification: dict[str, object]
+
+
+class EpisodePipeline:
+    def __init__(
+        self,
+        media: MediaToolchain,
+        speech: SpeechSynthesizer | None = None,
+        on_progress: ProgressCallback | None = None,
+    ) -> None:
+        self.media = media
+        self.speech = speech
+        self.on_progress = on_progress
+
+    def run(self, options: EpisodePipelineOptions) -> EpisodePipelineResult:
+        package = EpisodeCatalog(options.private_root).load(options.episode_id)
+        episode_dir = (
+            options.private_root
+            / "episodes"
+            / f"season-{package.episode.season:02d}"
+            / package.episode.id
+        )
+        audio_plan_path = options.audio_plan or episode_dir / "audio-plan.json"
+        plan = EpisodeAudioPlan.load(audio_plan_path)
+        subtitles = self._optional_file(options.subtitles or episode_dir / "subtitles.fr.srt")
+        music = self._optional_file(options.music or episode_dir / "music.wav")
+        ambience = self._optional_file(options.ambience or episode_dir / "ambience.wav")
+
+        destination = options.output_root / package.episode.id
+        final_video = destination / "episode.mp4"
+        manifest_path = destination / "episode-generation.json"
+        if final_video.exists() and not options.force:
+            raise FileExistsError(
+                f"L'épisode existe déjà : {final_video}. Utilise --force pour le remplacer."
+            )
+        destination.mkdir(parents=True, exist_ok=True)
+        created_at = datetime.now(UTC)
+        with tempfile.TemporaryDirectory(prefix=".episode-build-", dir=destination) as temporary:
+            workspace = Path(temporary)
+            segments: list[SegmentInput] = []
+            source_records: list[dict[str, object]] = []
+            generated_voices: list[tuple[str, Path]] = []
+            self._notify("voice", "running", "Résolution et génération des voix")
+            for shot in package.shots:
+                visual, visual_kind, visual_source = self._resolve_visual(
+                    options.output_root,
+                    shot.id,
+                    allow_stills=options.allow_stills,
+                )
+                audio, audio_source = self._resolve_audio(
+                    options,
+                    plan,
+                    shot.id,
+                    shot.dialogue.speaker if shot.dialogue else None,
+                    shot.dialogue.text if shot.dialogue else None,
+                    workspace,
+                )
+                cue = plan.cue_for(shot.id)
+                if audio and audio_source == "sapi":
+                    generated_voices.append((shot.id, audio))
+                if audio:
+                    audio_duration = self.media.duration(audio)
+                    if audio_duration + cue.offset_seconds > shot.duration + 0.05:
+                        raise ValueError(
+                            f"La voix de {shot.id} dure {audio_duration:.2f}s et dépasse le plan "
+                            f"de {shot.duration:.2f}s après son décalage de "
+                            f"{cue.offset_seconds:.2f}s."
+                        )
+                segments.append(
+                    SegmentInput(
+                        shot_id=shot.id,
+                        visual=visual,
+                        visual_kind=visual_kind,
+                        duration=shot.duration,
+                        audio=audio,
+                        audio_offset=cue.offset_seconds,
+                        audio_gain_db=cue.gain_db,
+                    )
+                )
+                audio_record = self._source_record(audio, audio_source) if audio else None
+                if audio_record is not None and audio_source == "sapi":
+                    audio_record["path"] = str(
+                        (destination / "voices" / f"{shot.id}.wav").resolve()
+                    )
+                source_records.append(
+                    {
+                        "shot_id": shot.id,
+                        "duration": shot.duration,
+                        "dialogue": (
+                            shot.dialogue.model_dump(mode="json") if shot.dialogue else None
+                        ),
+                        "visual": self._source_record(visual, visual_source),
+                        "audio": audio_record,
+                    }
+                )
+            voice_count = sum(segment.audio is not None for segment in segments)
+            self._notify(
+                "voice",
+                "completed",
+                f"{voice_count} piste(s) de dialogue prête(s)",
+            )
+
+            temporary_video = workspace / "episode.mp4"
+            self._notify("mix", "running", "Préparation du mix voix, musique et ambiance")
+            request = AssemblyRequest(
+                segments=segments,
+                output=temporary_video,
+                width=options.width,
+                height=options.height,
+                fps=options.fps,
+                subtitles=subtitles,
+                music=music,
+                ambience=ambience,
+                music_gain_db=plan.music_gain_db,
+                ambience_gain_db=plan.ambience_gain_db,
+            )
+            self._notify("mix", "completed", "Plan de mix synchronisé")
+            self._notify("montage", "running", "Assemblage déterministe des plans")
+            self.media.assemble(request)
+            self._notify("montage", "completed", "Montage vidéo et mixage terminés")
+            self._notify("export", "running", "Vérification du master final")
+            verification = self.media.verify(
+                temporary_video,
+                duration=package.episode.duration_target,
+                width=options.width,
+                height=options.height,
+            )
+            temporary_video.replace(final_video)
+
+            final_subtitles: Path | None = None
+            if subtitles:
+                final_subtitles = destination / "subtitles.fr.srt"
+                self._copy_atomic(subtitles, final_subtitles)
+            voices_dir = destination / "voices"
+            for shot_id, voice in generated_voices:
+                self._copy_atomic(voice, voices_dir / f"{shot_id}.wav")
+
+            record: dict[str, object] = {
+                "schema_version": 1,
+                "id": f"episode_{uuid.uuid4().hex}",
+                "type": "episode",
+                "episode_id": package.episode.id,
+                "status": "FINAL",
+                "created_at": created_at.isoformat(),
+                "completed_at": datetime.now(UTC).isoformat(),
+                "duration": package.episode.duration_target,
+                "render": {
+                    "width": options.width,
+                    "height": options.height,
+                    "fps": options.fps,
+                },
+                "toolchain": {
+                    "name": self.media.name,
+                    "version": self.media.version(),
+                    "speech": self.speech.name if self.speech else None,
+                },
+                "inputs": {
+                    "episode": str((episode_dir / "episode.json").resolve()),
+                    "shots": source_records,
+                    "subtitles": self._source_record(subtitles, "episode") if subtitles else None,
+                    "music": self._source_record(music, "episode") if music else None,
+                    "ambience": self._source_record(ambience, "episode") if ambience else None,
+                    "audio_plan": (
+                        self._source_record(audio_plan_path, "episode")
+                        if audio_plan_path.is_file()
+                        else None
+                    ),
+                },
+                "verification": verification,
+                "outputs": [
+                    {
+                        "path": final_video.name,
+                        "sha256": sha256_file(final_video),
+                        "media_type": "video/mp4",
+                    }
+                ],
+            }
+            if final_subtitles:
+                outputs = record["outputs"]
+                assert isinstance(outputs, list)
+                outputs.append(
+                    {
+                        "path": final_subtitles.name,
+                        "sha256": sha256_file(final_subtitles),
+                        "media_type": "application/x-subrip",
+                    }
+                )
+            write_text_atomic(
+                manifest_path,
+                json.dumps(record, ensure_ascii=False, indent=2) + "\n",
+            )
+            self._notify("export", "completed", "Master MP4 et manifeste vérifiés")
+        return EpisodePipelineResult(
+            episode_id=package.episode.id,
+            video=final_video,
+            manifest=manifest_path,
+            subtitles=final_subtitles,
+            duration=package.episode.duration_target,
+            verification=verification,
+        )
+
+    def _notify(self, stage: str, status: str, message: str) -> None:
+        if self.on_progress:
+            self.on_progress(stage, status, message)
+
+    def _resolve_audio(
+        self,
+        options: EpisodePipelineOptions,
+        plan: EpisodeAudioPlan,
+        shot_id: str,
+        speaker: str | None,
+        text: str | None,
+        workspace: Path,
+    ) -> tuple[Path | None, str | None]:
+        imported = self._first_media(
+            options.output_root / shot_id / "imports",
+            "audio",
+            AUDIO_SUFFIXES,
+        )
+        if imported:
+            return imported, "manual"
+        if text is None or speaker is None:
+            return None, None
+        if not options.tts_enabled:
+            raise FileNotFoundError(
+                f"Dialogue sans audio pour {shot_id}. Importe output/{shot_id}/imports/audio.* "
+                "ou active la synthèse vocale."
+            )
+        if self.speech is None:
+            raise RuntimeError(
+                f"Dialogue sans synthétiseur pour {shot_id}. Configure SAPI ou importe une voix."
+            )
+        destination = workspace / "voices" / f"{shot_id}.wav"
+        self.speech.synthesize(text, destination, plan.voice_for(speaker))
+        return destination, "sapi"
+
+    @classmethod
+    def _resolve_visual(
+        cls,
+        output_root: Path,
+        shot_id: str,
+        *,
+        allow_stills: bool,
+    ) -> tuple[Path, Literal["video", "image"], str]:
+        imported_video = cls._first_media(
+            output_root / shot_id / "imports",
+            "video",
+            VIDEO_SUFFIXES,
+        )
+        if imported_video:
+            return imported_video, "video", "manual"
+        generated_video = output_root / shot_id / "clip.mp4"
+        if generated_video.is_file():
+            return generated_video, "video", "model"
+        if allow_stills:
+            imported_image = cls._first_media(
+                output_root / shot_id / "imports",
+                "keyframe",
+                IMAGE_SUFFIXES,
+            )
+            if imported_image:
+                return imported_image, "image", "manual-keyframe"
+            generated_image = output_root / shot_id / "keyframe.png"
+            if generated_image.is_file():
+                return generated_image, "image", "model-keyframe"
+        suffix = " ou une keyframe avec --allow-stills" if allow_stills else ""
+        raise FileNotFoundError(
+            f"Vidéo introuvable pour {shot_id}: attends output/{shot_id}/clip.mp4 "
+            f"ou importe output/{shot_id}/imports/video.*{suffix}."
+        )
+
+    @staticmethod
+    def _first_media(directory: Path, stem: str, suffixes: set[str]) -> Path | None:
+        if not directory.is_dir():
+            return None
+        candidates = sorted(
+            item
+            for item in directory.iterdir()
+            if item.is_file() and item.stem == stem and item.suffix.lower() in suffixes
+        )
+        return candidates[0] if candidates else None
+
+    @staticmethod
+    def _optional_file(path: Path | None) -> Path | None:
+        return path if path is not None and path.is_file() else None
+
+    @staticmethod
+    def _source_record(path: Path, source: str | None) -> dict[str, object]:
+        return {
+            "path": str(path.resolve()),
+            "sha256": sha256_file(path),
+            "source": source,
+        }
+
+    @staticmethod
+    def _copy_atomic(source: Path, destination: Path) -> None:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        temporary = destination.with_suffix(destination.suffix + ".tmp")
+        shutil.copyfile(source, temporary)
+        temporary.replace(destination)

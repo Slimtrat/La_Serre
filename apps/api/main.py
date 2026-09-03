@@ -11,10 +11,12 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from apps.api.assets import AssetSlot, AssetStore
+from apps.api.episode_job_manager import EpisodeJobManager
 from apps.api.episode_routes import create_episode_router
 from apps.api.job_manager import JobManager
 from apps.api.narrative_routes import create_narrative_router
 from apps.api.schemas import (
+    EpisodeGenerationRequest,
     GenerationRequest,
     StudioConfigRequest,
     WorkflowImportRequest,
@@ -31,7 +33,13 @@ from engine.world.catalog import EpisodeCatalog
 
 STATIC_DIR = Path(__file__).with_name("static")
 SHOT_ID = re.compile(r"^S\d{2}E\d{3}-S\d{2}$")
+EPISODE_ID = re.compile(r"^S\d{2}E\d{3}$")
 MEDIA_FILES = {"keyframe.png", "clip.mp4", "generation.json", "prompt.txt"}
+EPISODE_MEDIA_FILES = {
+    "episode.mp4": "video/mp4",
+    "episode-generation.json": "application/json",
+    "subtitles.fr.srt": "application/x-subrip",
+}
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -43,6 +51,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="La Serre des Venins", version="0.2.0")
     assets = AssetStore(current_settings().output_dir)
     manager = JobManager(current_settings, assets)
+    episode_manager = EpisodeJobManager(current_settings)
     setup = WorkflowSetup()
     factory = WorkflowFactory()
     catalog = EpisodeCatalog(current_settings().private_content_dir)
@@ -268,6 +277,33 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             if isinstance(payload, dict):
                 result["status"] = payload.get("status")
         return result
+
+    @app.post("/api/episodes/{episode_id}/jobs", status_code=202)
+    async def start_episode_job(
+        episode_id: str,
+        payload: EpisodeGenerationRequest,
+    ) -> dict[str, object]:
+        if not EPISODE_ID.fullmatch(episode_id):
+            raise HTTPException(status_code=404, detail="Episode not found")
+        job = await episode_manager.start(episode_id, payload)
+        return job.public()
+
+    @app.get("/api/episode-jobs/{job_id}")
+    async def get_episode_job(job_id: str) -> dict[str, object]:
+        job = episode_manager.get(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="Episode job not found")
+        return job.public()
+
+    @app.get("/api/episode-media/{episode_id}/{filename}")
+    def episode_media(episode_id: str, filename: str) -> FileResponse:
+        media_type = EPISODE_MEDIA_FILES.get(filename)
+        if not EPISODE_ID.fullmatch(episode_id) or media_type is None:
+            raise HTTPException(status_code=404, detail="Episode media not found")
+        path = current_settings().output_dir / episode_id / filename
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="Episode media not found")
+        return FileResponse(path, media_type=media_type, filename=filename)
 
     return app
 

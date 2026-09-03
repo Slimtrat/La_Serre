@@ -26,6 +26,7 @@ dev = [
 ]
 
 [project.scripts]
+generate-episode = "tools.generate_episode:main"
 generate-shot = "tools.generate_shot:main"
 serre-studio = "tools.run_studio:main"
 
