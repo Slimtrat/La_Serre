@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     keyframe_workflow_profile: Path | None = Path("workflows/local/keyframe.profile.json")
     video_workflow_profile: Path | None = Path("workflows/local/video.profile.json")
     output_dir: Path = Path("output")
+    comfyui_models_dir: Path | None = None
+    downloads_dir: Path = Path.home() / "Downloads"
     default_video_backend: str = "ltx"
     llm_provider: str = "ollama"
     ollama_url: AnyHttpUrl = AnyHttpUrl("http://127.0.0.1:11434")
@@ -40,6 +42,8 @@ class Settings(BaseSettings):
         payload = {
             "comfyui_url": str(self.comfyui_url),
             "output_dir": str(self.output_dir),
+            "comfyui_models_dir": str(self.comfyui_models_dir) if self.comfyui_models_dir else None,
+            "downloads_dir": str(self.downloads_dir),
             "keyframe_workflow_profile": str(self.keyframe_workflow_profile)
             if self.keyframe_workflow_profile
             else None,

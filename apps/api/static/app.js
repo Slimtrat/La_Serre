@@ -48,6 +48,7 @@ async function refreshStatus() {
     $("#setup-badge").textContent = ready ? "Prêt" : status.profiles_configured ? "Modèles manquants" : "Workflows absents";
     $("#setup-badge").className = `badge ${ready ? "ready" : "warn"}`;
     renderModels(status.models || []);
+    $("#downloads-location").textContent = "Téléchargements : " + status.downloads_dir;
     if (!ready) $("#settings-panel").classList.remove("hidden");
     return status;
   } catch (error) {
@@ -60,6 +61,7 @@ async function refreshStatus() {
 function renderModels(models) {
   const list = $("#model-list");
   list.replaceChildren();
+  let readyToInstall = false;
   for (const model of models) {
     const row = document.createElement("div");
     row.className = "model";
@@ -70,8 +72,16 @@ function renderModels(models) {
     path.textContent = `models/${model.folder}/${model.filename}`;
     info.append(name, path);
     const state = document.createElement("span");
-    state.className = `model-state ${model.installed ? "ok" : "missing"}`;
-    state.textContent = model.installed ? "Installé" : "À télécharger";
+    const installed = model.installed || model.state === "installed";
+    state.className = `model-state ${installed ? "ok" : "missing"}`;
+    state.textContent = installed ? "Installé" : "À télécharger";
+    if (!installed && model.state === "ready") {
+      state.textContent = "Prêt à installer";
+      readyToInstall = true;
+    } else if (!installed && model.state === "downloading") {
+      const megabytes = Math.round((model.downloaded_bytes || 0) / 1048576);
+      state.textContent = megabytes ? "Téléchargement · " + megabytes + " Mo" : "Téléchargement";
+    }
     const link = document.createElement("a");
     link.href = model.url;
     link.target = "_blank";
@@ -79,6 +89,22 @@ function renderModels(models) {
     link.textContent = model.installed ? "Source" : "Télécharger ↗";
     row.append(info, state, link);
     list.append(row);
+  }
+  $("#install-downloads").disabled = !readyToInstall;
+}
+
+async function installDownloads() {
+  $("#install-downloads").disabled = true;
+  try {
+    const result = await api("/api/models/install", { method: "POST" });
+    if (!result.installed.length) {
+      notify("Aucun téléchargement terminé à installer.");
+    } else {
+      notify(result.installed.length + " modèle(s) installé(s). Redémarre ComfyUI.");
+    }
+    await refreshStatus();
+  } catch (error) {
+    notify(error.message, true);
   }
 }
 
@@ -225,6 +251,7 @@ async function init() {
   $("#settings-toggle").addEventListener("click", () => $("#settings-panel").classList.toggle("hidden"));
   $("#save-config").addEventListener("click", () => saveConfig().catch((e) => notify(e.message, true)));
   $("#build-workflows").addEventListener("click", buildWorkflows);
+  $("#install-downloads").addEventListener("click", installDownloads);
   $("#generate-all").addEventListener("click", () => startJob("all"));
   $("#generate-keyframe").addEventListener("click", () => startJob("keyframe"));
   $("#continue-video").addEventListener("click", () => startJob("video"));
@@ -235,6 +262,7 @@ async function init() {
   $("#advanced-video").addEventListener("change", (event) => event.target.files[0] && importAdvanced("video", event.target.files[0]).catch((e) => notify(e.message, true)));
   await refreshStatus();
   await refreshAssets();
+  window.setInterval(() => !document.hidden && refreshStatus(), 15000);
 }
 
 document.addEventListener("DOMContentLoaded", () => init().catch((error) => notify(error.message, true)));

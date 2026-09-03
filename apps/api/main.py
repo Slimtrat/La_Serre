@@ -22,6 +22,7 @@ from apps.api.workflow_setup import WorkflowSetup
 from engine.config import Settings
 from engine.generation.comfy.client import ComfyClient
 from engine.generation.comfy.errors import WorkflowConfigurationError
+from engine.generation.comfy.model_installer import ModelInstaller
 from engine.generation.comfy.workflow_factory import WorkflowFactory
 
 STATIC_DIR = Path(__file__).with_name("static")
@@ -40,6 +41,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     manager = JobManager(current_settings, assets)
     setup = WorkflowSetup()
     factory = WorkflowFactory()
+
+    def model_installer() -> ModelInstaller:
+        resolved = current_settings()
+        return ModelInstaller(
+            factory.requirements,
+            downloads_dir=resolved.downloads_dir,
+            models_root=resolved.comfyui_models_dir,
+        )
+
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
     @app.get("/", include_in_schema=False)
@@ -67,6 +77,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             comfyui = await client.is_ready()
             if comfyui:
                 missing_nodes, models = await _audit_comfy(client, factory)
+        download_status = {
+            str(item["filename"]): item
+            for item in await asyncio.to_thread(model_installer().inspect)
+        }
+        models = [{**model, **download_status.get(str(model["filename"]), {})} for model in models]
         models_ready = all(bool(model["installed"]) for model in models)
         nodes_ready = not missing_nodes
         return {
@@ -87,6 +102,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "video_profile": bool(
                 resolved.video_workflow_profile and resolved.video_workflow_profile.is_file()
             ),
+            "downloads_dir": str(resolved.downloads_dir),
+            "models_root": str(model_installer().models_root),
+        }
+
+    @app.post("/api/models/install")
+    async def install_downloaded_models() -> dict[str, object]:
+        try:
+            installed = await asyncio.to_thread(model_installer().install_ready)
+        except (FileExistsError, OSError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return {
+            "status": "installed" if installed else "nothing_ready",
+            "installed": installed,
+            "restart_required": bool(installed),
         }
 
     @app.post("/api/workflows/generate")

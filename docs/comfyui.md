@@ -12,6 +12,11 @@ Studio utilise uniquement ses routes natives et ses nœuds core.
 5. téléchargez les modèles listés et placez-les dans les dossiers affichés ;
 6. rafraîchissez ComfyUI, puis le Studio.
 
+Sur Windows avec ComfyUI Desktop, le Studio surveille aussi le dossier
+**Downloads**. Quand un fichier final est disponible, le bouton **Installer les
+téléchargements terminés** le déplace vers le bon sous-dossier. Les fichiers
+partiels et les placeholders vides sont ignorés.
+
 Le preset `rtx-5070-12gb` crée deux graphes API-format :
 
 - keyframe SDXL, 576×1024, KSampler DPM++ 2M SDE/Karras ;
