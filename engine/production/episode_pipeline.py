@@ -152,7 +152,7 @@ class EpisodePipeline:
                             fitted,
                             available_duration,
                         )
-                        if audio_fit_speed > plan.max_time_fit_speed:
+                        if audio_fit_speed > plan.max_time_fit_speed + 0.01:
                             raise ValueError(
                                 f"La voix de {shot.id} exige un time-fit de "
                                 f"{audio_fit_speed:.2f}x, au-dessus de la limite qualité "
