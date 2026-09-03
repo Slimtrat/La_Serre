@@ -88,6 +88,19 @@ class ComfyClient:
         except httpx.HTTPError:
             return False
 
+    async def get_object_info(self) -> dict[str, Any]:
+        response = await self._http.get("/object_info")
+        response.raise_for_status()
+        return self._json(response)
+
+    async def get_models(self, folder: str) -> list[str]:
+        response = await self._http.get(f"/models/{folder}")
+        response.raise_for_status()
+        payload = response.json()
+        if not isinstance(payload, list) or not all(isinstance(item, str) for item in payload):
+            raise ComfyProtocolError(f"ComfyUI returned an invalid model list for {folder}")
+        return payload
+
     async def submit_workflow(self, workflow: dict[str, Any]) -> str:
         response = await self._http.post(
             "/prompt",

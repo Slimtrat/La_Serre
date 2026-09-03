@@ -75,6 +75,9 @@ async def test_pipeline_produces_traceable_keyframe_and_clip(tmp_path: Path) -> 
     shot_path = Path("examples/shot.json")
     keyframe_profile = _write_profile(tmp_path, "keyframe", video=False)
     video_profile = _write_profile(tmp_path, "video", video=True)
+    imports = tmp_path / "output" / "S01E001-S01" / "imports"
+    imports.mkdir(parents=True)
+    (imports / "story.md").write_text("Brief importé", encoding="utf-8")
     async with ComfyClient(
         "http://comfy.test",
         transport=httpx.MockTransport(handler),

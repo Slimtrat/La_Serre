@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import httpx
 
 from apps.api.main import create_app
@@ -12,3 +14,19 @@ async def test_health() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+async def test_hybrid_asset_upload(tmp_path: Path) -> None:
+    app = create_app(Settings(_env_file=None, output_dir=tmp_path))
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.put(
+            "/api/assets/S01E001-S01/audio?filename=voice.wav",
+            content=b"wave-data",
+            headers={"Content-Type": "audio/wav"},
+        )
+        media = await client.get("/api/assets/S01E001-S01/audio/content")
+
+    assert response.status_code == 200
+    assert response.json()["source"] == "manual"
+    assert media.content == b"wave-data"

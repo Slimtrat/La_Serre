@@ -49,7 +49,7 @@ class WorkflowLoader:
             workflow_path = resolved_profile.parent / workflow_path
         workflow_path = workflow_path.resolve()
         template = self._read_json(workflow_path)
-        self._validate_api_format(template, workflow_path)
+        self.validate_api_format(template, workflow_path)
         digest = hashlib.sha256(workflow_path.read_bytes()).hexdigest()
         return LoadedWorkflow(
             profile_path=resolved_profile,
@@ -72,7 +72,7 @@ class WorkflowLoader:
         return value
 
     @staticmethod
-    def _validate_api_format(workflow: dict[str, Any], path: Path) -> None:
+    def validate_api_format(workflow: dict[str, Any], path: Path | str = "workflow") -> None:
         if "nodes" in workflow or "links" in workflow:
             raise WorkflowConfigurationError(
                 f"{path} is an editor workflow; export it with Save (API Format)"

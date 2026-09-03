@@ -1,61 +1,57 @@
-# Brancher les workflows ComfyUI
+# ComfyUI sans maintenance manuelle
 
-ComfyUI reste un service externe, par défaut sur `http://127.0.0.1:8188`.
-Le dépôt ne distribue ni modèles, ni checkpoints, ni graphes dépendant d'une
-installation particulière.
+ComfyUI reste un moteur externe, par défaut sur `http://127.0.0.1:8188`. Le
+Studio utilise uniquement ses routes natives et ses nœuds core.
 
-## 1. Exporter deux graphes exécutables
+## Installation guidée
 
-Dans ComfyUI :
+1. démarrez ComfyUI ;
+2. lancez `python -m tools.run_studio` ;
+3. ouvrez **Réglages ComfyUI** ;
+4. cliquez sur **Créer mes workflows** ;
+5. téléchargez les modèles listés et placez-les dans les dossiers affichés ;
+6. rafraîchissez ComfyUI, puis le Studio.
 
-1. validez manuellement un workflow de keyframe et un workflow LTX
-   image-to-video sur la machine cible ;
-2. activez `Settings > Comfy > Dev Mode > Enable dev mode options` ;
-3. exportez chaque workflow avec `Save (API Format)` ;
-4. placez les fichiers sous `workflows/local/` (ce dossier est ignoré par Git).
+Le preset `rtx-5070-12gb` crée deux graphes API-format :
 
-Un fichier API-format est un objet dont les clés sont les identifiants de nœuds
-et dont chaque valeur contient au minimum `class_type` et `inputs`. Un workflow
-de l'éditeur (`nodes`, `links`, etc.) est rejeté tôt avec un message explicite.
+- keyframe SDXL, 576×1024, KSampler DPM++ 2M SDE/Karras ;
+- LTX-Video 2B image-to-video, rendu court plan par plan avec T5 FP8.
 
-Pour une RTX 5070 12 Go, commencez par le workflow LTX qui fonctionne déjà dans
-votre ComfyUI avec offload/quantification, puis mappez-le. Le studio ne force
-aucun checkpoint et ne suppose jamais 24 Go de VRAM.
+Les graphes, profils et manifestes de modèles sont écrits sous
+`workflows/local/`, dossier ignoré par Git. Le code vérifie automatiquement les
+nœuds via `/object_info` et les modèles via `/models/{folder}`.
 
-## 2. Déclarer les mappings
+## Modèles proposés
 
-Copiez les exemples :
+| Rôle | Fichier | Dossier ComfyUI |
+|---|---|---|
+| Keyframes | `sd_xl_base_1.0.safetensors` | `models/checkpoints/` |
+| Vidéo | `ltx-video-2b-v0.9.5.safetensors` | `models/checkpoints/` |
+| Texte LTX | `t5xxl_fp8_e4m3fn_scaled.safetensors` | `models/text_encoders/` |
 
-```powershell
-New-Item -ItemType Directory -Force workflows/local
-Copy-Item workflows/images/keyframe.profile.json.example `
-  workflows/local/keyframe.profile.json
-Copy-Item workflows/video/ltx-i2v.profile.json.example `
-  workflows/local/ltx-i2v.profile.json
+Les liens directs des dépôts de référence sont affichés dans l'interface. Aucun
+téléchargement lourd n'est déclenché silencieusement.
+
+## Contrat hybride
+
+Le modèle et l'import manuel produisent le même type d'artefact :
+
+```text
+Shot JSON
+   ├─ SDXL ───────────┐
+   └─ image importée ─┴─> keyframe ─┬─ LTX ───────────┐
+                                    └─ vidéo importée ┴─> clip
 ```
 
-Dans chaque profil, ajustez `workflow`, puis les `node_id` et `input` d'après le
-JSON API exporté. Une liaison facultative (`required: false`) est ignorée si la
-valeur source n'existe pas. Les sources disponibles comprennent :
+Les slots supplémentaires `story` et `audio` acceptent déjà des fichiers et
+sont consignés avec leur taille, type MIME, date et SHA-256. Les futurs moteurs
+narratif et TTS se brancheront sur ces contrats, sans changer l'interface.
 
-- `prompt`, `negative_prompt`, `seed`, `width`, `height`, `frames`, `fps` ;
-- `reference_image` pour la keyframe envoyée au workflow vidéo ;
-- `reference_images.<character_id>.<index>` pour les références du `Shot` ;
-- `output_prefix`.
+## Mode avancé
 
-Les dimensions de génération restent volontairement inférieures au master
-1080x1920. Le rendu final et l'upscale appartiendront à la post-production.
+Un workflow personnel exporté en API-format peut toujours être importé. Le
+Studio inspecte ses entrées primitives et permet de construire un profil de
+mapping, mais cette voie n'est pas nécessaire avec le preset fourni.
 
-## 3. Vérifier avant une génération coûteuse
-
-```powershell
-python -m tools.generate_shot examples/shot.json --dry-run
-```
-
-Le dry-run valide le `Shot`, construit les prompts, charge les profils, vérifie
-tous les nœuds et écrit les graphes mappés sous `output/<shot>/dry-run/`, sans
-contacter ComfyUI.
-
-Le client utilise les routes natives `/prompt`, `/history/{id}`, `/queue`,
-`/upload/image`, `/view` et `/interrupt`. Les erreurs de validation de graphe et
-d'exécution sont remontées avec le détail fourni par ComfyUI.
+Les routes utilisées sont `/system_stats`, `/object_info`, `/models`, `/prompt`,
+`/history`, `/queue`, `/upload/image`, `/view` et `/interrupt`.

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import hashlib
 import shutil
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -22,9 +22,11 @@ from engine.generation.models import (
 )
 from engine.generation.video.base import VideoGenerationRequest, VideoGenerationResult
 from engine.generation.video.ltx import LTXVideoGenerator
+from engine.production.artifacts import artifact, sha256_file, write_record, write_text_atomic
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
 VIDEO_SUFFIXES = {".mp4", ".webm", ".mov", ".mkv"}
+ProgressCallback = Callable[[str, str, str], None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,26 +42,41 @@ class ShotPipelineOptions:
 
 
 class ShotPipeline:
-    def __init__(self, client: ComfyClient, prompt_builder: PromptBuilder | None = None) -> None:
+    def __init__(
+        self,
+        client: ComfyClient,
+        prompt_builder: PromptBuilder | None = None,
+        on_progress: ProgressCallback | None = None,
+    ) -> None:
         self.client = client
         self.prompt_builder = prompt_builder or PromptBuilder()
+        self.on_progress = on_progress
         self.executor = ComfyWorkflowExecutor(client)
         self.video = LTXVideoGenerator(client, self.executor)
 
     async def run(self, options: ShotPipelineOptions) -> GenerationRecord:
         shot = Shot.model_validate_json(options.shot_path.read_text(encoding="utf-8"))
+        self._notify("input", "completed", f"{shot.id} validé")
+        self._notify("prompt", "running", "Construction du prompt sémantique")
         prompt = self.prompt_builder.build(shot)
+        self._notify("prompt", "completed", "Prompt positif et négatif prêts")
         destination = options.output_root / shot.id
         self._prepare_destination(destination, options.force, options.from_keyframe)
         destination.mkdir(parents=True, exist_ok=True)
         prompt_text = prompt.positive + "\n\nNEGATIVE:\n" + prompt.negative + "\n"
-        self._write_text_atomic(destination / "prompt.txt", prompt_text)
+        write_text_atomic(destination / "prompt.txt", prompt_text)
 
         record = self._new_record(shot, prompt, options)
         manifest_path = destination / "generation.json"
-        self._write_record(manifest_path, record)
+        write_record(manifest_path, record)
         try:
+            self._notify("references", "running", "Préparation des références visuelles")
             reference_context, references = await self._upload_references(shot, options.shot_path)
+            self._notify(
+                "references",
+                "completed",
+                f"{len(references)} référence(s) chargée(s)",
+            )
             record.input["references"] = [item.model_dump(mode="json") for item in references]
             context = self._context(shot, prompt, reference_context)
             keyframe_path = destination / "keyframe.png"
@@ -70,7 +87,9 @@ class ShotPipeline:
                     raise FileNotFoundError(f"Approved keyframe does not exist: {source}")
                 if source != keyframe_path.resolve():
                     shutil.copyfile(source, keyframe_path)
+                self._notify("keyframe", "completed", "Keyframe approuvée réutilisée")
             else:
+                self._notify("keyframe", "running", "Génération ComfyUI en cours")
                 image_execution = await self.executor.execute(
                     options.keyframe_profile,
                     context,
@@ -79,15 +98,18 @@ class ShotPipeline:
                 image_output = self._select_output(image_execution.outputs, IMAGE_SUFFIXES, "image")
                 await self.client.download_output(image_output, keyframe_path)
                 record.stages.append(self._stage_from_image(shot, image_execution, keyframe_path))
+                self._notify("keyframe", "completed", "Keyframe téléchargée")
 
-            keyframe_artifact = self._artifact(keyframe_path, "image/png")
+            keyframe_artifact = artifact(keyframe_path, "image/png")
             self._replace_output(record, keyframe_artifact)
             if options.keyframe_only:
+                self._notify("video", "skipped", "En attente de validation humaine")
                 record.status = GenerationState.AWAITING_KEYFRAME_APPROVAL
                 record.completed_at = datetime.now(UTC)
-                self._write_record(manifest_path, record)
+                write_record(manifest_path, record)
                 return record
 
+            self._notify("video", "running", "Animation LTX image-to-video")
             result = await self.video.generate(
                 VideoGenerationRequest(
                     keyframe=keyframe_path,
@@ -99,19 +121,26 @@ class ShotPipeline:
             video_output = self._select_output(result.outputs, VIDEO_SUFFIXES, "video")
             clip_path = destination / "clip.mp4"
             await self.client.download_output(video_output, clip_path)
-            clip_artifact = self._artifact(clip_path, "video/mp4")
+            clip_artifact = artifact(clip_path, "video/mp4")
             record.stages.append(self._stage_from_video(shot, result, clip_artifact))
+            self._notify("video", "completed", "Clip vidéo téléchargé")
             self._replace_output(record, clip_artifact)
             record.status = GenerationState.GENERATED
             record.completed_at = datetime.now(UTC)
-            self._write_record(manifest_path, record)
+            write_record(manifest_path, record)
+            self._notify("artifacts", "completed", "Manifest et médias prêts")
             return record
         except Exception as exc:
             record.status = GenerationState.FAILED
             record.error = f"{type(exc).__name__}: {exc}"
             record.completed_at = datetime.now(UTC)
-            self._write_record(manifest_path, record)
+            write_record(manifest_path, record)
+            self._notify("artifacts", "failed", str(exc))
             raise
+
+    def _notify(self, stage: str, status: str, message: str) -> None:
+        if self.on_progress:
+            self.on_progress(stage, status, message)
 
     @staticmethod
     def _new_record(
@@ -153,7 +182,7 @@ class ShotPipeline:
                     ReferenceRecord(
                         character_id=character.id,
                         source_path=source,
-                        sha256=self._sha256(source),
+                        sha256=sha256_file(source),
                         comfyui_name=uploaded.workflow_reference,
                     )
                 )
@@ -198,7 +227,7 @@ class ShotPipeline:
             prompt_id=execution.prompt_id,
             seed=shot.render.seed,
             status="completed",
-            outputs=[self._artifact(path, "image/png")],
+            outputs=[artifact(path, "image/png")],
         )
 
     @staticmethod
@@ -220,7 +249,7 @@ class ShotPipeline:
     def _prepare_destination(destination: Path, force: bool, from_keyframe: Path | None) -> None:
         if not destination.exists():
             return
-        harmless_files = {"dry-run"}
+        harmless_files = {"dry-run", "imports"}
         allowed_resume_files = {"keyframe.png", "generation.json", "prompt.txt"}
         existing = {item.name for item in destination.iterdir()}
         if existing <= harmless_files:
@@ -244,33 +273,6 @@ class ShotPipeline:
         )
 
     @staticmethod
-    def _artifact(path: Path, media_type: str) -> OutputArtifact:
-        return OutputArtifact(
-            path=path.name,
-            sha256=ShotPipeline._sha256(path),
-            media_type=media_type,
-        )
-
-    @staticmethod
     def _replace_output(record: GenerationRecord, artifact: OutputArtifact) -> None:
         record.outputs = [item for item in record.outputs if item.path != artifact.path]
         record.outputs.append(artifact)
-
-    @staticmethod
-    def _sha256(path: Path) -> str:
-        digest = hashlib.sha256()
-        with path.open("rb") as handle:
-            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-                digest.update(chunk)
-        return digest.hexdigest()
-
-    @staticmethod
-    def _write_record(path: Path, record: GenerationRecord) -> None:
-        ShotPipeline._write_text_atomic(path, record.model_dump_json(indent=2) + "\n")
-
-    @staticmethod
-    def _write_text_atomic(path: Path, content: str) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_suffix(path.suffix + ".tmp")
-        temporary.write_text(content, encoding="utf-8")
-        temporary.replace(path)

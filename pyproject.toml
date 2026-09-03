@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "serre-des-venins"
-version = "0.1.0"
+version = "0.2.0"
 description = "Studio local de production narrative assistée par IA"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -27,6 +27,7 @@ dev = [
 
 [project.scripts]
 generate-shot = "tools.generate_shot:main"
+serre-studio = "tools.run_studio:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["apps", "engine", "tools"]

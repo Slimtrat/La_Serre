@@ -8,9 +8,12 @@
 - `engine.generation.video` expose `VideoGenerator`; LTX n'est qu'un adaptateur.
 - `engine.production` orchestre les étapes et écrit les artefacts traçables.
 - `tools` et `apps.api` sont des adaptateurs d'entrée, pas des domaines métier.
+- `apps.api.assets` normalise les artefacts manuels et générés afin de permettre
+  un pipeline hybride sans branchement spécial dans les étapes aval.
 
 Le `Shot` ne contient aucun numéro de nœud ComfyUI. Ceux-ci vivent dans des
-profils de workflow remplaçables. Le mapping reçoit un contexte de valeurs
+profils de workflow remplaçables, créés automatiquement par `WorkflowFactory`.
+Le mapping reçoit un contexte de valeurs
 sémantiques (`prompt`, `seed`, `reference_image`, etc.) et travaille sur une
 copie du graphe, ce qui évite de contaminer les générations suivantes.
 

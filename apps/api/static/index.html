@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>La Serre des Venins — Studio</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span class="brand-mark">SV</span>
+        <span><strong>La Serre des Venins</strong><small>Studio local</small></span>
+      </a>
+      <div class="connection"><span id="connection-dot" class="dot"></span><span id="connection-label">Connexion…</span></div>
+      <button id="settings-toggle" class="button ghost">Réglages ComfyUI</button>
+    </header>
+
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">ONE REPRODUCIBLE SHOT</p>
+          <h1>Un pipeline visible.<br /><em>Chaque étape reste remplaçable.</em></h1>
+          <p class="hero-copy">Génère localement ou dépose un artefact préparé ailleurs. Le format de sortie reste identique pour l’étape suivante.</p>
+        </div>
+        <div class="hero-actions">
+          <button id="generate-all" class="button primary">Générer le plan</button>
+          <button id="generate-keyframe" class="button secondary">Keyframe seulement</button>
+        </div>
+      </section>
+
+      <section id="settings-panel" class="panel setup hidden">
+        <div class="panel-heading">
+          <div><p class="eyebrow">CONFIGURATION GUIDÉE</p><h2>ComfyUI sans JSON à bricoler</h2></div>
+          <span id="setup-badge" class="badge warn">À configurer</span>
+        </div>
+        <div class="config-row">
+          <label>Adresse ComfyUI<input id="comfy-url" value="http://127.0.0.1:8188" /></label>
+          <button id="save-config" class="button secondary">Enregistrer & tester</button>
+          <button id="build-workflows" class="button primary">Créer mes workflows</button>
+        </div>
+        <div class="workflow-explainer">
+          <div><span>01</span><strong>Le code crée</strong><small>SDXL keyframe + LTX 2B I2V</small></div>
+          <div><span>02</span><strong>Tu télécharges</strong><small>uniquement les modèles listés</small></div>
+          <div><span>03</span><strong>Tu génères</strong><small>sans ouvrir le graphe ComfyUI</small></div>
+        </div>
+        <div id="model-list" class="model-list"></div>
+        <details class="advanced">
+          <summary>Mode avancé — importer un workflow personnel</summary>
+          <div class="advanced-grid">
+            <label class="drop compact">Workflow keyframe<input id="advanced-keyframe" type="file" accept="application/json,.json" /></label>
+            <label class="drop compact">Workflow vidéo<input id="advanced-video" type="file" accept="application/json,.json" /></label>
+          </div>
+          <p class="muted">Les imports et mappings restent privés dans <code>workflows/local/</code>, ignoré par Git.</p>
+        </details>
+      </section>
+
+      <section class="pipeline-map panel">
+        <div class="panel-heading compact-heading">
+          <div><p class="eyebrow">VISION PRODUIT</p><h2>Chaîne de production hybride</h2></div>
+          <span class="badge">3 étapes actives</span>
+        </div>
+        <div class="roadmap">
+          <div class="road-node future"><span>01</span><strong>Histoire</strong><small>texte / LLM</small></div>
+          <i>→</i><div class="road-node active"><span>02</span><strong>Shot</strong><small>JSON validé</small></div>
+          <i>→</i><div class="road-node active"><span>03</span><strong>Keyframe</strong><small>SDXL / import</small></div>
+          <i>→</i><div class="road-node future"><span>04</span><strong>Voix</strong><small>TTS / import</small></div>
+          <i>→</i><div class="road-node active"><span>05</span><strong>Mouvement</strong><small>LTX / import</small></div>
+          <i>→</i><div class="road-node future"><span>06</span><strong>Montage</strong><small>FFmpeg</small></div>
+        </div>
+      </section>
+
+      <section class="workspace-grid">
+        <div class="panel editor-panel">
+          <div class="panel-heading compact-heading">
+            <div><p class="eyebrow">CONTRAT DU PLAN</p><h2>Shot JSON</h2></div>
+            <label class="mini-upload">Déposer JSON<input id="shot-file" type="file" accept="application/json,.json" /></label>
+          </div>
+          <textarea id="shot-editor" spellcheck="false" aria-label="Shot JSON"></textarea>
+          <div class="editor-footer"><span id="json-state">Chargement…</span><label><input id="force-output" type="checkbox" /> Remplacer la sortie existante</label></div>
+        </div>
+
+        <div class="stages">
+          <article class="stage-card source-card">
+            <div class="stage-number">00</div>
+            <div class="stage-body">
+              <strong>Histoire / texte</strong><p>Brief, scénario ou sortie préparée ailleurs</p>
+              <div class="segmented" data-source="story"><button disabled data-value="model">Modèle narratif</button><button class="selected" data-value="manual">Importer</button></div>
+              <label class="dropzone" data-dropzone="story">Glisse un texte ici<input type="file" accept="text/plain,text/markdown,.txt,.md" /></label>
+              <small class="stage-status">Le moteur narratif viendra se brancher sur ce slot</small>
+            </div>
+          </article>
+          <article class="stage-card" data-job-stage="input">
+            <div class="stage-number">01</div><div class="stage-body"><strong>Validation</strong><p>Schéma Pydantic strict</p><small class="stage-status">En attente</small></div>
+          </article>
+          <article class="stage-card" data-job-stage="prompt">
+            <div class="stage-number">02</div><div class="stage-body"><strong>Prompt</strong><p>Sémantique → instructions visuelles</p><small class="stage-status">En attente</small></div>
+          </article>
+          <article class="stage-card source-card" data-job-stage="keyframe">
+            <div class="stage-number">03</div>
+            <div class="stage-body">
+              <strong>Keyframe</strong><p>Image d’identité et de composition</p>
+              <div class="segmented" data-source="keyframe"><button class="selected" data-value="model">Modèle SDXL</button><button data-value="manual">Importer</button></div>
+              <label class="dropzone hidden" data-dropzone="keyframe">Glisse une image ici<input type="file" accept="image/png,image/jpeg,image/webp" /></label>
+              <small class="stage-status">En attente</small>
+            </div>
+          </article>
+          <article class="stage-card source-card audio-card">
+            <div class="stage-number">04</div>
+            <div class="stage-body">
+              <strong>Voix / son</strong><p>Slot prêt pour TTS ou mix externe</p>
+              <div class="segmented" data-source="audio"><button disabled data-value="model">Modèle TTS</button><button class="selected" data-value="manual">Importer</button></div>
+              <label class="dropzone" data-dropzone="audio">Glisse un son ici<input type="file" accept="audio/*" /></label>
+              <small class="stage-status">Optionnel pour cette milestone</small>
+            </div>
+          </article>
+          <article class="stage-card source-card" data-job-stage="video">
+            <div class="stage-number">05</div>
+            <div class="stage-body">
+              <strong>Mouvement</strong><p>Clip image-to-video</p>
+              <div class="segmented" data-source="video"><button class="selected" data-value="model">Modèle LTX</button><button data-value="manual">Importer</button></div>
+              <label class="dropzone hidden" data-dropzone="video">Glisse une vidéo ici<input type="file" accept="video/*" /></label>
+              <small class="stage-status">En attente</small>
+            </div>
+          </article>
+          <article class="stage-card" data-job-stage="artifacts">
+            <div class="stage-number">06</div><div class="stage-body"><strong>Traçabilité</strong><p>Seeds, checksums et manifeste</p><small class="stage-status">En attente</small></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel preview-panel">
+        <div class="panel-heading compact-heading"><div><p class="eyebrow">SORTIES</p><h2>Contrôle humain</h2></div><span id="job-badge" class="badge">Aucun rendu</span></div>
+        <div class="previews">
+          <div class="preview-frame"><span class="preview-label">KEYFRAME</span><div id="image-empty" class="empty-preview">L’image apparaîtra ici</div><img id="keyframe-preview" class="hidden" alt="Keyframe générée ou importée" /></div>
+          <div class="preview-frame"><span class="preview-label">CLIP</span><div id="video-empty" class="empty-preview">La vidéo apparaîtra ici</div><video id="video-preview" class="hidden" controls loop></video></div>
+          <div class="preview-frame audio-preview"><span class="preview-label">AUDIO</span><div id="audio-empty" class="empty-preview">Aucun son importé</div><audio id="audio-preview" class="hidden" controls></audio></div>
+        </div>
+        <div class="bottom-actions"><p id="job-message">Configure ComfyUI, puis lance une génération.</p><button id="continue-video" class="button secondary">Animer la keyframe</button></div>
+      </section>
+    </main>
+    <div id="toast" class="toast hidden"></div>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>
