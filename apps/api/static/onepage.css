@@ -1,0 +1,163 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  display: grid;
+  grid-template-rows: 62px minmax(0, 1fr);
+}
+
+.topbar {
+  position: relative;
+  top: auto;
+  height: 62px;
+  padding-inline: 18px;
+}
+
+.app-nav {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, .18);
+}
+
+.app-nav button {
+  padding: 7px 10px;
+  color: var(--muted);
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.app-nav button.selected {
+  color: #0b120d;
+  background: var(--green);
+  font-weight: 800;
+}
+
+.shell {
+  display: flex;
+  width: min(1800px, calc(100% - 20px));
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  gap: 9px;
+  padding: 10px 0;
+  overflow: hidden;
+}
+
+.shell > section { min-height: 0; margin: 0; }
+
+body[data-workspace-view="graph"] .shell > :not(.hero):not(.episode-panel):not(.graph-workbench),
+body[data-workspace-view="plan"] .shell > :not(.episode-panel):not(.workspace-grid),
+body[data-workspace-view="outputs"] .shell > :not(.episode-panel):not(.preview-panel),
+body[data-workspace-view="settings"] .shell > :not(.setup) {
+  display: none !important;
+}
+
+body[data-workspace-view="graph"] .hero {
+  display: flex;
+  flex: 0 0 42px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 3px;
+}
+
+body[data-workspace-view="graph"] .hero > div:first-child { display: none; }
+body[data-workspace-view="graph"] .hero-actions { flex-direction: row; min-width: 0; }
+body[data-workspace-view="graph"] .episode-panel,
+body[data-workspace-view="plan"] .episode-panel,
+body[data-workspace-view="outputs"] .episode-panel {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 10px 14px;
+}
+
+.episode-panel .panel-heading { align-items: center; margin: 0; }
+.episode-panel .panel-heading .eyebrow { display: none; }
+.episode-panel .panel-heading h2 { font-size: 18px; }
+.episode-panel .episode-picker { min-width: 210px; }
+.episode-panel .episode-picker select { margin-top: 0; }
+.episode-panel .episode-logline,
+.episode-panel .episode-details { display: none; }
+.episode-panel .episode-meta { grid-column: 1 / -1; }
+
+body[data-workspace-view="graph"] .graph-workbench {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+body[data-workspace-view="graph"] .graph-toolbar { min-height: 58px; padding: 8px 14px; }
+body[data-workspace-view="graph"] .graph-toolbar .eyebrow,
+body[data-workspace-view="graph"] .graph-subtitle { display: none; }
+body[data-workspace-view="graph"] .graph-toolbar h2 { font-size: 21px; }
+body[data-workspace-view="graph"] .graph-episode-bar { min-height: 64px; padding-block: 7px; }
+body[data-workspace-view="graph"] .graph-layout { min-height: 0; }
+body[data-workspace-view="graph"] .graph-viewport { height: 100%; min-height: 0; }
+body[data-workspace-view="graph"] .graph-inspector { min-height: 0; overflow-y: auto; }
+body[data-workspace-view="graph"] .graph-hints { min-height: 30px; }
+
+body[data-workspace-view="plan"] .workspace-grid {
+  display: grid;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+body[data-workspace-view="plan"] .editor-panel {
+  position: static;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+body[data-workspace-view="plan"] #shot-editor {
+  min-height: 0;
+  flex: 1 1 auto;
+  resize: none;
+}
+
+body[data-workspace-view="plan"] .stages { height: 100%; overflow: auto; padding-right: 4px; }
+body[data-workspace-view="outputs"] .preview-panel { display: flex; flex: 1 1 auto; flex-direction: column; overflow: hidden; }
+body[data-workspace-view="outputs"] .previews { min-height: 0; flex: 1 1 auto; }
+body[data-workspace-view="outputs"] .preview-frame { min-height: 0; }
+body[data-workspace-view="settings"] .setup { display: block; flex: 1 1 auto; overflow: auto; }
+
+@media (max-width: 900px) {
+  .connection { display: none; }
+  .brand small { display: none; }
+  .workspace-grid { grid-template-columns: 1fr; }
+  body[data-workspace-view="plan"] .editor-panel,
+  body[data-workspace-view="plan"] .stages { height: auto; }
+  body[data-workspace-view="plan"] .workspace-grid { overflow-y: auto; }
+  body[data-workspace-view="plan"] #shot-editor { min-height: 45vh; }
+}
+
+@media (max-width: 720px) {
+  body { grid-template-rows: 58px minmax(0, 1fr); }
+  .topbar { height: 58px; padding-inline: 8px; }
+  .brand-mark { width: 32px; height: 32px; }
+  .brand > span:last-child { display: none; }
+  .app-nav button { padding-inline: 7px; font-size: 9px; }
+  #settings-toggle { display: none; }
+  .shell { width: calc(100% - 12px); padding-block: 6px; }
+  body[data-workspace-view="graph"] .episode-panel,
+  body[data-workspace-view="plan"] .episode-panel,
+  body[data-workspace-view="outputs"] .episode-panel { grid-template-columns: 1fr; }
+  .episode-panel .episode-meta { display: none; }
+  .episode-panel .episode-picker { min-width: 0; }
+}

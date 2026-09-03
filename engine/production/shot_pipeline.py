@@ -35,8 +35,10 @@ class ShotPipelineOptions:
     output_root: Path
     keyframe_profile: Path
     video_profile: Path
+    keyframe_guide_profile: Path | None = None
     keyframe_only: bool = False
     from_keyframe: Path | None = None
+    continuity_keyframe: Path | None = None
     guide_keyframes: tuple[Path, ...] = ()
     force: bool = False
     timeout_seconds: float = 1800
@@ -115,16 +117,27 @@ class ShotPipeline:
                     "running",
                     f"Génération de {len(targets)} pose(s) ComfyUI",
                 )
-                for target, stage_name, beat_description in targets:
+                previous_pose = options.continuity_keyframe
+                if previous_pose is not None:
+                    previous_pose = previous_pose.expanduser().resolve()
+                    if not previous_pose.is_file():
+                        raise FileNotFoundError(
+                            f"Continuity keyframe does not exist: {previous_pose}"
+                        )
+                for index, (target, stage_name, beat_description) in enumerate(targets, start=1):
                     keyframe_context = dict(context)
                     if beat_description:
-                        keyframe_context["prompt"] = (
-                            f"{prompt.positive}\n\nSTORYBOARD MOMENT:\n{beat_description}. "
-                            "Render this exact action beat as a stable single animation keyframe."
+                        keyframe_context["prompt"] = self.prompt_builder.visual_beat_prompt(
+                            prompt, beat_description
                         )
                         keyframe_context["output_prefix"] = f"{shot.id}-{stage_name}"
+                    profile = options.keyframe_profile
+                    if previous_pose is not None and options.keyframe_guide_profile is not None:
+                        uploaded_pose = await self.client.upload_image(previous_pose)
+                        keyframe_context["reference_image"] = uploaded_pose.workflow_reference
+                        profile = options.keyframe_guide_profile
                     image_execution = await self.executor.execute(
-                        options.keyframe_profile,
+                        profile,
                         keyframe_context,
                         timeout_seconds=options.timeout_seconds,
                     )
@@ -137,8 +150,14 @@ class ShotPipeline:
                             shot, image_execution, target, stage_name=stage_name
                         )
                     )
+                    self._notify(
+                        "keyframe",
+                        "running",
+                        f"Pose {index}/{len(targets)} disponible",
+                    )
                     if target != keyframe_path:
                         guide_paths.append(target)
+                    previous_pose = target
                 if scripted_beats:
                     frames = shot.render.frames or 9
                     context["guide_frame_1"] = self._ltx_frame(
@@ -225,6 +244,11 @@ class ShotPipeline:
                 if options.from_keyframe
                 else None,
                 "guide_keyframes": [str(path.resolve()) for path in options.guide_keyframes],
+                "continuity_keyframe": (
+                    str(options.continuity_keyframe.resolve())
+                    if options.continuity_keyframe
+                    else None
+                ),
             },
         )
 

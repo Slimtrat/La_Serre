@@ -19,10 +19,12 @@ def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description="Generate one reproducible shot through ComfyUI")
     result.add_argument("shot", type=Path, help="Path to the semantic Shot JSON")
     result.add_argument("--keyframe-profile", type=Path)
+    result.add_argument("--keyframe-guide-profile", type=Path)
     result.add_argument("--video-profile", type=Path)
     result.add_argument("--output-dir", type=Path)
     result.add_argument("--keyframe-only", action="store_true")
     result.add_argument("--from-keyframe", type=Path)
+    result.add_argument("--continuity-keyframe", type=Path)
     result.add_argument(
         "--guide-keyframe",
         action="append",
@@ -99,6 +101,10 @@ async def _run(args: argparse.Namespace) -> None:
         args.video_profile or settings.video_workflow_profile,
         "video workflow profile",
     )
+    keyframe_guide_profile = _profile(
+        args.keyframe_guide_profile or settings.keyframe_guide_workflow_profile,
+        "keyframe guide workflow profile",
+    )
     output_dir = args.output_dir or settings.output_dir
     if args.keyframe_only and args.from_keyframe:
         raise SystemExit("--keyframe-only and --from-keyframe cannot be used together")
@@ -118,9 +124,11 @@ async def _run(args: argparse.Namespace) -> None:
                 shot_path=args.shot,
                 output_root=output_dir,
                 keyframe_profile=keyframe_profile,
+                keyframe_guide_profile=keyframe_guide_profile,
                 video_profile=video_profile,
                 keyframe_only=args.keyframe_only,
                 from_keyframe=args.from_keyframe,
+                continuity_keyframe=args.continuity_keyframe,
                 guide_keyframes=tuple(args.guide_keyframe),
                 force=args.force,
                 timeout_seconds=settings.comfyui_timeout_seconds,
