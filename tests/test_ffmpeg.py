@@ -60,3 +60,17 @@ def test_ffmpeg_command_builds_timed_mix_and_soft_subtitles(tmp_path: Path) -> N
     assert "amix=inputs=3" in rendered
     assert "-c:s mov_text" in rendered
     assert rendered.endswith(str(request.output))
+
+
+def test_audio_fit_preserves_pitch_with_chained_atempo(tmp_path: Path) -> None:
+    command = toolchain().build_audio_fit_command(
+        tmp_path / "raw.mp3",
+        tmp_path / "fitted.wav",
+        duration=2.5,
+        speed=2.5,
+    )
+
+    rendered = " ".join(command)
+    assert "atempo=2,atempo=1.25" in rendered
+    assert "atrim=duration=2.5" in rendered
+    assert "pcm_s16le" in rendered
