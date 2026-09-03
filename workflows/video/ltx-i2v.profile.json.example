@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "ltx-i2v-v1",
+  "workflow": "../local/ltx-i2v.api.json",
+  "bindings": [
+    {"source": "prompt", "node_id": "6", "input": "text"},
+    {"source": "negative_prompt", "node_id": "7", "input": "text"},
+    {"source": "seed", "node_id": "3", "input": "seed"},
+    {"source": "width", "node_id": "12", "input": "width"},
+    {"source": "height", "node_id": "12", "input": "height"},
+    {"source": "frames", "node_id": "12", "input": "length"},
+    {"source": "fps", "node_id": "18", "input": "frame_rate"},
+    {"source": "reference_image", "node_id": "10", "input": "image"},
+    {"source": "output_prefix", "node_id": "18", "input": "filename_prefix"}
+  ],
+  "output_node_ids": ["18"]
+}

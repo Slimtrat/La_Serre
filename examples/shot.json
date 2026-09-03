@@ -1,0 +1,44 @@
+{
+  "id": "S01E001-S01",
+  "duration": 4.0,
+  "location": "winter_garden",
+  "location_description": "A Victorian glasshouse at night, wet black iron, poisonous flowers and pale moonlight through fogged panes",
+  "characters": [
+    {
+      "id": "belladone",
+      "name": "Belladone",
+      "emotion": "guarded curiosity, refusing to show fear",
+      "position": "foreground left",
+      "visual_description": "27-year-old pale woman, long black hair, dark violet eyes, elegant angular face",
+      "wardrobe": "the same fitted black Victorian dress and silver thorn jewelry",
+      "signature_details": [
+        "belladonna flower hairpin",
+        "small cluster of glossy black berries"
+      ],
+      "reference_images": []
+    }
+  ],
+  "camera": {
+    "shot_type": "medium close-up",
+    "movement": "very slow push-in",
+    "lens": "50mm"
+  },
+  "action": "Belladone enters the winter garden and notices a small black velvet ring box on a marble table",
+  "dialogue": null,
+  "lighting": "cold moonlight through the glass ceiling with restrained warm candle highlights",
+  "mood": "dark botanical romance, suspicion before a revelation",
+  "style": [
+    "gothic television drama",
+    "dark botanical romance",
+    "vertical cinematic composition",
+    "shallow depth of field"
+  ],
+  "render": {
+    "seed": 384723,
+    "width": 576,
+    "height": 1024,
+    "fps": 24,
+    "frames": 97,
+    "negative_prompt": "bright modern furniture, daylight, cheerful expression"
+  }
+}

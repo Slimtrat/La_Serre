@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "id": "single-character-keyframe-v1",
+  "workflow": "../local/keyframe.api.json",
+  "bindings": [
+    {"source": "prompt", "node_id": "6", "input": "text"},
+    {"source": "negative_prompt", "node_id": "7", "input": "text"},
+    {"source": "seed", "node_id": "3", "input": "seed"},
+    {"source": "width", "node_id": "5", "input": "width"},
+    {"source": "height", "node_id": "5", "input": "height"},
+    {"source": "output_prefix", "node_id": "9", "input": "filename_prefix"},
+    {"source": "reference_images.belladone.0", "node_id": "20", "input": "image", "required": false}
+  ],
+  "output_node_ids": ["9"]
+}

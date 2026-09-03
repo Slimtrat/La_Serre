@@ -1,0 +1,83 @@
+from __future__ import annotations
+
+from pydantic import BaseModel, ConfigDict
+
+from engine.director.models import Shot
+
+
+class PromptPackage(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    positive: str
+    negative: str
+    semantic: dict[str, object]
+
+
+class PromptBuilder:
+    """Builds model-facing text while preserving the semantic ingredients."""
+
+    default_negative = (
+        "identity drift, face change, inconsistent anatomy, extra fingers, extra limbs, "
+        "duplicate person, costume change, text, logo, watermark, low detail, oversaturated"
+    )
+
+    def build(self, shot: Shot) -> PromptPackage:
+        cast = []
+        for character in shot.characters:
+            details = ", ".join(character.signature_details) or "no additional motif"
+            cast.append(
+                "\n".join(
+                    [
+                        f"{character.name} ({character.id}).",
+                        "Maintain exact identity and proportions from every supplied reference.",
+                        f"Appearance: {character.visual_description}.",
+                        f"Wardrobe: {character.wardrobe}.",
+                        f"Signature details: {details}.",
+                        f"Position: {character.position}.",
+                        f"Expression: {character.emotion}.",
+                    ]
+                )
+            )
+
+        dialogue = "No spoken dialogue in this shot."
+        if shot.dialogue:
+            dialogue = f'{shot.dialogue.speaker} says in French: "{shot.dialogue.text}"'
+
+        positive = "\n\n".join(
+            [
+                "CHARACTERS:\n" + "\n\n".join(cast),
+                f"LOCATION:\n{shot.location}. {shot.location_description}.",
+                f"ACTION:\n{shot.action}.",
+                f"DIALOGUE:\n{dialogue}",
+                (f"CAMERA:\n{shot.camera.shot_type}, {shot.camera.lens}, {shot.camera.movement}."),
+                f"LIGHTING:\n{shot.lighting}.",
+                f"MOOD:\n{shot.mood}.",
+                "STYLE:\n" + ", ".join(shot.style) + ". Cinematic realistic textures.",
+                (
+                    "CONTINUITY:\nKeep faces, bodies, hair, clothing, colors, accessories "
+                    "and plant motifs unchanged throughout the shot."
+                ),
+            ]
+        )
+        negatives = [self.default_negative]
+        if shot.render.negative_prompt.strip():
+            negatives.append(shot.render.negative_prompt.strip())
+
+        semantic: dict[str, object] = {
+            "characters": [character.model_dump(mode="json") for character in shot.characters],
+            "location": {
+                "id": shot.location,
+                "description": shot.location_description,
+            },
+            "action": shot.action,
+            "dialogue": shot.dialogue.model_dump() if shot.dialogue else None,
+            "camera": shot.camera.model_dump(),
+            "lighting": shot.lighting,
+            "mood": shot.mood,
+            "style": shot.style,
+        }
+        return PromptPackage(
+            positive=positive,
+            negative=", ".join(negatives),
+            semantic=semantic,
+        )

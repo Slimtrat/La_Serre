@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "dry-run-fixture",
+  "workflow": "dry-run.api.json",
+  "bindings": [
+    {"source": "prompt", "node_id": "1", "input": "text"},
+    {"source": "negative_prompt", "node_id": "2", "input": "text"},
+    {"source": "seed", "node_id": "3", "input": "seed"},
+    {"source": "width", "node_id": "4", "input": "width"},
+    {"source": "height", "node_id": "4", "input": "height"},
+    {"source": "frames", "node_id": "5", "input": "frames"},
+    {"source": "fps", "node_id": "5", "input": "fps"},
+    {"source": "reference_image", "node_id": "6", "input": "image"},
+    {"source": "output_prefix", "node_id": "7", "input": "filename_prefix"}
+  ],
+  "output_node_ids": ["7"]
+}
