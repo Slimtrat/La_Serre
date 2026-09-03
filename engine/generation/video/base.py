@@ -14,6 +14,7 @@ class VideoGenerationRequest:
     keyframe: Path
     profile_path: Path
     context: dict[str, Any]
+    guide_keyframes: tuple[Path, ...] = ()
     timeout_seconds: float | None = None
 
 

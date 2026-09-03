@@ -23,6 +23,13 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--output-dir", type=Path)
     result.add_argument("--keyframe-only", action="store_true")
     result.add_argument("--from-keyframe", type=Path)
+    result.add_argument(
+        "--guide-keyframe",
+        action="append",
+        type=Path,
+        default=[],
+        help="Pose supplémentaire à imposer au milieu puis à la fin du plan (maximum 2)",
+    )
     result.add_argument("--force", action="store_true")
     result.add_argument("--dry-run", action="store_true")
     return result
@@ -37,6 +44,7 @@ def _profile(value: Path | None, name: str) -> Path:
 
 
 def _base_context(shot: Shot, prompt: str, negative: str) -> dict[str, Any]:
+    frames = shot.render.frames or 9
     return {
         "prompt": prompt,
         "negative_prompt": negative,
@@ -47,6 +55,10 @@ def _base_context(shot: Shot, prompt: str, negative: str) -> dict[str, Any]:
         "fps": shot.render.fps,
         "output_prefix": shot.id,
         "reference_image": "approved-keyframe.png",
+        "reference_image_guide_1": "approved-keyframe-guide-1.png",
+        "reference_image_guide_2": "approved-keyframe-guide-2.png",
+        "guide_frame_1": 8 * round((frames / 2) / 8),
+        "guide_frame_2": frames - 1,
         "reference_images": {
             character.id: [
                 f"reference-{character.id}-{index}.png"
@@ -109,6 +121,7 @@ async def _run(args: argparse.Namespace) -> None:
                 video_profile=video_profile,
                 keyframe_only=args.keyframe_only,
                 from_keyframe=args.from_keyframe,
+                guide_keyframes=tuple(args.guide_keyframe),
                 force=args.force,
                 timeout_seconds=settings.comfyui_timeout_seconds,
             )

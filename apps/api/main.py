@@ -34,7 +34,14 @@ from engine.world.catalog import EpisodeCatalog
 STATIC_DIR = Path(__file__).with_name("static")
 SHOT_ID = re.compile(r"^S\d{2}E\d{3}-S\d{2}$")
 EPISODE_ID = re.compile(r"^S\d{2}E\d{3}$")
-MEDIA_FILES = {"keyframe.png", "clip.mp4", "generation.json", "prompt.txt"}
+MEDIA_FILES = {
+    "keyframe.png",
+    "keyframe-guide-1.png",
+    "keyframe-guide-2.png",
+    "clip.mp4",
+    "generation.json",
+    "prompt.txt",
+}
 EPISODE_MEDIA_FILES = {
     "episode.mp4": "video/mp4",
     "episode-generation.json": "application/json",
@@ -262,10 +269,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "shot_id": shot_id,
             "status": None,
             "keyframe": None,
+            "keyframes": [],
             "video": None,
         }
         if (destination / "keyframe.png").is_file():
             result["keyframe"] = f"/api/media/{shot_id}/keyframe.png"
+            keyframes = [f"/api/media/{shot_id}/keyframe.png"]
+            for filename in ("keyframe-guide-1.png", "keyframe-guide-2.png"):
+                if (destination / filename).is_file():
+                    keyframes.append(f"/api/media/{shot_id}/{filename}")
+            result["keyframes"] = keyframes
         if (destination / "clip.mp4").is_file():
             result["video"] = f"/api/media/{shot_id}/clip.mp4"
         manifest = destination / "generation.json"

@@ -6,8 +6,9 @@ un clip LTX via une instance ComfyUI externe. Chaque étape accepte soit un mod�
 local, soit un artefact texte, image, audio ou vidéo préparé ailleurs.
 
 ```text
-source texte -> Ollama Director -> Shot JSON validé -> ComfyUI keyframe
-              -> validation humaine -> ComfyUI/LTX i2v -> clip.mp4
+source texte -> Ollama Director -> Shot JSON validé -> 3 poses ComfyUI
+              -> validation humaine -> LTX multi-guides -> clip.mp4
+              -> voix + musique + cadres + sous-titres -> episode.mp4
 ```
 
 Le moteur narratif, le Director, les workflows de génération et la
@@ -52,6 +53,8 @@ Sortie attendue :
 ```text
 output/S01E001-S01/
   keyframe.png
+  keyframe-guide-1.png
+  keyframe-guide-2.png
   clip.mp4
   generation.json
   prompt.txt
@@ -68,6 +71,10 @@ python -m tools.generate_shot examples/shot.json `
 Les fichiers existants ne sont jamais écrasés sans `--force`. Le seed, les
 paramètres, les prompts, les références, les profils, les identifiants ComfyUI
 et les artefacts sont consignés dans `generation.json`.
+
+Voir [`docs/episode-production-contract.md`](docs/episode-production-contract.md) pour le
+contrat entre scénario, intentions de jeu, poses multiples, cadre fantasy, musique et
+sous-titres visibles.
 
 ## Studio hybride
 

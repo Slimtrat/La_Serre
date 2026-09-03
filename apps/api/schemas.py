@@ -7,7 +7,7 @@ from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field
 WorkflowKind = Literal["keyframe", "video"]
 JobMode = Literal["all", "keyframe", "video"]
 SourceMode = Literal["model", "manual"]
-TtsMode = Literal["auto", "sapi", "none"]
+TtsMode = Literal["auto", "edge", "sapi", "none"]
 
 
 class StrictRequest(BaseModel):
