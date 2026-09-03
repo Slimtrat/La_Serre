@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/static/styles.css" />
     <link rel="stylesheet" href="/static/graph.css" />
     <link rel="stylesheet" href="/static/responsive.css" />
+    <link rel="stylesheet" href="/static/episode-canvas.css" />
   </head>
   <body>
     <div class="ambient ambient-one"></div>
@@ -78,8 +79,24 @@
             <button id="graph-zoom-in" class="button ghost" type="button" aria-label="Zoomer">+</button>
             <button id="graph-fit" class="button secondary" type="button">Tout voir</button>
             <button id="graph-reset" class="button ghost" type="button">Réinitialiser</button>
+            <button id="graph-focus" class="button ghost" type="button" aria-pressed="false">Mode focus</button>
           </div>
         </header>
+
+        <div class="graph-episode-bar">
+          <div class="graph-active-shot">
+            <span>PLAN ACTIF</span>
+            <strong id="graph-active-shot">Chargement…</strong>
+          </div>
+          <div id="graph-shot-track" class="graph-shot-track" role="tablist" aria-label="Plans de l’épisode"></div>
+          <div class="graph-episode-progress">
+            <span>PROGRESSION DE L’ÉPISODE</span>
+            <strong id="graph-episode-progress-label">0 / 0 clips finalisés</strong>
+            <div class="graph-progress-track" role="progressbar" aria-label="Clips finalisés" aria-valuenow="0" aria-valuemin="0" aria-valuemax="1">
+              <span id="graph-episode-progress-bar"></span>
+            </div>
+          </div>
+        </div>
 
         <div class="graph-layout">
           <div id="graph-viewport" class="graph-viewport" aria-label="Graphe de production interactif">
@@ -303,5 +320,6 @@
     <script src="/static/narrative.js" defer></script>
     <script src="/static/episode.js" defer></script>
     <script src="/static/graph.js" defer></script>
+    <script src="/static/episode-canvas.js" defer></script>
   </body>
 </html>
