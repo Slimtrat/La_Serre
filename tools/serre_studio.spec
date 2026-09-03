@@ -12,7 +12,6 @@ for source, destination in (
     (project_root / "examples", "examples"),
     (project_root / "workflows" / "images", "workflows/images"),
     (project_root / "workflows" / "video", "workflows/video"),
-    (project_root / "workflows" / "local", "workflows/local"),
 ):
     if source.exists():
         data_files.append((str(source), destination))

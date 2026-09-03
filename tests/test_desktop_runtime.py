@@ -14,16 +14,7 @@ def test_desktop_runtime_installs_missing_workflows_without_overwriting_custom_p
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     bundle = tmp_path / "bundle"
-    bundled_workflows = bundle / "workflows" / "local"
-    bundled_workflows.mkdir(parents=True)
-    (bundled_workflows / "keyframe.profile.json").write_text(
-        '{"id":"bundled"}',
-        encoding="utf-8",
-    )
-    (bundled_workflows / "video.profile.json").write_text(
-        '{"id":"bundled-video"}',
-        encoding="utf-8",
-    )
+    bundle.mkdir()
     runtime = tmp_path / "runtime"
     custom = runtime / "workflows" / "local" / "keyframe.profile.json"
     custom.parent.mkdir(parents=True)
@@ -37,12 +28,23 @@ def test_desktop_runtime_installs_missing_workflows_without_overwriting_custom_p
         os.chdir(original)
 
     assert custom.read_text(encoding="utf-8") == '{"id":"custom"}'
-    assert (runtime / "workflows" / "local" / "video.profile.json").read_text(
+    local = runtime / "workflows" / "local"
+    expected = {
+        "keyframe.api.json",
+        "keyframe.profile.json",
+        "keyframe-guide.api.json",
+        "keyframe-guide.profile.json",
+        "video.api.json",
+        "video.profile.json",
+        "models.required.json",
+    }
+    assert expected <= {path.name for path in local.iterdir()}
+    assert '"generated-ltx-i2v-2b-v1"' in (local / "video.profile.json").read_text(
         encoding="utf-8"
-    ) == '{"id":"bundled-video"}'
+    )
 
 
-def test_desktop_spec_bundles_ready_to_run_local_workflows() -> None:
+def test_desktop_spec_does_not_bundle_machine_local_workflows() -> None:
     spec = Path("tools/serre_studio.spec").read_text(encoding="utf-8")
 
-    assert '"workflows" / "local", "workflows/local"' in spec
+    assert '"workflows" / "local", "workflows/local"' not in spec

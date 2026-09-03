@@ -5,6 +5,7 @@ import os
 import shutil
 import socket
 import sys
+import tempfile
 import threading
 import time
 from dataclasses import dataclass
@@ -15,6 +16,7 @@ from types import TracebackType
 import uvicorn
 
 from apps.version import __version__
+from engine.generation.comfy.workflow_factory import WorkflowFactory
 
 APP_NAME = "La Serre des Venins"
 APP_VERSION = __version__
@@ -164,6 +166,7 @@ def prepare_runtime_directory(requested: Path | None = None) -> Path:
     for relative in ("output", ".private", "projects", "workflows/local", "logs"):
         (root / relative).mkdir(parents=True, exist_ok=True)
     _copy_bundled_examples(root)
+    _install_default_workflows(root)
     os.chdir(root)
     return root
 
@@ -216,7 +219,6 @@ def _copy_bundled_examples(runtime_root: Path) -> None:
         Path("examples"),
         Path("workflows/images"),
         Path("workflows/video"),
-        Path("workflows/local"),
     ):
         source = bundle_root / relative
         destination = runtime_root / relative
@@ -229,3 +231,26 @@ def _copy_bundled_examples(runtime_root: Path) -> None:
             elif not target.exists():
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(bundled, target)
+
+
+def _install_default_workflows(runtime_root: Path) -> None:
+    destination = runtime_root / "workflows" / "local"
+    expected = (
+        "keyframe.api.json",
+        "keyframe.profile.json",
+        "keyframe-guide.api.json",
+        "keyframe-guide.profile.json",
+        "video.api.json",
+        "video.profile.json",
+        "models.required.json",
+    )
+    if all((destination / filename).is_file() for filename in expected):
+        return
+    with tempfile.TemporaryDirectory(prefix="serre-workflows-") as temporary:
+        generated = Path(temporary)
+        WorkflowFactory().write(generated)
+        for filename in expected:
+            source = generated / filename
+            target = destination / filename
+            if not target.exists():
+                shutil.copy2(source, target)
