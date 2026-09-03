@@ -47,6 +47,8 @@ class MediaToolchain(Protocol):
 
     def duration(self, path: Path) -> float: ...
 
+    def fit_audio(self, source: Path, destination: Path, duration: float) -> float: ...
+
     def assemble(self, request: AssemblyRequest) -> None: ...
 
     def verify(
@@ -105,6 +107,45 @@ class FFmpegToolchain:
         if not isinstance(raw, dict) or raw.get("duration") is None:
             raise RuntimeError(f"Durée média introuvable : {path}")
         return float(raw["duration"])
+
+    def fit_audio(self, source: Path, destination: Path, duration: float) -> float:
+        if duration <= 0:
+            raise ValueError("La durée audio disponible doit être positive")
+        source_duration = self.duration(source)
+        speed = max(1.0, source_duration / duration)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        self._run(self.build_audio_fit_command(source, destination, duration, speed))
+        return speed
+
+    def build_audio_fit_command(
+        self,
+        source: Path,
+        destination: Path,
+        duration: float,
+        speed: float,
+    ) -> list[str]:
+        if speed < 1:
+            raise ValueError("Le time-fit ne ralentit pas artificiellement une interprétation")
+        factors = self._atempo_factors(speed)
+        filters = ",".join(f"atempo={self._number(factor)}" for factor in factors)
+        return [
+            self.ffmpeg,
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-i",
+            str(source),
+            "-filter:a",
+            f"{filters},apad,atrim=duration={self._number(duration)}",
+            "-ar",
+            "48000",
+            "-ac",
+            "2",
+            "-c:a",
+            "pcm_s16le",
+            str(destination),
+        ]
 
     def assemble(self, request: AssemblyRequest) -> None:
         if not request.segments:
@@ -404,6 +445,16 @@ class FFmpegToolchain:
         raise RuntimeError(
             "Police de carton introuvable. Configure AssemblyRequest.caption_font."
         )
+
+    @staticmethod
+    def _atempo_factors(speed: float) -> list[float]:
+        factors: list[float] = []
+        remaining = speed
+        while remaining > 2:
+            factors.append(2.0)
+            remaining /= 2
+        factors.append(remaining)
+        return factors
 
     @staticmethod
     def _run(command: list[str]) -> subprocess.CompletedProcess[str]:

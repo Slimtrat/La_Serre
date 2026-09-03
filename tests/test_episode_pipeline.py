@@ -96,6 +96,11 @@ class FakeMedia:
     def duration(self, path: Path) -> float:
         return 1.25
 
+    def fit_audio(self, source: Path, destination: Path, duration: float) -> float:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(source.read_bytes())
+        return 1.5
+
     def assemble(self, request: AssemblyRequest) -> None:
         self.request = request
         request.output.write_bytes(b"final-video")
@@ -189,3 +194,45 @@ def test_episode_pipeline_requires_audio_when_tts_is_disabled(tmp_path: Path) ->
         assert "Dialogue sans audio" in str(exc)
     else:
         raise AssertionError("Le pipeline aurait dû refuser un dialogue sans audio")
+
+
+def test_generated_voice_is_time_fitted_to_the_shot(tmp_path: Path) -> None:
+    class SlowVoiceMedia(FakeMedia):
+        def __init__(self) -> None:
+            super().__init__()
+            self.fit_duration: float | None = None
+
+        def duration(self, path: Path) -> float:
+            return 3.5 if path.name.endswith(".fitted.wav") else 5.0
+
+        def fit_audio(self, source: Path, destination: Path, duration: float) -> float:
+            self.fit_duration = duration
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(b"fitted-voice")
+            return 1.43
+
+    private = tmp_path / "private"
+    output = tmp_path / "output"
+    seed_episode(private)
+    keyframe = output / "S01E001-S01" / "keyframe.png"
+    keyframe.parent.mkdir(parents=True)
+    keyframe.write_bytes(b"image")
+    write_json(
+        private / "episodes/season-01/S01E001/audio-plan.json",
+        {"cues": {"S01E001-S01": {"offset_seconds": 0.5}}},
+    )
+    media = SlowVoiceMedia()
+
+    result = EpisodePipeline(media, FakeSpeech()).run(
+        EpisodePipelineOptions(
+            episode_id="S01E001",
+            private_root=private,
+            output_root=output,
+            allow_stills=True,
+        )
+    )
+
+    assert media.fit_duration == 3.5
+    assert (output / "S01E001/voices/S01E001-S01.wav").read_bytes() == b"fitted-voice"
+    manifest = json.loads(result.manifest.read_text(encoding="utf-8"))
+    assert manifest["inputs"]["shots"][0]["audio"]["fit_speed"] == 1.43

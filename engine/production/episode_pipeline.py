@@ -128,16 +128,40 @@ class EpisodePipeline:
                     else 0
                 )
                 audio_offset = cue.offset_seconds + performance_delay
-                if audio and self.speech is not None and audio_source == self.speech.name:
-                    generated_voices.append((shot.id, audio))
+                audio_fit_speed = 1.0
                 if audio:
                     audio_duration = self.media.duration(audio)
-                    if audio_duration + audio_offset > shot.duration + 0.05:
+                    pause_after = (
+                        shot.dialogue.performance.pause_after_seconds
+                        if shot.dialogue and shot.dialogue.performance
+                        else 0
+                    )
+                    available_duration = shot.duration - audio_offset - pause_after
+                    if available_duration <= 0:
+                        raise ValueError(
+                            f"Aucune place pour la voix de {shot.id} après les silences imposés."
+                        )
+                    if (
+                        audio_duration > available_duration + 0.05
+                        and self.speech is not None
+                        and audio_source == self.speech.name
+                    ):
+                        fitted = workspace / "voices" / f"{shot.id}.fitted.wav"
+                        audio_fit_speed = self.media.fit_audio(
+                            audio,
+                            fitted,
+                            available_duration,
+                        )
+                        audio = fitted
+                        audio_duration = self.media.duration(audio)
+                    if audio_duration > available_duration + 0.05:
                         raise ValueError(
                             f"La voix de {shot.id} dure {audio_duration:.2f}s et dépasse le plan "
-                            f"de {shot.duration:.2f}s après son décalage de "
-                            f"{audio_offset:.2f}s."
+                            f"de {shot.duration:.2f}s (fenêtre disponible : "
+                            f"{available_duration:.2f}s)."
                         )
+                if audio and self.speech is not None and audio_source == self.speech.name:
+                    generated_voices.append((shot.id, audio))
                 segments.append(
                     SegmentInput(
                         shot_id=shot.id,
@@ -153,6 +177,8 @@ class EpisodePipeline:
                     )
                 )
                 audio_record = self._source_record(audio, audio_source) if audio else None
+                if audio_record is not None:
+                    audio_record["fit_speed"] = audio_fit_speed
                 if (
                     audio_record is not None
                     and audio is not None
