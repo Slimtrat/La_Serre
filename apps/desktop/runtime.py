@@ -212,9 +212,20 @@ def _open_listener(host: str, port: int) -> tuple[socket.socket, ServerEndpoint]
 
 def _copy_bundled_examples(runtime_root: Path) -> None:
     bundle_root = Path(str(getattr(sys, "_MEIPASS", Path(__file__).parents[2])))
-    for relative in (Path("examples"), Path("workflows/images"), Path("workflows/video")):
+    for relative in (
+        Path("examples"),
+        Path("workflows/images"),
+        Path("workflows/video"),
+        Path("workflows/local"),
+    ):
         source = bundle_root / relative
         destination = runtime_root / relative
-        if source.is_dir() and not destination.exists():
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(source, destination)
+        if not source.is_dir() or source.resolve() == destination.resolve():
+            continue
+        for bundled in source.rglob("*"):
+            target = destination / bundled.relative_to(source)
+            if bundled.is_dir():
+                target.mkdir(parents=True, exist_ok=True)
+            elif not target.exists():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(bundled, target)
