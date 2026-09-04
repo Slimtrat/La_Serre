@@ -23,6 +23,34 @@ from engine.config import Settings
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_CONFIG_FILENAME = "runtime-services.json"
+COMFYUI_MODEL_DIRECTORIES = (
+    "audio_encoders",
+    "background_removal",
+    "checkpoints",
+    "classifiers",
+    "clip_vision",
+    "configs",
+    "controlnet",
+    "detection",
+    "diffusers",
+    "diffusion_models",
+    "embeddings",
+    "frame_interpolation",
+    "geometry_estimation",
+    "gligen",
+    "hypernetworks",
+    "latent_upscale_models",
+    "loras",
+    "model_patches",
+    "optical_flow",
+    "photomaker",
+    "style_models",
+    "text_encoders",
+    "unet",
+    "upscale_models",
+    "vae",
+    "vae_approx",
+)
 
 
 class ServiceState(StrEnum):
@@ -403,7 +431,12 @@ def _comfyui_spec(
         else:
             install_root = _discover_comfyui_root(environ)
             if install_root:
-                command = _comfyui_python_command(install_root, url)
+                extra_paths = _write_comfyui_desktop_model_paths(runtime_root, environ)
+                command = _comfyui_python_command(
+                    install_root,
+                    url,
+                    extra_model_paths=extra_paths,
+                )
                 working_directory = install_root
     return LocalServiceSpec(
         name="comfyui",
@@ -578,7 +611,12 @@ def _discover_comfyui_root(environ: Mapping[str, str]) -> Path | None:
     return None
 
 
-def _comfyui_python_command(install_root: Path, url: str) -> tuple[str, ...] | None:
+def _comfyui_python_command(
+    install_root: Path,
+    url: str,
+    *,
+    extra_model_paths: Path | None = None,
+) -> tuple[str, ...] | None:
     python_candidates = (
         install_root / ".venv" / "Scripts" / "python.exe",
         install_root.parent / "python_embeded" / "python.exe",
@@ -590,7 +628,7 @@ def _comfyui_python_command(install_root: Path, url: str) -> tuple[str, ...] | N
     parsed = urlsplit(url)
     host = parsed.hostname or "127.0.0.1"
     port = parsed.port or 8188
-    return (
+    command: tuple[str, ...] = (
         str(python),
         str((install_root / "main.py").resolve()),
         "--listen",
@@ -598,6 +636,42 @@ def _comfyui_python_command(install_root: Path, url: str) -> tuple[str, ...] | N
         "--port",
         str(port),
     )
+    if extra_model_paths is not None:
+        command += ("--extra-model-paths-config", str(extra_model_paths.resolve()))
+    return command
+
+
+def _write_comfyui_desktop_model_paths(
+    runtime_root: Path,
+    environ: Mapping[str, str],
+) -> Path | None:
+    local_app_data = environ.get("LOCALAPPDATA")
+    if not local_app_data:
+        return None
+    shared_root = Path(local_app_data) / "Comfy-Desktop" / "ComfyUI-Shared"
+    models_root = shared_root / "models"
+    if not models_root.is_dir():
+        return None
+    available = [name for name in COMFYUI_MODEL_DIRECTORIES if (models_root / name).is_dir()]
+    if not available:
+        return None
+    lines = [
+        "serre_comfy_desktop:",
+        f'  base_path: "{shared_root.resolve().as_posix()}"',
+        "  is_default: true",
+        *(f"  {name}: models/{name}" for name in available),
+        "",
+    ]
+    destination = runtime_root / "comfyui-extra-model-paths.yaml"
+    content = "\n".join(lines)
+    try:
+        if not destination.is_file() or destination.read_text(encoding="utf-8") != content:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_text(content, encoding="utf-8")
+    except OSError:
+        LOGGER.warning("Could not write ComfyUI shared model configuration", exc_info=True)
+        return None
+    return destination
 
 
 def _listen_address(url: str) -> str:

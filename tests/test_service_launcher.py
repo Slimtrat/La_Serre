@@ -213,6 +213,9 @@ def test_discovery_supports_comfyui_desktop_installation(tmp_path: Path) -> None
     python = comfy_root / ".venv" / "Scripts" / "python.exe"
     python.parent.mkdir(parents=True)
     python.write_bytes(b"")
+    shared = local_app_data / "Comfy-Desktop" / "ComfyUI-Shared" / "models"
+    (shared / "checkpoints").mkdir(parents=True)
+    (shared / "text_encoders").mkdir()
 
     discovered = discover_local_services(
         Settings(_env_file=None),
@@ -229,7 +232,13 @@ def test_discovery_supports_comfyui_desktop_installation(tmp_path: Path) -> None
         "127.0.0.1",
         "--port",
         "8188",
+        "--extra-model-paths-config",
+        str((tmp_path / "comfyui-extra-model-paths.yaml").resolve()),
     )
+    config = (tmp_path / "comfyui-extra-model-paths.yaml").read_text(encoding="utf-8")
+    assert f'base_path: "{shared.parent.resolve().as_posix()}"' in config
+    assert "checkpoints: models/checkpoints" in config
+    assert "text_encoders: models/text_encoders" in config
 
 
 async def test_runtime_services_api_exposes_the_native_supervisor(tmp_path: Path) -> None:
