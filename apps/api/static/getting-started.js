@@ -1,5 +1,5 @@
 (() => {
-  const STORAGE_KEY = "serre-studio-getting-started-v0.2.5";
+  const STORAGE_KEY = "serre-studio-getting-started-v0.2.6";
   const STEP_COUNT = 5;
   let dialog = null;
   let currentStep = 0;
@@ -113,7 +113,7 @@
     dialog.innerHTML = `
       <section class="getting-started-shell">
         <header class="getting-started-heading">
-          <div class="getting-started-brand"><span>SV</span><div><strong>Bien démarrer</strong><small>LA SERRE DES VENINS · STUDIO 0.2.5</small></div></div>
+          <div class="getting-started-brand"><span>SV</span><div><strong>Bien démarrer</strong><small>LA SERRE DES VENINS · STUDIO 0.2.6</small></div></div>
           <button class="getting-started-dismiss" type="button" data-guide-action="close" aria-label="Fermer le guide">×</button>
         </header>
         <div class="getting-started-body">

@@ -600,7 +600,11 @@ const studioGraph = (() => {
     if (["previews", "artifacts"].includes(action)) window.SerreWorkspace?.show("outputs");
     if (action === "story") scrollTo("#story-editor");
     if (action === "shot") scrollTo("#shot-editor");
-    if (action === "episode") scrollTo("#episode-title");
+    if (action === "episode") {
+      window.SerreWorkspace?.show("graph");
+      const opened = window.SerreEpisode?.openCasting({ returnFocus: document.activeElement });
+      if (!opened) scrollTo("#episode-title");
+    }
     if (action === "previews") scrollTo("#preview-panel");
     if (action === "audio") scrollTo("[data-dropzone='audio']");
     if (action === "artifacts") scrollTo("[data-job-stage='artifacts']");
