@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field
@@ -43,6 +44,20 @@ class StageGenerationRequest(StrictRequest):
 class ProjectCreateRequest(StrictRequest):
     name: str = Field(min_length=1, max_length=80)
     clone_content: bool = True
+
+
+class ProjectStorageRequest(StrictRequest):
+    work_root: Path
+    output_root: Path
+
+
+class ProjectRemovalRequest(StrictRequest):
+    mode: Literal["keep_files", "delete_files"]
+    confirmation: str | None = Field(default=None, max_length=80)
+
+
+class ProjectFolderRequest(StrictRequest):
+    role: Literal["work", "output"]
 
 
 class NotificationCreateRequest(StrictRequest):

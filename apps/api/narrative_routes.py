@@ -11,6 +11,7 @@ from apps.api.schemas import ShotDraftRequest
 from engine.config import Settings
 from engine.narrative.ollama import OllamaClient, OllamaModel
 from engine.narrative.shot_director import OllamaShotDirector
+from engine.world.bible import BibleRegistry
 
 
 def create_narrative_router(
@@ -49,6 +50,10 @@ def create_narrative_router(
                     duration=payload.duration,
                     model=model,
                 )
+                resolved_shot = BibleRegistry(settings.private_content_dir).resolve_shot(
+                    result.shot,
+                    strict=False,
+                )
         except httpx.HTTPStatusError as exc:
             detail = _ollama_error(exc.response)
             raise HTTPException(status_code=502, detail=detail) from exc
@@ -57,9 +62,9 @@ def create_narrative_router(
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-        content = result.shot.model_dump_json(indent=2).encode("utf-8")
+        content = resolved_shot.model_dump_json(indent=2).encode("utf-8")
         record = assets_provider().put_model(
-            result.shot.id,
+            resolved_shot.id,
             "shot",
             "shot.json",
             "application/json",
@@ -68,7 +73,7 @@ def create_narrative_router(
             model=result.model,
         )
         return {
-            "shot": result.shot.model_dump(mode="json"),
+            "shot": resolved_shot.model_dump(mode="json"),
             "model": result.model,
             "attempts": result.attempts,
             "artifact": asdict(record),

@@ -85,6 +85,41 @@
   font-size: 12px;
 }
 
+.graph-context-crumb {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 76px;
+  padding: 8px 24px 8px 11px;
+  color: #8fa2b2;
+  cursor: pointer;
+  border: 1px solid rgba(78, 159, 255, .18);
+  border-radius: 8px;
+  background: rgba(21, 31, 39, .78);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.graph-context-crumb::after {
+  content: "›";
+  position: absolute;
+  right: 9px;
+  color: rgba(78, 159, 255, .58);
+}
+
+.graph-context-crumb:hover,
+.graph-context-crumb[aria-current="page"] {
+  transform: none;
+  color: #d9eaff;
+  border-color: rgba(78, 159, 255, .58);
+  background: rgba(78, 159, 255, .12);
+}
+
+.graph-context-crumb[aria-current="page"]::after {
+  content: "●";
+  font-size: 6px;
+}
+
 .graph-controls {
   display: flex;
   align-items: center;
@@ -139,6 +174,21 @@
 
 .graph-viewport.panning {
   cursor: grabbing;
+}
+
+.graph-viewport.graph-loading::before {
+  content: "CHARGEMENT DU GRAPHE…";
+  position: absolute;
+  inset: 0;
+  z-index: 11;
+  display: grid;
+  place-items: center;
+  color: #a9cfff;
+  background: rgba(8, 13, 10, .7);
+  backdrop-filter: blur(3px);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
 }
 
 .graph-world {
@@ -446,6 +496,48 @@
   font-weight: 700;
   letter-spacing: .06em;
   text-transform: uppercase;
+}
+
+.graph-node-container {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  color: rgba(132, 191, 255, .78);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.graph-node.structure-container {
+  padding-bottom: 31px;
+}
+
+.graph-node-progress {
+  position: absolute;
+  right: 15px;
+  bottom: 9px;
+  left: 15px;
+  display: block;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(78, 159, 255, .12);
+}
+
+.graph-node.structure-container .graph-node-progress {
+  right: 76px;
+}
+
+.graph-node-progress > i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--graph-core);
+}
+
+.graph-node.structure-optional .graph-node-progress > i {
+  background: var(--graph-optional);
 }
 
 .graph-node.state-idle .graph-node-status { color: #82909a; }

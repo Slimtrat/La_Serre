@@ -51,6 +51,21 @@ class ShotCharacter(StrictModel):
     reference_images: list[Path] = Field(default_factory=list)
 
 
+class CanonicalContext(StrictModel):
+    revision: int = Field(ge=0)
+    fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    entity_fingerprints: dict[str, str]
+    art_direction: list[str] = Field(default_factory=list)
+    tone: list[str] = Field(default_factory=list)
+    world_rules: list[str] = Field(default_factory=list)
+    relationships: list[dict[str, object]] = Field(default_factory=list)
+    narrative_arcs: list[dict[str, object]] = Field(default_factory=list)
+    secrets: list[dict[str, object]] = Field(default_factory=list)
+    positive_prompt: str = ""
+    negative_prompt: str = ""
+    constraints: list[str] = Field(default_factory=list)
+
+
 class RenderSpec(StrictModel):
     seed: int = Field(ge=0, le=2**63 - 1)
     width: int = Field(default=576, ge=256, le=2160, multiple_of=8)
@@ -81,6 +96,7 @@ class Shot(StrictModel):
     mood: str = Field(min_length=1)
     style: list[str] = Field(min_length=1)
     render: RenderSpec
+    canonical_context: CanonicalContext | None = None
 
     @model_validator(mode="after")
     def derive_frames_and_validate_dialogue(self) -> Shot:

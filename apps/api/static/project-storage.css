@@ -1,0 +1,222 @@
+.project-manage-dialog,
+.project-remove-dialog {
+  width: min(860px, calc(100vw - 32px));
+  max-height: min(760px, calc(100vh - 32px));
+  padding: 0;
+  overflow: hidden;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #101713;
+  box-shadow: 0 30px 100px #000d;
+}
+
+.project-remove-dialog {
+  width: min(620px, calc(100vw - 32px));
+}
+
+.project-manage-dialog::backdrop,
+.project-remove-dialog::backdrop {
+  background: rgba(2, 5, 3, .78);
+  backdrop-filter: blur(5px);
+}
+
+.project-manage-shell,
+.project-remove-dialog form {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+}
+
+.project-manage-shell {
+  max-height: min(760px, calc(100vh - 32px));
+  overflow: auto;
+}
+
+.project-manage-shell > header,
+.project-remove-dialog header,
+.project-storage-settings > header,
+.project-location-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.project-manage-shell h2,
+.project-remove-dialog h2,
+.project-storage-settings h3,
+.project-manage-shell p,
+.project-remove-dialog p {
+  margin: 0;
+}
+
+.project-manage-intro {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.project-manage-list {
+  display: grid;
+  gap: 12px;
+}
+
+.project-location-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(5, 10, 7, .58);
+}
+
+.project-location-card.active {
+  border-color: rgba(95, 226, 137, .46);
+  box-shadow: inset 3px 0 0 #5fe289;
+}
+
+.project-location-card header div {
+  display: grid;
+  gap: 3px;
+}
+
+.project-location-card header small,
+.project-path-row small,
+.removal-choice small,
+.project-storage-settings > p,
+.project-storage-settings > small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.project-path-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-path-row > div {
+  min-width: 0;
+}
+
+.project-path-row code {
+  display: block;
+  overflow: hidden;
+  margin-top: 3px;
+  color: #bfe9ca;
+  font: 11px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.button.compact {
+  min-height: 30px;
+  padding: 5px 9px;
+  font-size: 10px;
+}
+
+.button.danger {
+  color: #ffe9e4;
+  border-color: rgba(255, 112, 90, .58);
+  background: rgba(145, 40, 28, .54);
+}
+
+.button.danger:hover:not(:disabled) {
+  background: rgba(185, 48, 33, .7);
+}
+
+.removal-choice {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(5, 10, 7, .58);
+}
+
+.removal-choice > div {
+  display: grid;
+  gap: 5px;
+}
+
+.removal-choice.danger {
+  grid-template-columns: 1fr;
+  border-color: rgba(255, 112, 90, .28);
+}
+
+.removal-choice label,
+.project-storage-fields label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.removal-choice input,
+.project-storage-fields input {
+  min-width: 0;
+  padding: 10px;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: 0;
+  background: #080d0a;
+  font: 11px ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.removal-choice input:focus,
+.project-storage-fields input:focus {
+  border-color: rgba(95, 226, 137, .62);
+}
+
+.project-storage-settings {
+  display: grid;
+  gap: 13px;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(8, 15, 11, .62);
+}
+
+.project-storage-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.project-storage-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.storage-same-root {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+@media (max-width: 760px) {
+  .project-path-row,
+  .project-storage-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .project-path-row .button {
+    justify-self: start;
+  }
+
+  .project-storage-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

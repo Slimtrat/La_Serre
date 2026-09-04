@@ -11,11 +11,16 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from apps.api.assets import AssetSlot, AssetStore
+from apps.api.bible_routes import create_bible_router
+from apps.api.context_graph import create_context_graph_router
 from apps.api.episode_job_manager import EpisodeJobManager
 from apps.api.episode_routes import create_episode_router
 from apps.api.job_manager import JobManager
 from apps.api.narrative_routes import create_narrative_router
 from apps.api.notifications import StudioNotificationLog
+from apps.api.production_queue import ProductionQueueManager
+from apps.api.production_queue_routes import create_production_queue_router
+from apps.api.project_storage_routes import create_project_storage_router
 from apps.api.projects import ProjectRegistry
 from apps.api.run_history import RUN_FILES, RunHistory
 from apps.api.schemas import (
@@ -40,6 +45,7 @@ from engine.generation.comfy.client import ComfyClient
 from engine.generation.comfy.errors import WorkflowConfigurationError
 from engine.generation.comfy.model_installer import ModelInstaller
 from engine.generation.comfy.workflow_factory import WorkflowFactory
+from engine.world.bible import BibleRegistry
 from engine.world.catalog import EpisodeCatalog
 
 STATIC_DIR = Path(__file__).with_name("static")
@@ -100,6 +106,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     manager = JobManager(current_settings, assets)
     episode_manager = EpisodeJobManager(current_settings)
     stage_service = ShotStageService(current_settings)
+    production_queue = ProductionQueueManager(current_settings, catalog, manager, stage_service)
     setup = WorkflowSetup()
     factory = WorkflowFactory()
 
@@ -115,7 +122,28 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(
         create_episode_router(catalog, lambda: current_settings().output_dir)
     )
+    app.include_router(
+        create_context_graph_router(catalog, lambda: current_settings().output_dir)
+    )
     app.include_router(create_narrative_router(current_settings, assets))
+    app.include_router(create_production_queue_router(production_queue))
+    app.include_router(
+        create_project_storage_router(
+            project_registry,
+            has_active_work=lambda: (
+                manager.has_active_jobs()
+                or episode_manager.has_active_jobs()
+                or stage_service.has_active_operations()
+                or production_queue.has_active_jobs()
+            ),
+        )
+    )
+    app.include_router(
+        create_bible_router(
+            lambda: BibleRegistry(current_settings().private_content_dir),
+            lambda: current_settings().output_dir,
+        )
+    )
 
     @app.get("/api/projects")
     def list_projects() -> dict[str, object]:
@@ -127,6 +155,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             manager.has_active_jobs()
             or episode_manager.has_active_jobs()
             or stage_service.has_active_operations()
+            or production_queue.has_active_jobs()
         ):
             raise HTTPException(
                 status_code=409,
@@ -153,6 +182,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             manager.has_active_jobs()
             or episode_manager.has_active_jobs()
             or stage_service.has_active_operations()
+            or production_queue.has_active_jobs()
         ):
             raise HTTPException(
                 status_code=409,
@@ -166,6 +196,32 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "info",
             "Projet actif",
             f"Le Studio travaille maintenant dans {project.name}.",
+            source="projects",
+        )
+        return project_registry.listing()
+
+    @app.delete("/api/projects/{project_id}")
+    def delete_discovery_project(project_id: str) -> dict[str, object]:
+        if (
+            manager.has_active_jobs()
+            or episode_manager.has_active_jobs()
+            or stage_service.has_active_operations()
+            or production_queue.has_active_jobs()
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="Attends la fin des générations avant de supprimer un projet.",
+            )
+        try:
+            project = project_registry.delete_discovery(project_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="Projet introuvable") from exc
+        except (OSError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        notifications().publish(
+            "info",
+            "Projet Découverte retiré",
+            f"{project.name} a été retiré sans supprimer les autres projets.",
             source="projects",
         )
         return project_registry.listing()

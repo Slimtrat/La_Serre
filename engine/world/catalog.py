@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from engine.director.models import Shot, ShotCharacter
 from engine.narrative.episode_models import Episode, EpisodePackage, EpisodeSummary
+from engine.world.bible import BibleRegistry
 from engine.world.models import CharacterProfile, LocationProfile
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
@@ -43,25 +44,23 @@ class EpisodeCatalog:
         if episode.id != episode_id:
             raise ValueError(f"Episode file contains {episode.id}, expected {episode_id}")
 
-        characters = [
-            self._load_model(
-                self.root / "world" / "characters" / character_id / "character.json",
-                CharacterProfile,
-            )
-            for character_id in episode.characters
-        ]
-        locations = [
-            self._load_model(
-                self.root / "world" / "locations" / location_id / "location.json",
-                LocationProfile,
-            )
-            for location_id in episode.locations
-        ]
+        registry = BibleRegistry(self.root)
+        bible = registry.load()
+        character_by_id = {character.id: character for character in bible.characters}
+        location_by_id = {location.id: location for location in bible.locations}
+        try:
+            characters = [character_by_id[character_id] for character_id in episode.characters]
+            locations = [location_by_id[location_id] for location_id in episode.locations]
+        except KeyError as exc:
+            raise ValueError(
+                f"Episode references an unknown canonical entity: {exc.args[0]}"
+            ) from exc
         shots = [
             self._load_model(episode_dir / "shots" / f"{shot_id}.json", Shot)
             for shot_id in episode.shot_order
         ]
         self._validate_package(episode, characters, locations, shots)
+        shots = [registry.resolve_shot(shot) for shot in shots]
         return EpisodePackage(
             episode=episode,
             characters=characters,
