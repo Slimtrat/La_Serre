@@ -29,15 +29,27 @@ class ModelInstaller:
         *,
         downloads_dir: Path | None = None,
         models_root: Path | None = None,
+        model_search_roots: tuple[Path, ...] | None = None,
     ) -> None:
         self.requirements = requirements
         self.downloads_dir = downloads_dir or Path.home() / "Downloads"
-        self.models_root = models_root or self.detect_models_root()
+        if models_root is not None:
+            self.models_root = models_root
+            self.model_search_roots = model_search_roots or (models_root,)
+        else:
+            detected = self.detect_model_roots()
+            self.models_root = detected[0]
+            self.model_search_roots = detected
 
     @staticmethod
     def detect_models_root() -> Path:
+        return ModelInstaller.detect_model_roots()[0]
+
+    @staticmethod
+    def detect_model_roots() -> tuple[Path, ...]:
         local_app_data = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData/Local"))
         candidates = (
+            local_app_data / "Comfy-Desktop" / "ComfyUI-Shared" / "models",
             local_app_data
             / "Comfy-Desktop"
             / "ComfyUI-Installs"
@@ -47,7 +59,8 @@ class ModelInstaller:
             Path.home() / "Documents" / "ComfyUI" / "models",
             Path.home() / "ComfyUI" / "models",
         )
-        return next((candidate for candidate in candidates if candidate.is_dir()), candidates[0])
+        existing = tuple(candidate for candidate in candidates if candidate.is_dir())
+        return existing or (candidates[0],)
 
     def inspect(self) -> list[dict[str, object]]:
         return [asdict(self._status(requirement)) for requirement in self.requirements]
@@ -72,9 +85,19 @@ class ModelInstaller:
     def _status(self, requirement: ModelRequirement) -> ModelInstallStatus:
         destination = self.models_root / requirement.folder / requirement.filename
         source = self.downloads_dir / requirement.filename
-        if destination.is_file() and destination.stat().st_size > 0:
+        installed_path = next(
+            (
+                root / requirement.folder / requirement.filename
+                for root in self.model_search_roots
+                if (root / requirement.folder / requirement.filename).is_file()
+                and (root / requirement.folder / requirement.filename).stat().st_size > 0
+            ),
+            None,
+        )
+        if installed_path is not None:
             state: DownloadState = "installed"
-            downloaded_bytes = destination.stat().st_size
+            destination = installed_path
+            downloaded_bytes = installed_path.stat().st_size
         elif source.is_file() and source.stat().st_size > 0:
             state = "ready"
             downloaded_bytes = source.stat().st_size

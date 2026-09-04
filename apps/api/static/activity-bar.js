@@ -20,6 +20,11 @@ const serreActivity = (() => {
     export: "Export",
     music: "Musique",
     director: "Director",
+    story: "Histoire",
+    plan: "Découpage",
+    frames: "Images",
+    sound: "Son",
+    video: "Mini-vidéo",
     job: "Pipeline",
   };
   const KIND_LABELS = {
@@ -29,6 +34,7 @@ const serreActivity = (() => {
     prompt: "Prompt",
     voice: "Voix",
     music: "Musique",
+    demo: "Démo express",
   };
 
   const overlay = document.createElement("aside");
@@ -213,6 +219,42 @@ const serreActivity = (() => {
     return result;
   }
 
+  function normalizeDemo(detail) {
+    const existing = current?.kind === "demo" ? current : null;
+    const stageMap = { story: "story", plan: "director", frames: "keyframe", sound: "music", video: "montage" };
+    const items = detail.state?.stages || [];
+    const approved = items.filter((item) => item.status === "approved").length;
+    const active = detail.activeStage || items.find((item) => ["generating", "generated", "rejected"].includes(item.status))?.id || "story";
+    const result = {
+      id: "express-demo",
+      kind: "demo",
+      title: "Démo express · chaîne 0 GPU",
+      status: detail.status || "AWAITING_REVIEW",
+      message: detail.message || "Contrôle humain requis",
+      createdAt: detail.state?.created_at || existing?.createdAt || new Date().toISOString(),
+      completedAt: detail.status === "COMPLETED" ? new Date().toISOString() : null,
+      progress: {
+        percent: Math.min(100, approved * 20 + (detail.status === "GENERATING" ? 8 : 0)),
+        completed: approved,
+        total: items.length || 5,
+        active_stage: stageMap[active] || active,
+        elapsed_seconds: existing?.progress?.elapsed_seconds || 0,
+        indeterminate: detail.status === "GENERATING",
+      },
+      stages: items.map((item) => ({
+        id: stageMap[item.id] || item.id,
+        status: item.status === "approved" ? "completed"
+          : item.status === "generating" ? "running"
+            : item.status === "rejected" || item.status === "failed" ? "failed"
+              : item.status === "locked" ? "skipped" : "pending",
+        message: item.status,
+      })),
+      events: detail.state?.events || [],
+      remote: false,
+    };
+    return result;
+  }
+
   function stageLabel(value) {
     return STAGE_LABELS[value] || value || "Préparation";
   }
@@ -221,6 +263,7 @@ const serreActivity = (() => {
     const value = String(activity.status || "").toUpperCase();
     if (value === "FAILED") return "Échec";
     if (value === "QUEUED") return "Dans la file d’attente";
+    if (value === "AWAITING_REVIEW") return "Validation requise";
     if (value === "AWAITING_KEYFRAME_APPROVAL") return "Validation requise";
     if (isTerminal(value)) return "Terminé";
     return "En cours";
@@ -428,6 +471,7 @@ const serreActivity = (() => {
   window.addEventListener("studio:episode-job", (event) => render(normalizeJob(event.detail, "episode")));
   window.addEventListener("studio:stage-job", (event) => render(normalizeStageJob(event.detail)));
   window.addEventListener("studio:narrative-job", (event) => render(normalizeNarrative(event.detail)));
+  window.addEventListener("studio:demo-job", (event) => render(normalizeDemo(event.detail)));
   window.addEventListener("studio:project-changing", () => {
     current = null;
     dismissedId = null;

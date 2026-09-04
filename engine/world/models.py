@@ -63,6 +63,7 @@ class RelationshipState(StrictWorldModel):
     anger: int = Field(ge=-100, le=100)
     fear: int = Field(ge=-100, le=100)
     attachment: int = Field(ge=-100, le=100)
+    toxicity: int = Field(default=0, ge=0, le=100)
 
     @model_validator(mode="after")
     def endpoints_are_distinct(self) -> RelationshipState:

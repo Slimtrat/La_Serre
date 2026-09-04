@@ -46,3 +46,24 @@ def test_installer_never_moves_empty_placeholder(tmp_path: Path) -> None:
 
     assert installer.inspect()[0]["state"] == "downloading"
     assert installer.install_ready() == []
+
+
+def test_installer_detects_models_across_shared_and_install_roots(tmp_path: Path) -> None:
+    downloads = tmp_path / "downloads"
+    shared = tmp_path / "ComfyUI-Shared/models"
+    install = tmp_path / "ComfyUI-Installs/ComfyUI/ComfyUI/models"
+    downloads.mkdir()
+    model = install / "checkpoints" / "model.safetensors"
+    model.parent.mkdir(parents=True)
+    model.write_bytes(b"installed")
+    installer = ModelInstaller(
+        requirement(),
+        downloads_dir=downloads,
+        models_root=shared,
+        model_search_roots=(shared, install),
+    )
+
+    status = installer.inspect()[0]
+
+    assert status["state"] == "installed"
+    assert status["destination"] == str(model)

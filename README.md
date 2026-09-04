@@ -36,6 +36,19 @@ Lancez l'interface :
 python -m tools.run_studio
 ```
 
+### Démo express sans GPU
+
+Le menu **Outils → Démo** ouvre une mini-production isolée du pipeline ComfyUI.
+Décrivez une histoire, puis utilisez **Laisser l’IA imaginer** sur chacun des cinq
+maillons : histoire, découpage, trois images, son et mini-vidéo. Chaque proposition
+doit être validée ou refusée avant que la suivante soit accessible. Un refus
+invalide les sorties qui en dépendent, tandis que la barre d’activité expose la
+progression et le journal complet.
+
+La démo produit localement un MP4 d’environ cinq secondes en 480 × 270 avec
+FFmpeg. Son rendu 0 GPU sert à expliquer la chaîne et les contrôles humains ; il
+ne remplace pas les workflows ComfyUI destinés à la qualité finale.
+
 ### Application Windows native
 
 Le shell desktop ouvre le Studio dans une fenêtre native WebView2, sans onglet de
@@ -144,6 +157,8 @@ sont rangées dans `versions/<version>` et l’ancien patch courant dans `versio
 - `POST /api/workflows/generate` : création des graphes privés ;
 - `GET /api/narrative/status` : modèles Ollama disponibles ;
 - `POST /api/narrative/shot` : proposition et stockage d'un Shot validé ;
+- `GET /api/demo` : état persistant de la mini-production 0 GPU ;
+- `POST /api/demo/{stage}/imagine|approve|reject` : génération et gate humaine ;
 - `GET /api/episodes` : catalogue local lu depuis `.private/` ;
 - `GET /api/episodes/{id}` : épisode, casting canonique et plans validés ;
 - `POST /api/models/install` : déplacement contrôlé des modèles téléchargés ;
