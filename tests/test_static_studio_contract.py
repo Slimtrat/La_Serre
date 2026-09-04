@@ -18,9 +18,13 @@ def test_activity_overlay_and_current_version_are_loaded() -> None:
 def test_casting_is_visible_and_graph_edges_explain_their_connections() -> None:
     onepage = (STATIC / "onepage.css").read_text(encoding="utf-8")
     graph = (STATIC / "graph.js").read_text(encoding="utf-8")
+    episode = (STATIC / "episode.js").read_text(encoding="utf-8")
 
     assert ".episode-panel .episode-details {" in onepage
     assert ".episode-panel .episode-details[open] .episode-details-grid" in onepage
+    assert 'window.SerreEpisode = Object.freeze({ openCasting, closeCasting })' in episode
+    assert 'window.SerreEpisode?.openCasting({ returnFocus: document.activeElement })' in graph
+    assert 'panel?.focus({ preventScroll: true })' in episode
     assert "edgeDescriptions" in graph
     assert "showEdgeTooltip" in graph
     assert "graph-link-hit" in graph
@@ -34,7 +38,7 @@ def test_getting_started_is_first_run_guided_and_reopenable() -> None:
     assert "/static/getting-started.js" in index
     assert 'id="getting-started-open"' in index
     assert 'const STEP_COUNT = 5' in guide
-    assert 'serre-studio-getting-started-v0.2.5' in guide
+    assert 'serre-studio-getting-started-v0.2.6' in guide
     assert 'localStorage.setItem(STORAGE_KEY, "seen")' in guide
     assert 'window.addEventListener("studio:status"' in guide
     assert 'window.SerreStudio.api("/api/status")' in guide

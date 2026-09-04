@@ -1,6 +1,40 @@
 const episodeStudio = window.SerreStudio;
 let loadedEpisode = null;
 let catalogBound = false;
+let castingReturnFocus = null;
+
+function castingDetails() {
+  return document.querySelector(".episode-details");
+}
+
+function closeCasting({ restoreFocus = true } = {}) {
+  const details = castingDetails();
+  if (!details) return false;
+  const summary = details.querySelector("summary");
+  details.open = false;
+  summary?.setAttribute("aria-expanded", "false");
+  if (restoreFocus) {
+    const focusTarget = castingReturnFocus?.isConnected ? castingReturnFocus : summary;
+    focusTarget?.focus({ preventScroll: true });
+  }
+  castingReturnFocus = null;
+  return true;
+}
+
+function openCasting({ returnFocus = document.activeElement } = {}) {
+  const details = castingDetails();
+  if (!details) return false;
+  if (returnFocus instanceof HTMLElement) castingReturnFocus = returnFocus;
+  details.open = true;
+  details.querySelector("summary")?.setAttribute("aria-expanded", "true");
+  requestAnimationFrame(() => {
+    const panel = details.querySelector(".episode-details-grid");
+    panel?.focus({ preventScroll: true });
+  });
+  return true;
+}
+
+window.SerreEpisode = Object.freeze({ openCasting, closeCasting });
 
 async function episodeRequest(path) {
   const response = await fetch(path);
@@ -118,12 +152,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       summary?.setAttribute("aria-expanded", String(details.open));
     });
     document.addEventListener("pointerdown", (event) => {
-      if (details.open && !details.contains(event.target)) details.open = false;
+      if (details.open && !details.contains(event.target)) closeCasting();
     });
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && details.open) {
-        details.open = false;
-        summary?.focus();
+        closeCasting();
       }
     });
   }
@@ -132,7 +165,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 window.addEventListener("studio:project-changed", () => {
   loadedEpisode = null;
-  const details = document.querySelector(".episode-details");
-  if (details) details.open = false;
+  closeCasting({ restoreFocus: false });
   initEpisodeCatalog().catch((error) => episodeStudio.notify(error.message, true));
 });
