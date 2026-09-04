@@ -37,6 +37,14 @@ humaine sans ajouter prématurément une base ou une interface.
 
 ## Décisions différées
 
-Le world state, le montage d'épisodes, la synthèse vocale et la base de données
-restent hors de cette tranche. Leur ajout ne demandera pas de modifier
-`ComfyClient` ni le contrat `VideoGenerator`.
+Le montage d'épisodes est désormais une tranche indépendante de ComfyUI. Il
+résout pour chaque plan un clip généré ou importé, accepte une keyframe comme
+animatique explicite, synthétise localement les dialogues avec les voix SAPI de
+Windows ou consomme des voix importées, puis normalise et concatène les plans
+avec FFmpeg. Musique et ambiance sont bouclées, la musique est atténuée sous les
+dialogues, les sous-titres sont intégrés au MP4 et `ffprobe` vérifie la durée,
+le format ainsi que la présence des pistes audio et vidéo.
+
+Le world state avancé et la base de données restent hors de cette tranche. Le
+montage consomme les contrats `Episode` et `Shot` existants sans coupler
+`ComfyClient`, la synthèse vocale et FFmpeg.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import re
 from dataclasses import asdict
 from pathlib import Path
@@ -10,17 +11,29 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from apps.api.assets import AssetSlot, AssetStore
+from apps.api.episode_job_manager import EpisodeJobManager
 from apps.api.episode_routes import create_episode_router
 from apps.api.job_manager import JobManager
 from apps.api.narrative_routes import create_narrative_router
+from apps.api.notifications import StudioNotificationLog
+from apps.api.projects import ProjectRegistry
+from apps.api.run_history import RUN_FILES, RunHistory
 from apps.api.schemas import (
+    EpisodeGenerationRequest,
     GenerationRequest,
+    NotificationCreateRequest,
+    NotificationReadRequest,
+    ProjectCreateRequest,
+    StageGenerationRequest,
     StudioConfigRequest,
     WorkflowImportRequest,
     WorkflowKind,
     WorkflowProfileRequest,
 )
+from apps.api.stage_actions import ShotStageService, StageKind
+from apps.api.workflow_graph import WORKFLOW_GRAPH_KINDS, build_workflow_graph
 from apps.api.workflow_setup import WorkflowSetup
+from apps.version import __version__
 from engine.config import Settings
 from engine.generation.comfy.client import ComfyClient
 from engine.generation.comfy.errors import WorkflowConfigurationError
@@ -30,21 +43,64 @@ from engine.world.catalog import EpisodeCatalog
 
 STATIC_DIR = Path(__file__).with_name("static")
 SHOT_ID = re.compile(r"^S\d{2}E\d{3}-S\d{2}$")
-MEDIA_FILES = {"keyframe.png", "clip.mp4", "generation.json", "prompt.txt"}
+EPISODE_ID = re.compile(r"^S\d{2}E\d{3}$")
+MEDIA_FILES = {
+    "keyframe.png",
+    "keyframe-guide-1.png",
+    "keyframe-guide-2.png",
+    "clip.mp4",
+    "generation.json",
+    "prompt.txt",
+    "voice.wav",
+    "voice.mp3",
+}
+EPISODE_MEDIA_FILES = {
+    "episode.mp4": "video/mp4",
+    "episode-generation.json": "application/json",
+    "subtitles.fr.srt": "application/x-subrip",
+    "music.wav": "audio/wav",
+}
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     fixed_settings = settings
 
-    def current_settings() -> Settings:
+    def base_settings() -> Settings:
         return fixed_settings or Settings.load()
 
-    app = FastAPI(title="La Serre des Venins", version="0.2.0")
-    assets = AssetStore(current_settings().output_dir)
+    initial = base_settings()
+    project_registry = ProjectRegistry(
+        initial,
+        config_path=(
+            initial.output_dir / ".studio" / "projects.json"
+            if fixed_settings is not None
+            else Path("workflows/local/studio-projects.json")
+        ),
+        projects_root=(
+            initial.output_dir.parent / "projects"
+            if fixed_settings is not None
+            else Path("projects")
+        ),
+    )
+
+    def current_settings() -> Settings:
+        return project_registry.settings(base_settings())
+
+    def assets() -> AssetStore:
+        return AssetStore(current_settings().output_dir)
+
+    def catalog() -> EpisodeCatalog:
+        return EpisodeCatalog(current_settings().private_content_dir)
+
+    def notifications() -> StudioNotificationLog:
+        return StudioNotificationLog(current_settings().output_dir)
+
+    app = FastAPI(title="La Serre des Venins", version=__version__)
     manager = JobManager(current_settings, assets)
+    episode_manager = EpisodeJobManager(current_settings)
+    stage_service = ShotStageService(current_settings)
     setup = WorkflowSetup()
     factory = WorkflowFactory()
-    catalog = EpisodeCatalog(current_settings().private_content_dir)
 
     def model_installer() -> ModelInstaller:
         resolved = current_settings()
@@ -57,6 +113,76 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     app.include_router(create_episode_router(catalog))
     app.include_router(create_narrative_router(current_settings, assets))
+
+    @app.get("/api/projects")
+    def list_projects() -> dict[str, object]:
+        return project_registry.listing()
+
+    @app.post("/api/projects", status_code=201)
+    def create_project(payload: ProjectCreateRequest) -> dict[str, object]:
+        if (
+            manager.has_active_jobs()
+            or episode_manager.has_active_jobs()
+            or stage_service.has_active_operations()
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="Attends la fin des générations avant de créer un projet.",
+            )
+        try:
+            project = project_registry.create(
+                payload.name,
+                clone_content=payload.clone_content,
+            )
+        except (OSError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        notifications().publish(
+            "success",
+            "Projet créé",
+            f"{project.name} est maintenant le projet actif.",
+            source="projects",
+        )
+        return project_registry.listing()
+
+    @app.post("/api/projects/{project_id}/activate")
+    def activate_project(project_id: str) -> dict[str, object]:
+        if (
+            manager.has_active_jobs()
+            or episode_manager.has_active_jobs()
+            or stage_service.has_active_operations()
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="Attends la fin des générations avant de changer de projet.",
+            )
+        try:
+            project = project_registry.activate(project_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="Projet introuvable") from exc
+        notifications().publish(
+            "info",
+            "Projet actif",
+            f"Le Studio travaille maintenant dans {project.name}.",
+            source="projects",
+        )
+        return project_registry.listing()
+
+    @app.get("/api/notifications")
+    def list_notifications(limit: int = 100) -> dict[str, object]:
+        return notifications().listing(limit=max(1, min(limit, 200)))
+
+    @app.post("/api/notifications", status_code=201)
+    def create_notification(payload: NotificationCreateRequest) -> dict[str, object]:
+        return notifications().publish(
+            payload.level,
+            payload.title,
+            payload.message,
+            source=payload.source,
+        )
+
+    @app.post("/api/notifications/read")
+    def read_notifications(payload: NotificationReadRequest) -> dict[str, object]:
+        return notifications().mark_read(payload.ids)
 
     @app.get("/", include_in_schema=False)
     def studio() -> FileResponse:
@@ -91,6 +217,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         models_ready = all(bool(model["installed"]) for model in models)
         nodes_ready = not missing_nodes
         return {
+            "version": __version__,
             "status": (
                 "ready"
                 if resolved.profiles_configured and comfyui and models_ready and nodes_ready
@@ -104,6 +231,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "comfyui_url": str(resolved.comfyui_url),
             "keyframe_profile": bool(
                 resolved.keyframe_workflow_profile and resolved.keyframe_workflow_profile.is_file()
+            ),
+            "keyframe_guide_profile": bool(
+                resolved.keyframe_guide_workflow_profile
+                and resolved.keyframe_guide_workflow_profile.is_file()
             ),
             "video_profile": bool(
                 resolved.video_workflow_profile and resolved.video_workflow_profile.is_file()
@@ -136,6 +267,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "status": "generated",
             "preset": generated.preset,
             "keyframe_workflow": "workflows/local/keyframe.api.json",
+            "keyframe_guide_workflow": "workflows/local/keyframe-guide.api.json",
             "video_workflow": "workflows/local/video.api.json",
             "missing_nodes": missing_nodes,
             "models": models,
@@ -143,7 +275,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.post("/api/config")
     async def save_config(payload: StudioConfigRequest) -> dict[str, str]:
-        resolved = await asyncio.to_thread(current_settings)
+        resolved = await asyncio.to_thread(base_settings)
         updated = resolved.model_copy(update={"comfyui_url": payload.comfyui_url})
         path = await asyncio.to_thread(updated.save_local)
         return {"status": "saved", "path": str(path)}
@@ -155,6 +287,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/workflows/{kind}")
     def inspect_workflow(kind: WorkflowKind) -> dict[str, object]:
         return setup.inspect_saved(kind)
+
+    @app.get("/api/workflow-graphs/{kind}")
+    def workflow_graph(kind: str) -> dict[str, object]:
+        if kind not in WORKFLOW_GRAPH_KINDS:
+            raise HTTPException(status_code=404, detail="Workflow not found")
+        workflow_path = Path("workflows/local") / f"{kind}.api.json"
+        profile_path = Path("workflows/local") / f"{kind}.profile.json"
+        if not workflow_path.is_file():
+            raise HTTPException(status_code=404, detail="Workflow not configured")
+        try:
+            return build_workflow_graph(kind, workflow_path, profile_path)
+        except (OSError, ValueError, WorkflowConfigurationError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     @app.post("/api/workflows/import")
     def import_workflow(payload: WorkflowImportRequest) -> dict[str, object]:
@@ -183,10 +328,31 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         return job.public()
 
+    @app.post("/api/stages/{kind}")
+    async def generate_stage(
+        kind: StageKind,
+        payload: StageGenerationRequest,
+    ) -> dict[str, object]:
+        shot_id = str(payload.shot.get("id", ""))
+        if manager.active_for_shot(shot_id):
+            raise HTTPException(
+                status_code=409,
+                detail="Une génération GPU est déjà active pour ce plan.",
+            )
+        try:
+            return await asyncio.to_thread(
+                stage_service.generate,
+                kind,
+                payload.shot,
+                tts=payload.tts,
+            )
+        except (OSError, RuntimeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
     @app.get("/api/assets/{shot_id}")
     def list_assets(shot_id: str) -> dict[str, object]:
         try:
-            return assets.list(shot_id)
+            return assets().list(shot_id)
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -200,7 +366,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         content = await request.body()
         try:
             record = await asyncio.to_thread(
-                assets.put,
+                assets().put,
                 shot_id,
                 slot,
                 filename,
@@ -217,7 +383,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/assets/{shot_id}/{slot}/content")
     def get_asset(shot_id: str, slot: AssetSlot) -> FileResponse:
         try:
-            found = assets.get(shot_id, slot)
+            found = assets().get(shot_id, slot)
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         if not found:
@@ -232,6 +398,56 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="Generation job not found")
         return job.public()
 
+    @app.get("/api/activity")
+    async def current_activity() -> dict[str, object]:
+        shot_job = manager.latest_active()
+        episode_job = episode_manager.latest_active()
+        candidates = [
+            (shot_job.created_at, "shot", shot_job)
+            for shot_job in [shot_job]
+            if shot_job is not None
+        ] + [
+            (episode_job.created_at, "episode", episode_job)
+            for episode_job in [episode_job]
+            if episode_job is not None
+        ]
+        if not candidates:
+            return {"activity": None}
+        _created_at, kind, job = max(candidates, key=lambda candidate: candidate[0])
+        return {"activity": {"kind": kind, **job.public()}}
+
+    @app.get("/api/history/{shot_id}")
+    def generation_history(shot_id: str) -> dict[str, object]:
+        try:
+            runs = RunHistory(current_settings().output_dir).list_runs(shot_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return {"shot_id": shot_id, "runs": runs}
+
+    @app.post("/api/history/{shot_id}/{run_id}/restore")
+    def restore_generation(shot_id: str, run_id: str) -> dict[str, object]:
+        try:
+            return RunHistory(current_settings().output_dir).restore(shot_id, run_id)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Version not found") from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.get("/api/history-media/{shot_id}/{run_id}/{filename}")
+    def history_media(shot_id: str, run_id: str, filename: str) -> FileResponse:
+        if filename not in RUN_FILES:
+            raise HTTPException(status_code=404, detail="History media not found")
+        try:
+            path = RunHistory(current_settings().output_dir).media_path(
+                shot_id, run_id, filename
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail="History media not found") from exc
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="History media not found")
+        media_type = "video/mp4" if filename.endswith(".mp4") else None
+        return FileResponse(path, media_type=media_type, filename=filename)
+
     @app.get("/api/media/{shot_id}/{filename}")
     def media(shot_id: str, filename: str) -> FileResponse:
         if not SHOT_ID.fullmatch(shot_id) or filename not in MEDIA_FILES:
@@ -242,6 +458,64 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="Media not found")
         media_type = "video/mp4" if filename.endswith(".mp4") else None
         return FileResponse(path, media_type=media_type)
+
+    @app.get("/api/outputs/{shot_id}")
+    def outputs(shot_id: str) -> dict[str, object]:
+        if not SHOT_ID.fullmatch(shot_id):
+            raise HTTPException(status_code=404, detail="Shot not found")
+        destination = current_settings().output_dir / shot_id
+        result: dict[str, object] = {
+            "shot_id": shot_id,
+            "status": None,
+            "keyframe": None,
+            "keyframes": [],
+            "video": None,
+        }
+        if (destination / "keyframe.png").is_file():
+            result["keyframe"] = f"/api/media/{shot_id}/keyframe.png"
+            keyframes = [f"/api/media/{shot_id}/keyframe.png"]
+            for filename in ("keyframe-guide-1.png", "keyframe-guide-2.png"):
+                if (destination / filename).is_file():
+                    keyframes.append(f"/api/media/{shot_id}/{filename}")
+            result["keyframes"] = keyframes
+        if (destination / "clip.mp4").is_file():
+            result["video"] = f"/api/media/{shot_id}/clip.mp4"
+        manifest = destination / "generation.json"
+        if manifest.is_file():
+            try:
+                payload = json.loads(manifest.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                payload = {}
+            if isinstance(payload, dict):
+                result["status"] = payload.get("status")
+        return result
+
+    @app.post("/api/episodes/{episode_id}/jobs", status_code=202)
+    async def start_episode_job(
+        episode_id: str,
+        payload: EpisodeGenerationRequest,
+    ) -> dict[str, object]:
+        if not EPISODE_ID.fullmatch(episode_id):
+            raise HTTPException(status_code=404, detail="Episode not found")
+        job = await episode_manager.start(episode_id, payload)
+        return job.public()
+
+    @app.get("/api/episode-jobs/{job_id}")
+    async def get_episode_job(job_id: str) -> dict[str, object]:
+        job = episode_manager.get(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="Episode job not found")
+        return job.public()
+
+    @app.get("/api/episode-media/{episode_id}/{filename}")
+    def episode_media(episode_id: str, filename: str) -> FileResponse:
+        media_type = EPISODE_MEDIA_FILES.get(filename)
+        if not EPISODE_ID.fullmatch(episode_id) or media_type is None:
+            raise HTTPException(status_code=404, detail="Episode media not found")
+        path = current_settings().output_dir / episode_id / filename
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="Episode media not found")
+        return FileResponse(path, media_type=media_type, filename=filename)
 
     return app
 

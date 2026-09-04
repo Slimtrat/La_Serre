@@ -10,6 +10,7 @@ def test_factory_writes_loadable_mapped_workflows(tmp_path: Path) -> None:
 
     generated = factory.write(tmp_path)
     keyframe = WorkflowLoader().load(tmp_path / "keyframe.profile.json")
+    keyframe_guide = WorkflowLoader().load(tmp_path / "keyframe-guide.profile.json")
     video = WorkflowLoader().load(tmp_path / "video.profile.json")
     context = {
         "prompt": "Belladone enters the greenhouse",
@@ -20,16 +21,29 @@ def test_factory_writes_loadable_mapped_workflows(tmp_path: Path) -> None:
         "frames": 97,
         "fps": 24,
         "reference_image": "keyframe.png",
+        "reference_image_guide_1": "keyframe-guide-1.png",
+        "reference_image_guide_2": "keyframe-guide-2.png",
+        "guide_frame_1": 48,
+        "guide_frame_2": 96,
         "output_prefix": "S01E001-S01",
     }
 
     mapped_keyframe = WorkflowMapper().map(keyframe, context)
+    mapped_keyframe_guide = WorkflowMapper().map(keyframe_guide, context)
     mapped_video = WorkflowMapper().map(video, context)
 
     assert generated.preset == "rtx-5070-12gb"
     assert mapped_keyframe["5"]["inputs"]["seed"] == 42
+    assert mapped_keyframe_guide["4"]["inputs"]["image"] == "keyframe.png"
+    assert mapped_keyframe_guide["5"]["inputs"]["height"] == 1024
+    assert mapped_keyframe_guide["7"]["inputs"]["seed"] == 42
     assert mapped_video["5"]["inputs"]["image"] == "keyframe.png"
     assert mapped_video["6"]["inputs"]["length"] == 97
+    assert mapped_video["14"]["inputs"]["image"] == "keyframe-guide-1.png"
+    assert mapped_video["15"]["inputs"]["frame_idx"] == 48
+    assert mapped_video["16"]["inputs"]["image"] == "keyframe-guide-2.png"
+    assert mapped_video["17"]["inputs"]["frame_idx"] == 96
+    assert mapped_video["10"]["inputs"]["model"] == ["18", 0]
     assert mapped_video["13"]["inputs"]["filename_prefix"] == "S01E001-S01"
     assert (tmp_path / "models.required.json").is_file()
 
@@ -39,7 +53,7 @@ def test_factory_only_uses_declared_core_nodes() -> None:
     generated = factory.build()
     used = {
         node["class_type"]
-        for workflow in (generated.keyframe, generated.video)
+        for workflow in (generated.keyframe, generated.keyframe_guide, generated.video)
         for node in workflow.values()
     }
 

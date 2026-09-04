@@ -15,9 +15,29 @@ class Camera(StrictModel):
     lens: str = Field(min_length=1)
 
 
+class DialoguePerformance(StrictModel):
+    """Actor-facing direction that can also drive speech prosody."""
+
+    intention: str = Field(min_length=1)
+    emotion: str = Field(min_length=1)
+    intensity: float = Field(default=0.5, ge=0, le=1)
+    pace: float = Field(default=0, ge=-1, le=1)
+    pitch: float = Field(default=0, ge=-1, le=1)
+    volume: float = Field(default=0, ge=-1, le=1)
+    pause_before_seconds: float = Field(default=0, ge=0, le=3)
+    pause_after_seconds: float = Field(default=0, ge=0, le=3)
+
+
+class VisualBeat(StrictModel):
+    id: str = Field(pattern=r"^(start|middle|end)$")
+    at: float = Field(ge=0, le=1)
+    description: str = Field(min_length=1)
+
+
 class Dialogue(StrictModel):
     speaker: str = Field(min_length=1)
     text: str = Field(min_length=1)
+    performance: DialoguePerformance | None = None
 
 
 class ShotCharacter(StrictModel):
@@ -55,6 +75,7 @@ class Shot(StrictModel):
     characters: list[ShotCharacter] = Field(min_length=1, max_length=3)
     camera: Camera
     action: str = Field(min_length=1)
+    visual_beats: list[VisualBeat] = Field(default_factory=list, max_length=3)
     dialogue: Dialogue | None = None
     lighting: str = Field(min_length=1)
     mood: str = Field(min_length=1)
@@ -68,6 +89,15 @@ class Shot(StrictModel):
             raise ValueError("character ids must be unique within a shot")
         if self.dialogue and self.dialogue.speaker not in character_ids:
             raise ValueError("dialogue speaker must be visible in the shot")
+        if self.visual_beats:
+            if len(self.visual_beats) != 3:
+                raise ValueError("visual_beats must contain start, middle and end")
+            ids = [beat.id for beat in self.visual_beats]
+            positions = [beat.at for beat in self.visual_beats]
+            if ids != ["start", "middle", "end"] or positions != sorted(positions):
+                raise ValueError("visual_beats must be ordered start, middle and end")
+            if positions[0] != 0 or positions[-1] != 1:
+                raise ValueError("visual_beats must start at 0 and end at 1")
         if self.render.frames is None:
             target = max(9, round(self.duration * self.render.fps))
             self.render.frames = max(9, 1 + 8 * round((target - 1) / 8))

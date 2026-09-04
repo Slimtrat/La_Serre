@@ -1,0 +1,214 @@
+.graph-episode-bar {
+  display: grid;
+  grid-template-columns: 190px minmax(360px, 1fr) 190px;
+  align-items: center;
+  gap: 18px;
+  min-height: 76px;
+  padding: 11px 22px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(8, 13, 10, .82);
+}
+
+.graph-active-shot span,
+.graph-episode-progress span {
+  display: block;
+  margin-bottom: 5px;
+  color: #66736b;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+
+.graph-active-shot strong {
+  display: block;
+  overflow: hidden;
+  font: 500 13px/1.3 Georgia, serif;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.graph-shot-track {
+  display: flex;
+  gap: 7px;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 3px 2px 6px;
+  scrollbar-color: #46534a transparent;
+  scrollbar-width: thin;
+}
+
+.graph-shot-tab {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-areas: "number duration" "state state";
+  gap: 2px 9px;
+  min-width: 104px;
+  padding: 9px 10px 8px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(24, 32, 27, .75);
+}
+
+.graph-shot-tab::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 9px 0 0 9px;
+  background: #4f5c53;
+}
+
+.graph-shot-tab:hover,
+.graph-shot-tab.selected {
+  transform: none;
+  border-color: rgba(143, 207, 157, .48);
+  background: rgba(143, 207, 157, .09);
+}
+
+.graph-shot-tab.selected {
+  box-shadow: 0 0 0 2px rgba(143, 207, 157, .1);
+}
+
+.graph-shot-tab strong {
+  grid-area: number;
+  color: var(--text);
+  font-size: 11px;
+}
+
+.graph-shot-tab small {
+  grid-area: duration;
+  color: #728078;
+  font-size: 9px;
+  text-align: right;
+}
+
+.graph-shot-state {
+  grid-area: state;
+  overflow: hidden;
+  color: #718077;
+  font-size: 8px;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.graph-shot-tab.state-review::before { background: var(--violet); }
+.graph-shot-tab.state-review .graph-shot-state { color: #bda5d7; }
+.graph-shot-tab.state-complete::before { background: var(--green); }
+.graph-shot-tab.state-complete .graph-shot-state { color: var(--green); }
+
+.graph-episode-progress {
+  min-width: 0;
+}
+
+#graph-episode-progress-label {
+  overflow: hidden;
+  color: #b5c1b8;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.graph-progress-track {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(143, 207, 157, .1);
+}
+
+.graph-progress-track > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  margin: 0;
+  background: var(--green);
+  transition: width .25s ease;
+}
+
+.graph-focus-open {
+  overflow: hidden;
+}
+
+.graph-workbench.focus-mode {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.graph-workbench.focus-mode .graph-toolbar,
+.graph-workbench.focus-mode .graph-episode-bar,
+.graph-workbench.focus-mode .graph-hints {
+  flex: 0 0 auto;
+}
+
+.graph-workbench.focus-mode .graph-layout {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.graph-workbench.focus-mode .graph-viewport {
+  height: auto;
+  min-height: 0;
+}
+
+.graph-workbench.focus-mode .graph-inspector {
+  overflow-y: auto;
+}
+
+@media (max-width: 1180px) {
+  .graph-episode-bar {
+    grid-template-columns: 170px minmax(260px, 1fr) 170px;
+  }
+}
+
+@media (max-width: 900px) {
+  .graph-episode-bar {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .graph-shot-track {
+    order: 3;
+  }
+
+  .graph-workbench.focus-mode .graph-layout {
+    display: block;
+    overflow-y: auto;
+  }
+
+  .graph-workbench.focus-mode .graph-viewport {
+    height: 56vh;
+  }
+}
+
+@media (max-width: 720px) {
+  .graph-episode-bar {
+    padding-inline: 14px;
+  }
+
+  .graph-active-shot strong {
+    white-space: normal;
+  }
+
+  #graph-focus {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .graph-progress-track > span { transition: none; }
+}

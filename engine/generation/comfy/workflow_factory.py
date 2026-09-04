@@ -24,6 +24,7 @@ class ModelRequirement:
 class GeneratedWorkflows:
     preset: str
     keyframe: dict[str, Any]
+    keyframe_guide: dict[str, Any]
     video: dict[str, Any]
     requirements: tuple[ModelRequirement, ...]
 
@@ -68,11 +69,15 @@ class WorkflowFactory:
             "CLIPTextEncode",
             "EmptyLatentImage",
             "KSampler",
+            "VAEEncode",
             "VAEDecode",
             "SaveImage",
             "LoadImage",
+            "ImageScale",
             "LTXVImgToVideo",
+            "LTXVAddGuide",
             "LTXVConditioning",
+            "LTXVSpatioTemporalGuidance",
             "LTXVScheduler",
             "KSamplerSelect",
             "SamplerCustom",
@@ -85,10 +90,14 @@ class WorkflowFactory:
         result = GeneratedWorkflows(
             preset=self.preset,
             keyframe=self._keyframe_workflow(),
+            keyframe_guide=self._keyframe_guide_workflow(),
             video=self._video_workflow(),
             requirements=self.requirements,
         )
         WorkflowLoader.validate_api_format(result.keyframe, "generated keyframe")
+        WorkflowLoader.validate_api_format(
+            result.keyframe_guide, "generated keyframe guide"
+        )
         WorkflowLoader.validate_api_format(result.video, "generated video")
         return result
 
@@ -96,10 +105,15 @@ class WorkflowFactory:
         generated = self.build()
         root.mkdir(parents=True, exist_ok=True)
         self._write_json(root / "keyframe.api.json", generated.keyframe)
+        self._write_json(root / "keyframe-guide.api.json", generated.keyframe_guide)
         self._write_json(root / "video.api.json", generated.video)
         self._write_json(
             root / "keyframe.profile.json",
             self._keyframe_profile().model_dump(mode="json"),
+        )
+        self._write_json(
+            root / "keyframe-guide.profile.json",
+            self._keyframe_guide_profile().model_dump(mode="json"),
         )
         self._write_json(
             root / "video.profile.json",
@@ -140,8 +154,8 @@ class WorkflowFactory:
                 "inputs": {
                     "model": ["1", 0],
                     "seed": 0,
-                    "steps": 28,
-                    "cfg": 6.5,
+                    "steps": 34,
+                    "cfg": 5.8,
                     "sampler_name": "dpmpp_2m_sde",
                     "scheduler": "karras",
                     "positive": ["2", 0],
@@ -157,6 +171,63 @@ class WorkflowFactory:
             "7": {
                 "class_type": "SaveImage",
                 "inputs": {"images": ["6", 0], "filename_prefix": "Serre/keyframe"},
+            },
+        }
+
+    @staticmethod
+    def _keyframe_guide_workflow() -> dict[str, Any]:
+        return {
+            "1": {
+                "class_type": "CheckpointLoaderSimple",
+                "inputs": {"ckpt_name": "sd_xl_base_1.0.safetensors"},
+            },
+            "2": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {"text": "", "clip": ["1", 1]},
+                "_meta": {"title": "Positive prompt"},
+            },
+            "3": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {"text": "", "clip": ["1", 1]},
+                "_meta": {"title": "Negative prompt"},
+            },
+            "4": {"class_type": "LoadImage", "inputs": {"image": "previous-pose.png"}},
+            "5": {
+                "class_type": "ImageScale",
+                "inputs": {
+                    "image": ["4", 0],
+                    "upscale_method": "lanczos",
+                    "width": 576,
+                    "height": 1024,
+                    "crop": "center",
+                },
+            },
+            "6": {
+                "class_type": "VAEEncode",
+                "inputs": {"pixels": ["5", 0], "vae": ["1", 2]},
+            },
+            "7": {
+                "class_type": "KSampler",
+                "inputs": {
+                    "model": ["1", 0],
+                    "seed": 0,
+                    "steps": 34,
+                    "cfg": 5.8,
+                    "sampler_name": "dpmpp_2m_sde",
+                    "scheduler": "karras",
+                    "positive": ["2", 0],
+                    "negative": ["3", 0],
+                    "latent_image": ["6", 0],
+                    "denoise": 0.52,
+                },
+            },
+            "8": {
+                "class_type": "VAEDecode",
+                "inputs": {"samples": ["7", 0], "vae": ["1", 2]},
+            },
+            "9": {
+                "class_type": "SaveImage",
+                "inputs": {"images": ["8", 0], "filename_prefix": "Serre/keyframe-guide"},
             },
         }
 
@@ -197,41 +268,77 @@ class WorkflowFactory:
                     "height": 1024,
                     "length": 97,
                     "batch_size": 1,
-                    "strength": 0.15,
+                    "strength": 1.0,
+                },
+            },
+            "14": {"class_type": "LoadImage", "inputs": {"image": "keyframe-guide-1.png"}},
+            "15": {
+                "class_type": "LTXVAddGuide",
+                "inputs": {
+                    "positive": ["6", 0],
+                    "negative": ["6", 1],
+                    "vae": ["1", 2],
+                    "latent": ["6", 2],
+                    "image": ["14", 0],
+                    "frame_idx": 48,
+                    "strength": 0.95,
+                },
+            },
+            "16": {"class_type": "LoadImage", "inputs": {"image": "keyframe-guide-2.png"}},
+            "17": {
+                "class_type": "LTXVAddGuide",
+                "inputs": {
+                    "positive": ["15", 0],
+                    "negative": ["15", 1],
+                    "vae": ["1", 2],
+                    "latent": ["15", 2],
+                    "image": ["16", 0],
+                    "frame_idx": 96,
+                    "strength": 1.0,
+                },
+            },
+            "18": {
+                "class_type": "LTXVSpatioTemporalGuidance",
+                "inputs": {
+                    "model": ["1", 0],
+                    "scale": 0.7,
+                    "blocks": "29",
+                    "start_percent": 0.05,
+                    "end_percent": 0.85,
                 },
             },
             "7": {
                 "class_type": "LTXVConditioning",
                 "inputs": {
-                    "positive": ["6", 0],
-                    "negative": ["6", 1],
+                    "positive": ["17", 0],
+                    "negative": ["17", 1],
                     "frame_rate": 24.0,
                 },
             },
             "8": {
                 "class_type": "LTXVScheduler",
                 "inputs": {
-                    "steps": 30,
+                    "steps": 36,
                     "max_shift": 2.05,
                     "base_shift": 0.95,
                     "stretch": True,
                     "terminal": 0.1,
-                    "latent": ["6", 2],
+                    "latent": ["17", 2],
                 },
             },
             "9": {"class_type": "KSamplerSelect", "inputs": {"sampler_name": "euler"}},
             "10": {
                 "class_type": "SamplerCustom",
                 "inputs": {
-                    "model": ["1", 0],
+                    "model": ["18", 0],
                     "add_noise": True,
                     "noise_seed": 0,
-                    "cfg": 3.0,
+                    "cfg": 3.4,
                     "positive": ["7", 0],
                     "negative": ["7", 1],
                     "sampler": ["9", 0],
                     "sigmas": ["8", 0],
-                    "latent_image": ["6", 2],
+                    "latent_image": ["17", 2],
                 },
             },
             "11": {
@@ -267,6 +374,23 @@ class WorkflowFactory:
         )
 
     @staticmethod
+    def _keyframe_guide_profile() -> WorkflowProfile:
+        return WorkflowProfile(
+            id="generated-sdxl-continuity-guide-v2",
+            workflow=Path("keyframe-guide.api.json"),
+            bindings=[
+                WorkflowBinding(source="prompt", node_id="2", input="text"),
+                WorkflowBinding(source="negative_prompt", node_id="3", input="text"),
+                WorkflowBinding(source="reference_image", node_id="4", input="image"),
+                WorkflowBinding(source="width", node_id="5", input="width"),
+                WorkflowBinding(source="height", node_id="5", input="height"),
+                WorkflowBinding(source="seed", node_id="7", input="seed"),
+                WorkflowBinding(source="output_prefix", node_id="9", input="filename_prefix"),
+            ],
+            output_node_ids=["9"],
+        )
+
+    @staticmethod
     def _video_profile() -> WorkflowProfile:
         return WorkflowProfile(
             id="generated-ltx-i2v-2b-v1",
@@ -281,6 +405,14 @@ class WorkflowFactory:
                 WorkflowBinding(source="fps", node_id="7", input="frame_rate"),
                 WorkflowBinding(source="fps", node_id="12", input="fps"),
                 WorkflowBinding(source="reference_image", node_id="5", input="image"),
+                WorkflowBinding(
+                    source="reference_image_guide_1", node_id="14", input="image"
+                ),
+                WorkflowBinding(source="guide_frame_1", node_id="15", input="frame_idx"),
+                WorkflowBinding(
+                    source="reference_image_guide_2", node_id="16", input="image"
+                ),
+                WorkflowBinding(source="guide_frame_2", node_id="17", input="frame_idx"),
                 WorkflowBinding(source="output_prefix", node_id="13", input="filename_prefix"),
             ],
             output_node_ids=["13"],

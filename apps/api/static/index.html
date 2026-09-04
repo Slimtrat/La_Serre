@@ -6,8 +6,19 @@
     <title>La Serre des Venins — Studio</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="stylesheet" href="/static/graph.css" />
+    <link rel="stylesheet" href="/static/workflow-graph.css" />
+    <link rel="stylesheet" href="/static/output-console.css" />
+    <link rel="stylesheet" href="/static/responsive.css" />
+    <link rel="stylesheet" href="/static/episode-canvas.css" />
+    <link rel="stylesheet" href="/static/episode-production.css" />
+    <link rel="stylesheet" href="/static/onepage.css" />
+    <link rel="stylesheet" href="/static/studio-shell.css" />
+    <link rel="stylesheet" href="/static/desktop-workspace.css" />
+    <link rel="stylesheet" href="/static/activity-bar.css" />
+    <link rel="stylesheet" href="/static/getting-started.css" />
   </head>
-  <body>
+  <body data-workspace-view="graph">
     <div class="ambient ambient-one"></div>
     <div class="ambient ambient-two"></div>
     <header class="topbar">
@@ -15,9 +26,31 @@
         <span class="brand-mark">SV</span>
         <span><strong>La Serre des Venins</strong><small>Studio local</small></span>
       </a>
+      <span id="app-version" class="app-version" title="Version actuelle">v0.2.3</span>
+      <nav class="app-nav" aria-label="Espaces du studio" role="tablist">
+        <button type="button" role="tab" data-workspace-target="graph" class="selected">Production</button>
+        <button type="button" role="tab" data-workspace-target="plan">Plan</button>
+        <button type="button" role="tab" data-workspace-target="outputs">Sorties</button>
+        <button type="button" role="tab" data-workspace-target="settings">Réglages</button>
+      </nav>
+      <label class="project-switcher" title="Changer de projet">
+        <span>Projet</span>
+        <select id="project-select" aria-label="Projet actif"><option>Chargement…</option></select>
+      </label>
+      <button id="project-create-open" class="topbar-icon" type="button" title="Créer un projet" aria-label="Créer un projet">＋</button>
       <div class="connection"><span id="connection-dot" class="dot"></span><span id="connection-label">Connexion…</span></div>
+      <button id="getting-started-open" class="guide-toggle" type="button" title="Ouvrir le guide de démarrage">
+        <span aria-hidden="true">?</span><strong>Guide</strong>
+      </button>
+      <button id="notification-toggle" class="notification-toggle" type="button" aria-expanded="false" aria-controls="notification-panel">
+        <span>Journal</span><strong id="notification-badge" class="hidden">0</strong>
+      </button>
       <button id="settings-toggle" class="button ghost">Réglages ComfyUI</button>
     </header>
+    <aside id="notification-panel" class="notification-panel hidden" aria-label="Journal du projet">
+      <header><div><small>PROJET ACTIF</small><strong>Journal d’activité</strong></div><button id="notification-read-all" type="button">Tout marquer comme lu</button></header>
+      <ol id="notification-list"><li class="empty">Aucune notification.</li></ol>
+    </aside>
 
     <main class="shell">
       <section class="hero">
@@ -48,17 +81,152 @@
           <span id="episode-duration" class="badge">—</span>
           <span id="episode-state" class="muted">Catalogue local</span>
         </div>
-        <div>
-          <p class="eyebrow">PERSONNAGES CANONIQUES</p>
-          <div id="episode-cast" class="character-cast"></div>
-        </div>
-        <div>
-          <p class="eyebrow">PLANS</p>
-          <div id="episode-shots" class="shot-strip"></div>
-        </div>
+        <details class="episode-details">
+          <summary>Voir le casting et les plans</summary>
+          <div class="episode-details-grid">
+            <div>
+              <p class="eyebrow">PERSONNAGES CANONIQUES</p>
+              <div id="episode-cast" class="character-cast"></div>
+            </div>
+            <div>
+              <p class="eyebrow">PLANS</p>
+              <div id="episode-shots" class="shot-strip"></div>
+            </div>
+          </div>
+        </details>
       </section>
 
-      <section id="settings-panel" class="panel setup hidden">
+      <section class="graph-workbench panel" aria-labelledby="graph-title">
+        <header class="graph-toolbar">
+          <div>
+            <p class="eyebrow">CANVAS DE PRODUCTION</p>
+            <h2 id="graph-title">Du récit au plan final</h2>
+            <p class="graph-subtitle">Déplace le canvas, zoome et ouvre un nœud pour agir.</p>
+          </div>
+          <div class="graph-controls" aria-label="Navigation du graphe">
+            <button id="graph-zoom-out" class="button ghost" type="button" aria-label="Dézoomer">−</button>
+            <output id="graph-zoom-label" aria-live="polite">75 %</output>
+            <button id="graph-zoom-in" class="button ghost" type="button" aria-label="Zoomer">+</button>
+            <button id="graph-fit" class="button secondary" type="button">Tout voir</button>
+            <button id="graph-reset" class="button ghost" type="button">Réinitialiser</button>
+            <button id="graph-focus" class="button ghost" type="button" aria-pressed="false">Mode focus</button>
+          </div>
+        </header>
+
+        <div class="graph-episode-bar">
+          <div class="graph-active-shot">
+            <span>PLAN ACTIF</span>
+            <strong id="graph-active-shot">Chargement…</strong>
+          </div>
+          <div id="graph-shot-track" class="graph-shot-track" role="tablist" aria-label="Plans de l’épisode"></div>
+          <div class="graph-episode-progress">
+            <span>PROGRESSION DE L’ÉPISODE</span>
+            <strong id="graph-episode-progress-label">0 / 0 clips finalisés</strong>
+            <div class="graph-progress-track" role="progressbar" aria-label="Clips finalisés" aria-valuenow="0" aria-valuemin="0" aria-valuemax="1">
+              <span id="graph-episode-progress-bar"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="graph-layout">
+          <div id="graph-viewport" class="graph-viewport" aria-label="Graphe de production interactif">
+            <div id="graph-world" class="graph-world">
+              <svg id="graph-links" class="graph-links" width="2440" height="900" aria-hidden="true">
+                <defs>
+                  <marker id="graph-arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+                    <path d="M 0 0 L 10 5 L 0 10 z"></path>
+                  </marker>
+                </defs>
+              </svg>
+
+              <button class="graph-node state-ready selected" type="button" data-node-id="story" data-x="80" data-y="340">
+                <span class="graph-node-index">01</span><span class="graph-node-type">ENTRÉE</span>
+                <strong>Histoire</strong><small>Texte ou import</small>
+                <span class="graph-node-status">Source chargée</span>
+              </button>
+              <button class="graph-node state-idle" type="button" data-node-id="director" data-x="380" data-y="340">
+                <span class="graph-node-index">02</span><span class="graph-node-type">OLLAMA</span>
+                <strong>Director</strong><small>Découpage créatif</small>
+                <span class="graph-node-status">Disponible</span>
+              </button>
+              <button class="graph-node state-ready" type="button" data-node-id="shot" data-x="680" data-y="340">
+                <span class="graph-node-index">03</span><span class="graph-node-type">CONTRAT</span>
+                <strong>Shot JSON</strong><small>Plan validé</small>
+                <span class="graph-node-status">Prêt</span>
+              </button>
+              <button class="graph-node state-ready graph-node-branch" type="button" data-node-id="cast" data-x="390" data-y="80">
+                <span class="graph-node-index">C</span><span class="graph-node-type">BIBLE</span>
+                <strong>Personnages</strong><small>Identités privées</small>
+                <span class="graph-node-status">Canon verrouillé</span>
+              </button>
+              <button class="graph-node state-pending" type="button" data-node-id="keyframe" data-x="980" data-y="120">
+                <span class="graph-node-index">04</span><span class="graph-node-type">SDXL / IMPORT</span>
+                <strong>Keyframe</strong><small>Composition & identité</small>
+                <span class="graph-node-status">À produire</span>
+              </button>
+              <button class="graph-node state-pending" type="button" data-node-id="review" data-x="1270" data-y="120">
+                <span class="graph-node-index">✓</span><span class="graph-node-type">HUMAIN</span>
+                <strong>Validation</strong><small>Approuver ou reroll</small>
+                <span class="graph-node-status">En attente</span>
+              </button>
+              <button class="graph-node state-pending" type="button" data-node-id="motion" data-x="1560" data-y="120">
+                <span class="graph-node-index">05</span><span class="graph-node-type">LTX / IMPORT</span>
+                <strong>Mouvement</strong><small>Image vers vidéo</small>
+                <span class="graph-node-status">En attente</span>
+              </button>
+              <button class="graph-node state-optional graph-node-branch" type="button" data-node-id="voice" data-x="980" data-y="570">
+                <span class="graph-node-index">A</span><span class="graph-node-type">AUDIO</span>
+                <strong>Voix & son</strong><small>TTS ou import</small>
+                <span class="graph-node-status">Optionnel</span>
+              </button>
+              <button class="graph-node state-future graph-node-branch" type="button" data-node-id="mix" data-x="1270" data-y="570">
+                <span class="graph-node-index">M</span><span class="graph-node-type">MIXAGE</span>
+                <strong>Synchronisation</strong><small>Voix, musique, SFX</small>
+                <span class="graph-node-status">À venir</span>
+              </button>
+              <button class="graph-node state-future" type="button" data-node-id="montage" data-x="1840" data-y="340">
+                <span class="graph-node-index">06</span><span class="graph-node-type">FFMPEG</span>
+                <strong>Montage</strong><small>Plans approuvés</small>
+                <span class="graph-node-status">À venir</span>
+              </button>
+              <button class="graph-node state-future" type="button" data-node-id="export" data-x="2130" data-y="340">
+                <span class="graph-node-index">07</span><span class="graph-node-type">9:16</span>
+                <strong>Épisode final</strong><small>1080 × 1920</small>
+                <span class="graph-node-status">À venir</span>
+              </button>
+            </div>
+
+            <div id="graph-minimap" class="graph-minimap" aria-hidden="true">
+              <div id="graph-minimap-world" class="graph-minimap-world"></div>
+              <div id="graph-minimap-window" class="graph-minimap-window"></div>
+            </div>
+          </div>
+
+          <aside id="graph-inspector" class="graph-inspector" aria-live="polite">
+            <div class="graph-inspector-heading">
+              <span id="graph-inspector-index">01</span>
+              <div><small id="graph-inspector-type">ENTRÉE</small><h3 id="graph-inspector-title">Histoire</h3></div>
+            </div>
+            <p id="graph-inspector-description">Le brief narratif du plan sélectionné.</p>
+            <dl class="graph-inspector-facts">
+              <div><dt>Moteur</dt><dd id="graph-inspector-provider">Ollama ou import</dd></div>
+              <div><dt>État</dt><dd id="graph-inspector-status">Source chargée</dd></div>
+            </dl>
+            <div id="graph-inspector-preview" class="graph-inspector-preview hidden"></div>
+            <div id="graph-inspector-actions" class="graph-inspector-actions"></div>
+            <p id="graph-inspector-drop" class="graph-inspector-drop hidden">Dépose un fichier directement sur ce nœud.</p>
+          </aside>
+        </div>
+
+        <footer class="graph-hints">
+          <span>Glisser le fond pour se déplacer</span>
+          <span>Molette pour zoomer</span>
+          <span>Glisser un nœud pour réorganiser</span>
+          <span id="graph-position">x 0 · y 0</span>
+        </footer>
+      </section>
+
+      <section id="settings-panel" class="panel setup">
         <div class="panel-heading">
           <div><p class="eyebrow">CONFIGURATION GUIDÉE</p><h2>ComfyUI sans JSON à bricoler</h2></div>
           <span id="setup-badge" class="badge warn">À configurer</span>
@@ -88,7 +256,7 @@
         </details>
       </section>
 
-      <section class="pipeline-map panel">
+      <section class="pipeline-map panel hidden">
         <div class="panel-heading compact-heading">
           <div><p class="eyebrow">VISION PRODUIT</p><h2>Chaîne de production hybride</h2></div>
           <span class="badge">3 étapes actives</span>
@@ -110,7 +278,7 @@
             <label class="mini-upload">Déposer JSON<input id="shot-file" type="file" accept="application/json,.json" /></label>
           </div>
           <textarea id="shot-editor" spellcheck="false" aria-label="Shot JSON"></textarea>
-          <div class="editor-footer"><span id="json-state">Chargement…</span><label><input id="force-output" type="checkbox" /> Remplacer la sortie existante</label></div>
+          <div class="editor-footer"><span id="json-state">Chargement…</span><span>Chaque régénération conserve la version précédente.</span></div>
         </div>
 
         <div class="stages">
@@ -129,10 +297,10 @@
             </div>
           </article>
           <article class="stage-card" data-job-stage="input">
-            <div class="stage-number">01</div><div class="stage-body"><strong>Validation</strong><p>Schéma Pydantic strict</p><small class="stage-status">En attente</small></div>
+            <div class="stage-number">01</div><div class="stage-body"><strong>Validation</strong><p>Schéma Pydantic strict</p><small class="stage-status">En attente</small><button class="stage-run" type="button" data-stage-action="validate">Valider ce plan</button></div>
           </article>
           <article class="stage-card" data-job-stage="prompt">
-            <div class="stage-number">02</div><div class="stage-body"><strong>Prompt</strong><p>Sémantique → instructions visuelles</p><small class="stage-status">En attente</small></div>
+            <div class="stage-number">02</div><div class="stage-body"><strong>Prompt</strong><p>Sémantique → instructions visuelles</p><small class="stage-status">En attente</small><button class="stage-run" type="button" data-stage-action="prompt">Construire le prompt</button></div>
           </article>
           <article class="stage-card source-card" data-job-stage="keyframe">
             <div class="stage-number">03</div>
@@ -141,15 +309,17 @@
               <div class="segmented" data-source="keyframe"><button class="selected" data-value="model">Modèle SDXL</button><button data-value="manual">Importer</button></div>
               <label class="dropzone hidden" data-dropzone="keyframe">Glisse une image ici<input type="file" accept="image/png,image/jpeg,image/webp" /></label>
               <small class="stage-status">En attente</small>
+              <button class="stage-run" type="button" data-stage-action="keyframe">Générer les 3 poses</button>
             </div>
           </article>
           <article class="stage-card source-card audio-card">
             <div class="stage-number">04</div>
             <div class="stage-body">
-              <strong>Voix / son</strong><p>Slot prêt pour TTS ou mix externe</p>
-              <div class="segmented" data-source="audio"><button disabled data-value="model">Modèle TTS</button><button class="selected" data-value="manual">Importer</button></div>
-              <label class="dropzone" data-dropzone="audio">Glisse un son ici<input type="file" accept="audio/*" /></label>
-              <small class="stage-status">Optionnel pour cette milestone</small>
+              <strong>Voix / son</strong><p>Interprétation locale et musique de fond</p>
+              <div class="segmented" data-source="audio"><button class="selected" data-value="model">Générer</button><button data-value="manual">Importer</button></div>
+              <label class="dropzone hidden" data-dropzone="audio">Glisse un son ici<input type="file" accept="audio/*" /></label>
+              <small class="stage-status">Prêt à générer</small>
+              <div class="stage-run-group"><button class="stage-run" type="button" data-stage-action="voice">Générer la voix</button><button class="stage-run" type="button" data-stage-action="music">Musique de fond</button></div>
             </div>
           </article>
           <article class="stage-card source-card" data-job-stage="video">
@@ -159,27 +329,91 @@
               <div class="segmented" data-source="video"><button class="selected" data-value="model">Modèle LTX</button><button data-value="manual">Importer</button></div>
               <label class="dropzone hidden" data-dropzone="video">Glisse une vidéo ici<input type="file" accept="video/*" /></label>
               <small class="stage-status">En attente</small>
+              <button class="stage-run" type="button" data-stage-action="video">Générer le clip</button>
             </div>
           </article>
           <article class="stage-card" data-job-stage="artifacts">
-            <div class="stage-number">06</div><div class="stage-body"><strong>Traçabilité</strong><p>Seeds, checksums et manifeste</p><small class="stage-status">En attente</small></div>
+            <div class="stage-number">06</div><div class="stage-body"><strong>Traçabilité</strong><p>Seeds, checksums et manifeste</p><small class="stage-status">En attente</small><button class="stage-run" type="button" data-stage-action="history">Ouvrir l’historique</button></div>
           </article>
         </div>
       </section>
 
-      <section class="panel preview-panel">
-        <div class="panel-heading compact-heading"><div><p class="eyebrow">SORTIES</p><h2>Contrôle humain</h2></div><span id="job-badge" class="badge">Aucun rendu</span></div>
-        <div class="previews">
-          <div class="preview-frame"><span class="preview-label">KEYFRAME</span><div id="image-empty" class="empty-preview">L’image apparaîtra ici</div><img id="keyframe-preview" class="hidden" alt="Keyframe générée ou importée" /></div>
-          <div class="preview-frame"><span class="preview-label">CLIP</span><div id="video-empty" class="empty-preview">La vidéo apparaîtra ici</div><video id="video-preview" class="hidden" controls loop></video></div>
-          <div class="preview-frame audio-preview"><span class="preview-label">AUDIO</span><div id="audio-empty" class="empty-preview">Aucun son importé</div><audio id="audio-preview" class="hidden" controls></audio></div>
+      <section id="preview-panel" class="panel preview-panel">
+        <div class="panel-heading compact-heading output-heading">
+          <div><p class="eyebrow">SORTIES</p><h2>Contrôle humain</h2></div>
+          <div class="output-history-controls"><label>Version<select id="run-history-select" aria-label="Version générée"><option>Aucun rendu</option></select></label><button id="restore-run" class="button ghost" type="button" disabled>Restaurer</button><span id="job-badge" class="badge">Aucun rendu</span></div>
+        </div>
+        <div class="output-layout">
+          <div class="previews">
+            <div class="preview-frame pose-preview"><span class="preview-label">POSES D’ACTION</span><div id="image-empty" class="empty-preview">Les poses début, milieu et fin apparaîtront ici</div><div id="keyframe-strip" class="frame-browser hidden"><img id="keyframe-preview" alt="Pose générée sélectionnée" /><div class="frame-controls"><button id="frame-prev" type="button" aria-label="Pose précédente">←</button><span id="frame-counter">1 / 1</span><button id="frame-next" type="button" aria-label="Pose suivante">→</button></div><div id="frame-picker" class="frame-picker"></div></div></div>
+            <div class="preview-frame"><span class="preview-label">CLIP</span><div id="video-empty" class="empty-preview">La vidéo apparaîtra ici</div><video id="video-preview" class="hidden" controls loop></video></div>
+            <div class="preview-frame audio-preview"><span class="preview-label">VOIX / MUSIQUE</span><div id="audio-empty" class="empty-preview">Aucune piste générée</div><audio id="audio-preview" class="hidden" controls></audio></div>
+          </div>
+          <aside class="output-sidebar">
+            <section class="scene-context"><p class="eyebrow">SCÈNE EN COURS</p><h3 id="scene-title">Sélectionne un plan</h3><p id="scene-source" class="scene-source"></p><dl><div><dt>Action</dt><dd id="scene-action">—</dd></div><div><dt>Caméra</dt><dd id="scene-camera">—</dd></div></dl><div id="scene-dialogue" class="scene-dialogue"></div><ol id="scene-beats" class="scene-beats"></ol></section>
+            <section class="run-log"><div><p class="eyebrow">JOURNAL</p><strong id="run-log-title">Aucune exécution</strong></div><ol id="run-log"></ol></section>
+          </aside>
         </div>
         <div class="bottom-actions"><p id="job-message">Configure ComfyUI, puis lance une génération.</p><button id="continue-video" class="button secondary">Animer la keyframe</button></div>
       </section>
     </main>
     <div id="toast" class="toast hidden"></div>
+    <dialog id="project-create-dialog" class="project-create-dialog" aria-labelledby="project-create-title">
+      <form id="project-create-form">
+        <header><div><p class="eyebrow">NOUVEL ESPACE ISOLÉ</p><h2 id="project-create-title">Créer un projet</h2></div><button id="project-create-close" class="button ghost" type="button">Fermer</button></header>
+        <p>Le scénario courant est dupliqué comme base. Les images, voix, clips, historiques et masters repartent dans un dossier de sortie vide.</p>
+        <label>Nom du projet<input id="project-create-name" name="name" maxlength="80" required placeholder="Version alternative" /></label>
+        <footer><button class="button primary" type="submit">Créer et ouvrir</button></footer>
+      </form>
+    </dialog>
+    <script src="/static/notifications.js" defer></script>
+    <script src="/static/projects.js" defer></script>
     <script src="/static/app.js" defer></script>
     <script src="/static/narrative.js" defer></script>
     <script src="/static/episode.js" defer></script>
+    <script src="/static/output-console.js" defer></script>
+    <dialog id="workflow-graph-dialog" class="workflow-graph-dialog" aria-labelledby="workflow-graph-title">
+      <section class="workflow-graph-shell">
+        <header class="workflow-graph-toolbar">
+          <div>
+            <p class="eyebrow">SOUS-WORKFLOW COMFYUI</p>
+            <h2 id="workflow-graph-title">Graphe d’exécution</h2>
+            <p id="workflow-graph-profile">Chargement du profil…</p>
+          </div>
+          <nav id="workflow-graph-tabs" aria-label="Sous-workflows">
+            <button type="button" data-workflow-kind="keyframe">Pose initiale</button>
+            <button type="button" data-workflow-kind="keyframe-guide">Continuité</button>
+            <button type="button" data-workflow-kind="video">Mouvement</button>
+          </nav>
+          <div class="workflow-graph-controls">
+            <button id="workflow-graph-zoom-out" class="button ghost" type="button" aria-label="Dézoomer">−</button>
+            <output id="workflow-graph-zoom-label">100 %</output>
+            <button id="workflow-graph-zoom-in" class="button ghost" type="button" aria-label="Zoomer">+</button>
+            <button id="workflow-graph-fit" class="button secondary" type="button">Tout voir</button>
+            <button id="workflow-graph-close" class="button ghost" type="button">Fermer</button>
+          </div>
+        </header>
+        <div id="workflow-graph-viewport" class="workflow-graph-viewport">
+          <div id="workflow-graph-world" class="workflow-graph-world">
+            <svg id="workflow-graph-links" class="workflow-graph-links" aria-hidden="true"></svg>
+            <div id="workflow-graph-nodes"></div>
+          </div>
+        </div>
+        <footer class="workflow-graph-legend">
+          <span><i class="binding"></i> Paramètre injecté par le Studio</span>
+          <span><i class="output"></i> Sortie enregistrée</span>
+          <strong id="workflow-graph-live">Inactif</strong>
+        </footer>
+      </section>
+    </dialog>
+
+    <script src="/static/graph.js" defer></script>
+    <script src="/static/workflow-graph.js" defer></script>
+    <script src="/static/episode-canvas.js" defer></script>
+    <script src="/static/episode-production.js" defer></script>
+    <script src="/static/workspace-shell.js" defer></script>
+    <script src="/static/desktop-workspace.js" defer></script>
+    <script src="/static/activity-bar.js" defer></script>
+    <script src="/static/getting-started.js" defer></script>
   </body>
 </html>

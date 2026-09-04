@@ -42,12 +42,26 @@ class PromptBuilder:
         dialogue = "No spoken dialogue in this shot."
         if shot.dialogue:
             dialogue = f'{shot.dialogue.speaker} says in French: "{shot.dialogue.text}"'
+            if shot.dialogue.performance:
+                performance = shot.dialogue.performance
+                dialogue += (
+                    f". Acting intention: {performance.intention}. Emotion: "
+                    f"{performance.emotion}, intensity {performance.intensity:.2f}"
+                )
+
+        timeline = "No explicit visual timeline supplied."
+        if shot.visual_beats:
+            timeline = "\n".join(
+                f"{round(beat.at * 100)}% — {beat.description}"
+                for beat in shot.visual_beats
+            )
 
         positive = "\n\n".join(
             [
                 "CHARACTERS:\n" + "\n\n".join(cast),
                 f"LOCATION:\n{shot.location}. {shot.location_description}.",
                 f"ACTION:\n{shot.action}.",
+                f"SHOT TIMELINE:\n{timeline}",
                 f"DIALOGUE:\n{dialogue}",
                 (f"CAMERA:\n{shot.camera.shot_type}, {shot.camera.lens}, {shot.camera.movement}."),
                 f"LIGHTING:\n{shot.lighting}.",
@@ -55,7 +69,9 @@ class PromptBuilder:
                 "STYLE:\n" + ", ".join(shot.style) + ". Cinematic realistic textures.",
                 (
                     "CONTINUITY:\nKeep faces, bodies, hair, clothing, colors, accessories "
-                    "and plant motifs unchanged throughout the shot."
+                    "and plant motifs unchanged throughout the shot. Preserve the exact "
+                    "greenhouse architecture, marble table, door placement, weather, light "
+                    "direction and background objects between every pose."
                 ),
             ]
         )
@@ -70,6 +86,7 @@ class PromptBuilder:
                 "description": shot.location_description,
             },
             "action": shot.action,
+            "visual_beats": [beat.model_dump(mode="json") for beat in shot.visual_beats],
             "dialogue": shot.dialogue.model_dump() if shot.dialogue else None,
             "camera": shot.camera.model_dump(),
             "lighting": shot.lighting,
@@ -80,4 +97,14 @@ class PromptBuilder:
             positive=positive,
             negative=", ".join(negatives),
             semantic=semantic,
+        )
+
+    @staticmethod
+    def visual_beat_prompt(prompt: PromptPackage, description: str) -> str:
+        return (
+            "PRIMARY FRAME INSTRUCTION — render this exact instant before anything else:\n"
+            f"{description}.\nDo not include actions that happen earlier or later. "
+            "Keep the same character identity, botanical anatomy, set geometry, props, "
+            "palette and light direction as the adjacent frame.\n\n"
+            f"{prompt.positive}"
         )

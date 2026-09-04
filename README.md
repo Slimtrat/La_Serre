@@ -6,8 +6,9 @@ un clip LTX via une instance ComfyUI externe. Chaque étape accepte soit un mod�
 local, soit un artefact texte, image, audio ou vidéo préparé ailleurs.
 
 ```text
-source texte -> Ollama Director -> Shot JSON validé -> ComfyUI keyframe
-              -> validation humaine -> ComfyUI/LTX i2v -> clip.mp4
+source texte -> Ollama Director -> Shot JSON validé -> 3 poses ComfyUI
+              -> validation humaine -> LTX multi-guides -> clip.mp4
+              -> voix + musique + cadres + sous-titres -> episode.mp4
 ```
 
 Le moteur narratif, le Director, les workflows de génération et la
@@ -35,6 +36,40 @@ Lancez l'interface :
 python -m tools.run_studio
 ```
 
+### Application Windows native
+
+Le shell desktop ouvre le Studio dans une fenêtre native WebView2, sans onglet de
+navigateur. Il réserve automatiquement un port local libre, démarre FastAPI en
+arrière-plan puis arrête proprement le serveur lorsque la dernière fenêtre est
+fermée. Les panneaux peuvent ensuite être détachés dans de vraies fenêtres via
+l'API locale `pywebview.api.open_panel(...)` exposée au front.
+
+```powershell
+python -m pip install -e ".[desktop]"
+python -m apps.desktop
+# ou, après installation : serre-desktop
+```
+
+En développement, les projets restent dans le dossier courant. L'EXE utilise
+`%LOCALAPPDATA%\SerreStudio` pour les projets, sorties, workflows, préférences
+WebView2 et journaux (`logs\desktop.log`). Un emplacement isolé peut être choisi
+avec `--data-dir C:\chemin\studio`. `--port 0` est la valeur par défaut et évite
+les collisions avec un ancien serveur sur le port 8000.
+
+La construction locale de l'EXE nécessite l'extra `build`; l'installateur exige
+également Inno Setup 6 :
+
+```powershell
+python -m pip install -e ".[desktop,build]"
+python -m tools.build_desktop
+python -m tools.build_desktop --installer
+```
+
+Le workflow **Windows desktop** vérifie le projet, produit
+`SerreStudio.exe`, une archive portable, un installateur utilisateur et leurs
+sommes SHA-256. Chaque exécution publie un artefact téléchargeable; un tag `v*`
+publie aussi ces fichiers dans une GitHub Release.
+
 Dans **Réglages ComfyUI**, cliquez sur **Créer mes workflows**, téléchargez les
 modèles affichés puis utilisez **Installer les téléchargements terminés**. Dans
 l'étape Histoire, choisissez un modèle Ollama et cliquez sur **Proposer le
@@ -52,6 +87,8 @@ Sortie attendue :
 ```text
 output/S01E001-S01/
   keyframe.png
+  keyframe-guide-1.png
+  keyframe-guide-2.png
   clip.mp4
   generation.json
   prompt.txt
@@ -69,6 +106,10 @@ Les fichiers existants ne sont jamais écrasés sans `--force`. Le seed, les
 paramètres, les prompts, les références, les profils, les identifiants ComfyUI
 et les artefacts sont consignés dans `generation.json`.
 
+Voir [`docs/episode-production-contract.md`](docs/episode-production-contract.md) pour le
+contrat entre scénario, intentions de jeu, poses multiples, cadre fantasy, musique et
+sous-titres visibles.
+
 ## Studio hybride
 
 Les slots `story`, `shot`, `keyframe`, `audio` et `video` partagent un contrat
@@ -85,6 +126,15 @@ Le serveur peut également être lancé sans ouverture automatique du navigateur
 ```powershell
 python -m tools.run_studio --no-browser
 ```
+
+Une release locale versionnée peut être construite et publiée sur le Bureau avec :
+
+```powershell
+python -m tools.build_desktop --publish-desktop
+```
+
+La copie courante est `La Serre des Venins/SerreStudio.exe`; les releases immuables
+sont rangées dans `versions/<version>` et l’ancien patch courant dans `versions-old`.
 
 - `GET /health` : processus disponible ;
 - `GET /ready` : workflows, nœuds et modèles ComfyUI vérifiés ;

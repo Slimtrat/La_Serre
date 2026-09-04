@@ -35,8 +35,11 @@ class ShotPipelineOptions:
     output_root: Path
     keyframe_profile: Path
     video_profile: Path
+    keyframe_guide_profile: Path | None = None
     keyframe_only: bool = False
     from_keyframe: Path | None = None
+    continuity_keyframe: Path | None = None
+    guide_keyframes: tuple[Path, ...] = ()
     force: bool = False
     timeout_seconds: float = 1800
 
@@ -56,12 +59,19 @@ class ShotPipeline:
 
     async def run(self, options: ShotPipelineOptions) -> GenerationRecord:
         shot = Shot.model_validate_json(options.shot_path.read_text(encoding="utf-8"))
+        if len(options.guide_keyframes) > 2:
+            raise ValueError("LTX accepte au maximum deux poses guides en plus de l'image initiale")
         self._notify("input", "completed", f"{shot.id} validé")
         self._notify("prompt", "running", "Construction du prompt sémantique")
         prompt = self.prompt_builder.build(shot)
         self._notify("prompt", "completed", "Prompt positif et négatif prêts")
         destination = options.output_root / shot.id
-        self._prepare_destination(destination, options.force, options.from_keyframe)
+        self._prepare_destination(
+            destination,
+            options.force,
+            options.from_keyframe,
+            options.guide_keyframes,
+        )
         destination.mkdir(parents=True, exist_ok=True)
         prompt_text = prompt.positive + "\n\nNEGATIVE:\n" + prompt.negative + "\n"
         write_text_atomic(destination / "prompt.txt", prompt_text)
@@ -80,6 +90,7 @@ class ShotPipeline:
             record.input["references"] = [item.model_dump(mode="json") for item in references]
             context = self._context(shot, prompt, reference_context)
             keyframe_path = destination / "keyframe.png"
+            guide_paths: list[Path] = []
 
             if options.from_keyframe:
                 source = options.from_keyframe.expanduser().resolve()
@@ -89,19 +100,92 @@ class ShotPipeline:
                     shutil.copyfile(source, keyframe_path)
                 self._notify("keyframe", "completed", "Keyframe approuvée réutilisée")
             else:
-                self._notify("keyframe", "running", "Génération ComfyUI en cours")
-                image_execution = await self.executor.execute(
-                    options.keyframe_profile,
-                    context,
-                    timeout_seconds=options.timeout_seconds,
+                scripted_beats = shot.visual_beats if not options.guide_keyframes else []
+                targets: list[tuple[Path, str, str | None]] = [
+                    (
+                        keyframe_path,
+                        "keyframe-start" if scripted_beats else "keyframe",
+                        scripted_beats[0].description if scripted_beats else None,
+                    )
+                ]
+                if scripted_beats:
+                    targets.extend(
+                        (
+                            destination / f"keyframe-guide-{index}.png",
+                            f"keyframe-{beat.id}",
+                            beat.description,
+                        )
+                        for index, beat in enumerate(scripted_beats[1:], start=1)
+                    )
+                self._notify(
+                    "keyframe",
+                    "running",
+                    f"Génération de {len(targets)} pose(s) ComfyUI",
                 )
-                image_output = self._select_output(image_execution.outputs, IMAGE_SUFFIXES, "image")
-                await self.client.download_output(image_output, keyframe_path)
-                record.stages.append(self._stage_from_image(shot, image_execution, keyframe_path))
-                self._notify("keyframe", "completed", "Keyframe téléchargée")
+                previous_pose = options.continuity_keyframe
+                if previous_pose is not None:
+                    previous_pose = previous_pose.expanduser().resolve()
+                    if not previous_pose.is_file():
+                        raise FileNotFoundError(
+                            f"Continuity keyframe does not exist: {previous_pose}"
+                        )
+                for index, (target, stage_name, beat_description) in enumerate(targets, start=1):
+                    keyframe_context = dict(context)
+                    if beat_description:
+                        keyframe_context["prompt"] = self.prompt_builder.visual_beat_prompt(
+                            prompt, beat_description
+                        )
+                        keyframe_context["output_prefix"] = f"{shot.id}-{stage_name}"
+                    profile = options.keyframe_profile
+                    if previous_pose is not None and options.keyframe_guide_profile is not None:
+                        uploaded_pose = await self.client.upload_image(previous_pose)
+                        keyframe_context["reference_image"] = uploaded_pose.workflow_reference
+                        profile = options.keyframe_guide_profile
+                    image_execution = await self.executor.execute(
+                        profile,
+                        keyframe_context,
+                        timeout_seconds=options.timeout_seconds,
+                    )
+                    image_output = self._select_output(
+                        image_execution.outputs, IMAGE_SUFFIXES, "image"
+                    )
+                    await self.client.download_output(image_output, target)
+                    record.stages.append(
+                        self._stage_from_image(
+                            shot, image_execution, target, stage_name=stage_name
+                        )
+                    )
+                    self._notify(
+                        "keyframe",
+                        "running",
+                        f"Pose {index}/{len(targets)} disponible",
+                    )
+                    if target != keyframe_path:
+                        guide_paths.append(target)
+                    previous_pose = target
+                if scripted_beats:
+                    frames = shot.render.frames or 9
+                    context["guide_frame_1"] = self._ltx_frame(
+                        frames, scripted_beats[1].at
+                    )
+                    context["guide_frame_2"] = self._ltx_frame(
+                        frames, scripted_beats[2].at
+                    )
+                self._notify("keyframe", "completed", f"{len(targets)} pose(s) téléchargée(s)")
+
+            for index, guide in enumerate(options.guide_keyframes, start=1):
+                source = guide.expanduser().resolve()
+                if not source.is_file():
+                    raise FileNotFoundError(f"Guide keyframe does not exist: {source}")
+                guide_path = destination / f"keyframe-guide-{index}.png"
+                if source != guide_path.resolve():
+                    shutil.copyfile(source, guide_path)
+                guide_paths.append(guide_path)
 
             keyframe_artifact = artifact(keyframe_path, "image/png")
             self._replace_output(record, keyframe_artifact)
+            for guide_path in guide_paths:
+                self._replace_output(record, artifact(guide_path, "image/png"))
             if options.keyframe_only:
                 self._notify("video", "skipped", "En attente de validation humaine")
                 record.status = GenerationState.AWAITING_KEYFRAME_APPROVAL
@@ -115,6 +199,7 @@ class ShotPipeline:
                     keyframe=keyframe_path,
                     profile_path=options.video_profile,
                     context=context,
+                    guide_keyframes=tuple(guide_paths),
                     timeout_seconds=options.timeout_seconds,
                 )
             )
@@ -163,6 +248,12 @@ class ShotPipeline:
                 "from_keyframe": str(options.from_keyframe.resolve())
                 if options.from_keyframe
                 else None,
+                "guide_keyframes": [str(path.resolve()) for path in options.guide_keyframes],
+                "continuity_keyframe": (
+                    str(options.continuity_keyframe.resolve())
+                    if options.continuity_keyframe
+                    else None
+                ),
             },
         )
 
@@ -194,6 +285,7 @@ class ShotPipeline:
         prompt: PromptPackage,
         reference_images: dict[str, list[str]],
     ) -> dict[str, Any]:
+        frames = shot.render.frames or 9
         return {
             "prompt": prompt.positive,
             "negative_prompt": prompt.negative,
@@ -201,6 +293,8 @@ class ShotPipeline:
             "width": shot.render.width,
             "height": shot.render.height,
             "frames": shot.render.frames,
+            "guide_frame_1": 8 * round((frames / 2) / 8),
+            "guide_frame_2": frames - 1,
             "fps": shot.render.fps,
             "output_prefix": shot.id,
             "reference_images": reference_images,
@@ -217,10 +311,15 @@ class ShotPipeline:
         raise ComfyProtocolError(f"Workflow returned no {expected} output; available: {available}")
 
     def _stage_from_image(
-        self, shot: Shot, execution: WorkflowExecution, path: Path
+        self,
+        shot: Shot,
+        execution: WorkflowExecution,
+        path: Path,
+        *,
+        stage_name: str = "keyframe",
     ) -> StageRecord:
         return StageRecord(
-            name="keyframe",
+            name=stage_name,
             backend="comfyui",
             workflow_id=execution.loaded.profile.id,
             workflow_sha256=execution.loaded.sha256,
@@ -246,31 +345,47 @@ class ShotPipeline:
         )
 
     @staticmethod
-    def _prepare_destination(destination: Path, force: bool, from_keyframe: Path | None) -> None:
+    def _prepare_destination(
+        destination: Path,
+        force: bool,
+        from_keyframe: Path | None,
+        guide_keyframes: tuple[Path, ...] = (),
+    ) -> None:
         if not destination.exists():
             return
         harmless_files = {"dry-run", "imports"}
-        allowed_resume_files = {"keyframe.png", "generation.json", "prompt.txt"}
+        allowed_resume_files = {
+            "keyframe.png",
+            "keyframe-guide-1.png",
+            "keyframe-guide-2.png",
+            "generation.json",
+            "prompt.txt",
+        }
         existing = {item.name for item in destination.iterdir()}
         if existing <= harmless_files:
             return
         if from_keyframe and existing <= allowed_resume_files | harmless_files:
             return
         if force:
-            preserved_keyframe = (
-                from_keyframe
-                and from_keyframe.resolve() == (destination / "keyframe.png").resolve()
-            )
+            preserved_sources = {
+                source.resolve()
+                for source in ((from_keyframe,) + guide_keyframes)
+                if source is not None
+            }
             for name in allowed_resume_files | {"clip.mp4"}:
-                if preserved_keyframe and name == "keyframe.png":
-                    continue
                 candidate = destination / name
+                if candidate.resolve() in preserved_sources:
+                    continue
                 if candidate.is_file():
                     candidate.unlink()
             return
         raise FileExistsError(
             f"Output already exists at {destination}; use --force to replace generated files"
         )
+
+    @staticmethod
+    def _ltx_frame(frames: int, position: float) -> int:
+        return min(frames - 1, max(0, 8 * round(((frames - 1) * position) / 8)))
 
     @staticmethod
     def _replace_output(record: GenerationRecord, artifact: OutputArtifact) -> None:

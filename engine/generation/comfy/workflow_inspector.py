@@ -76,7 +76,16 @@ class WorkflowInspector:
 
     def _rank(self, field: str, targets: list[WorkflowTarget]) -> list[WorkflowTarget]:
         scored = [(self._score(field, target), target) for target in targets]
-        return [target for score, target in sorted(scored, key=lambda item: -item[0]) if score > 0]
+        ranked = sorted(
+            scored,
+            key=lambda item: (
+                -item[0],
+                int(item[1].node_id) if item[1].node_id.isdigit() else 2**31,
+                item[1].node_id,
+                item[1].input_name,
+            ),
+        )
+        return [target for score, target in ranked if score > 0]
 
     @staticmethod
     def _score(field: str, target: WorkflowTarget) -> int:

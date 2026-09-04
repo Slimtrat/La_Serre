@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -43,7 +44,9 @@ def _write_profile(tmp_path: Path, name: str, video: bool) -> Path:
 
 
 async def test_pipeline_produces_traceable_keyframe_and_clip(tmp_path: Path) -> None:
-    prompt_ids = iter(("keyframe-job", "video-job"))
+    prompt_ids = iter(
+        ("keyframe-start-job", "keyframe-middle-job", "keyframe-end-job", "video-job")
+    )
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.method == "POST" and request.url.path == "/prompt":
@@ -52,8 +55,8 @@ async def test_pipeline_produces_traceable_keyframe_and_clip(tmp_path: Path) -> 
             return httpx.Response(200, json={"name": "keyframe.png", "type": "input"})
         if request.url.path.startswith("/history/"):
             prompt_id = request.url.path.rsplit("/", 1)[-1]
-            filename = "source.png" if prompt_id == "keyframe-job" else "source.mp4"
-            kind = "images" if prompt_id == "keyframe-job" else "gifs"
+            filename = "source.mp4" if prompt_id == "video-job" else f"{prompt_id}.png"
+            kind = "gifs" if prompt_id == "video-job" else "images"
             return httpx.Response(
                 200,
                 json={
@@ -72,22 +75,40 @@ async def test_pipeline_produces_traceable_keyframe_and_clip(tmp_path: Path) -> 
             )
         raise AssertionError(f"Unexpected request: {request.method} {request.url}")
 
-    shot_path = Path("examples/shot.json")
+    shot_text = await asyncio.to_thread(
+        Path("examples/shot.json").read_text, encoding="utf-8"
+    )
+    shot_payload = json.loads(shot_text)
+    shot_payload["visual_beats"] = [
+        {"id": "start", "at": 0, "description": "Belladone reaches toward the lock"},
+        {"id": "middle", "at": 0.5, "description": "the lock snaps at her vine"},
+        {"id": "end", "at": 1, "description": "she recoils while petals scatter"},
+    ]
+    shot_path = tmp_path / "shot.json"
+    shot_path.write_text(json.dumps(shot_payload), encoding="utf-8")
     keyframe_profile = _write_profile(tmp_path, "keyframe", video=False)
+    keyframe_guide_profile = _write_profile(tmp_path, "keyframe-guide", video=True)
     video_profile = _write_profile(tmp_path, "video", video=True)
     imports = tmp_path / "output" / "S01E001-S01" / "imports"
     imports.mkdir(parents=True)
     (imports / "story.md").write_text("Brief importé", encoding="utf-8")
+    progress: list[tuple[str, str, str]] = []
     async with ComfyClient(
         "http://comfy.test",
         transport=httpx.MockTransport(handler),
         poll_interval_seconds=0.001,
     ) as client:
-        record = await ShotPipeline(client).run(
+        record = await ShotPipeline(
+            client,
+            on_progress=lambda stage, status, message: progress.append(
+                (stage, status, message)
+            ),
+        ).run(
             ShotPipelineOptions(
                 shot_path=shot_path,
                 output_root=tmp_path / "output",
                 keyframe_profile=keyframe_profile,
+                keyframe_guide_profile=keyframe_guide_profile,
                 video_profile=video_profile,
             )
         )
@@ -95,11 +116,47 @@ async def test_pipeline_produces_traceable_keyframe_and_clip(tmp_path: Path) -> 
     destination = tmp_path / "output" / "S01E001-S01"
     assert record.status is GenerationState.GENERATED
     assert (destination / "keyframe.png").read_bytes() == b"png-bytes"
+    assert (destination / "keyframe-guide-1.png").read_bytes() == b"png-bytes"
+    assert (destination / "keyframe-guide-2.png").read_bytes() == b"png-bytes"
     assert (destination / "clip.mp4").read_bytes() == b"mp4-bytes"
     assert (destination / "prompt.txt").is_file()
     manifest = json.loads((destination / "generation.json").read_text(encoding="utf-8"))
     assert manifest["seed"] == 384723
     assert [stage["prompt_id"] for stage in manifest["stages"]] == [
-        "keyframe-job",
+        "keyframe-start-job",
+        "keyframe-middle-job",
+        "keyframe-end-job",
         "video-job",
     ]
+    assert [
+        message
+        for stage, status, message in progress
+        if stage == "keyframe" and status == "running" and "disponible" in message
+    ] == [
+        "Pose 1/3 disponible",
+        "Pose 2/3 disponible",
+        "Pose 3/3 disponible",
+    ]
+
+
+def test_force_resume_preserves_all_three_input_poses(tmp_path: Path) -> None:
+    destination = tmp_path / "S01E001-S01"
+    destination.mkdir()
+    start = destination / "keyframe.png"
+    middle = destination / "keyframe-guide-1.png"
+    end = destination / "keyframe-guide-2.png"
+    for path in (start, middle, end):
+        path.write_bytes(path.name.encode())
+    (destination / "clip.mp4").write_bytes(b"old-video")
+
+    ShotPipeline._prepare_destination(
+        destination,
+        True,
+        start,
+        (middle, end),
+    )
+
+    assert start.is_file()
+    assert middle.is_file()
+    assert end.is_file()
+    assert not (destination / "clip.mp4").exists()

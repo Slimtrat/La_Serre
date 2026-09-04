@@ -1,5 +1,6 @@
 const episodeStudio = window.SerreStudio;
 let loadedEpisode = null;
+let catalogBound = false;
 
 async function episodeRequest(path) {
   const response = await fetch(path);
@@ -44,6 +45,11 @@ function selectEpisodeShot(shotId) {
   const index = loadedEpisode.episode.shot_order.indexOf(shotId) + 1;
   document.querySelector("#episode-state").textContent =
     "Plan " + index + " sur " + loadedEpisode.shots.length + " · prêt à générer";
+  window.dispatchEvent(
+    new CustomEvent("studio:shot-selected", {
+      detail: { episode: loadedEpisode.episode, shot: selected, index },
+    }),
+  );
   episodeStudio.refreshAssets().catch(() => {});
 }
 
@@ -73,6 +79,9 @@ async function loadEpisode(episodeId) {
     episode.duration_target + " secondes · " + loadedEpisode.shots.length + " plans";
   renderCast(loadedEpisode.characters);
   renderShotStrip(loadedEpisode);
+  window.dispatchEvent(
+    new CustomEvent("studio:episode-loaded", { detail: loadedEpisode }),
+  );
   selectEpisodeShot(episode.shot_order[0]);
 }
 
@@ -84,15 +93,46 @@ async function initEpisodeCatalog() {
     select.append(new Option("Aucun épisode", ""));
     select.disabled = true;
     document.querySelector("#episode-state").textContent = "Catalogue vide";
+    document.querySelector("#episode-title").textContent = "Projet sans épisode";
+    document.querySelector("#episode-logline").textContent = "Ajoute un épisode au contenu privé de ce projet.";
+    document.querySelector("#episode-shots").replaceChildren();
+    document.querySelector("#episode-cast").replaceChildren();
+    window.dispatchEvent(new CustomEvent("studio:episode-cleared"));
     return;
   }
   for (const episode of listing.episodes) {
     select.append(new Option(episode.id + " — " + episode.title, episode.id));
   }
-  select.addEventListener("change", () => loadEpisode(select.value));
+  if (!catalogBound) {
+    select.addEventListener("change", () => loadEpisode(select.value));
+    catalogBound = true;
+  }
   await loadEpisode(select.value);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  const details = document.querySelector(".episode-details");
+  if (details) {
+    const summary = details.querySelector("summary");
+    details.addEventListener("toggle", () => {
+      summary?.setAttribute("aria-expanded", String(details.open));
+    });
+    document.addEventListener("pointerdown", (event) => {
+      if (details.open && !details.contains(event.target)) details.open = false;
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && details.open) {
+        details.open = false;
+        summary?.focus();
+      }
+    });
+  }
+  await window.SerreProjects?.ready.catch(() => {});
+  initEpisodeCatalog().catch((error) => episodeStudio.notify(error.message, true));
+});
+window.addEventListener("studio:project-changed", () => {
+  loadedEpisode = null;
+  const details = document.querySelector(".episode-details");
+  if (details) details.open = false;
   initEpisodeCatalog().catch((error) => episodeStudio.notify(error.message, true));
 });
