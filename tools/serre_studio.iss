@@ -3,7 +3,7 @@
 #define AppExeName "SerreStudio.exe"
 #define AppVersion GetEnv("SERRE_STUDIO_VERSION")
 #if AppVersion == ""
-  #define AppVersion "0.2.4"
+  #define AppVersion "0.2.5"
 #endif
 
 [Setup]
