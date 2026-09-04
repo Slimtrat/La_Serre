@@ -383,8 +383,20 @@ function resetForProject() {
 async function runStage(kind, button) {
   if (kind === "validate") {
     if (!validateEditor()) throw new Error("Le plan est invalide.");
-    notify("Plan validé par le contrat Pydantic.");
-    return;
+    button.disabled = true;
+    button.classList.add("running");
+    try {
+      const report = await window.SerreCoherence?.currentShot("all");
+      const card = button.closest(".stage-card");
+      const status = card?.querySelector(".stage-status");
+      card?.classList.toggle("completed", Boolean(report?.approved_at));
+      card?.classList.toggle("failed", report?.status === "fail");
+      if (status && report) status.textContent = report.summary;
+      return report;
+    } finally {
+      button.disabled = false;
+      button.classList.remove("running");
+    }
   }
   if (kind === "keyframe") return startJob("keyframe");
   if (kind === "video") return startJob("video");

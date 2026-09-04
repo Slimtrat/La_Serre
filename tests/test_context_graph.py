@@ -18,8 +18,12 @@ def test_one_graph_contract_builds_series_episode_and_shot_scopes(tmp_path: Path
     shot = builder.shot("S01E001-S01")
 
     assert series.scope is GraphScope.SERIES
-    assert series.nodes[0].container is not None
-    assert series.nodes[0].container.scope is GraphScope.EPISODE
+    series_cast = next(node for node in series.nodes if node.id == "series:cast")
+    assert series_cast.type_label == "BIBLE · SÉRIE"
+    assert any(action.value == "characters" for action in series_cast.actions)
+    first_episode = next(node for node in series.nodes if node.container is not None)
+    assert first_episode.container is not None
+    assert first_episode.container.scope is GraphScope.EPISODE
     assert episode.scope is GraphScope.EPISODE
     assert episode.parent is not None
     assert episode.parent.scope is GraphScope.SERIES
@@ -64,6 +68,12 @@ def test_shot_graph_preserves_pipeline_and_data_driven_actions(tmp_path: Path) -
     assert ("voice", "stage", "voice") in actions
     assert ("voice", "import", "audio") in actions
     assert ("mix", "stage", "music") in actions
+    assert ("shot", "validate", "all") in actions
+    assert ("story", "validate", "story") in actions
+    assert ("cast", "validate", "characters") in actions
+    assert next(node for node in graph.nodes if node.id == "shot").label == (
+        "Validation du découpage"
+    )
 
 
 def test_graph_runtime_and_progress_follow_generated_artifacts(tmp_path: Path) -> None:
@@ -104,8 +114,11 @@ def test_empty_series_graph_is_actionable_and_valid(tmp_path: Path) -> None:
     assert graph.id == "series"
     assert graph.progress is not None
     assert graph.progress.total == 0
-    assert graph.nodes[0].label == "Projet sans épisode"
+    assert [node.id for node in graph.nodes] == ["series:cast", "series:empty"]
+    assert graph.nodes[0].label == "Personnages"
     assert graph.nodes[0].state is GraphRuntimeState.BLOCKED
+    assert graph.nodes[1].label == "Projet sans épisode"
+    assert graph.nodes[1].state is GraphRuntimeState.BLOCKED
 
 
 async def test_context_graph_router_serves_common_dto_and_errors(tmp_path: Path) -> None:

@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 from apps.api.assets import AssetSlot, AssetStore
 from apps.api.bible_routes import create_bible_router
+from apps.api.coherence_routes import create_coherence_router
 from apps.api.context_graph import create_context_graph_router
 from apps.api.episode_job_manager import EpisodeJobManager
 from apps.api.episode_routes import create_episode_router
@@ -125,6 +126,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(
         create_context_graph_router(catalog, lambda: current_settings().output_dir)
     )
+    app.include_router(create_coherence_router(current_settings, catalog))
     app.include_router(create_narrative_router(current_settings, assets))
     app.include_router(create_production_queue_router(production_queue))
     app.include_router(

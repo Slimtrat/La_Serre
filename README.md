@@ -383,6 +383,11 @@ episode.mp4
 
 Chaque étape reste remplaçable par un artefact externe.
 
+### Documentation de production
+
+- [`docs/episode-production-contract.md`](docs/episode-production-contract.md) : contrat entre scénario, jeu, poses, cadre fantasy, son et sous-titres.
+- [`docs/narrative-coherence.md`](docs/narrative-coherence.md) : règles de cohérence, comité IA local depuis les nœuds métier et gate humaine.
+
 ---
 
 ## Structure locale
@@ -957,6 +962,11 @@ episode.mp4
 ```
 
 Every stage can be replaced with an external artifact.
+
+### Production documentation
+
+- [`docs/episode-production-contract.md`](docs/episode-production-contract.md): contract between story, performance, poses, fantasy frame, sound and subtitles.
+- [`docs/narrative-coherence.md`](docs/narrative-coherence.md): consistency rules, local AI committee from business nodes and human gate.
 
 ---
 

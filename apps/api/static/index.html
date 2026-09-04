@@ -20,35 +20,61 @@
     <link rel="stylesheet" href="/static/project-explorer.css" />
     <link rel="stylesheet" href="/static/production-queue.css" />
     <link rel="stylesheet" href="/static/bible-view.css" />
+    <link rel="stylesheet" href="/static/coherence.css" />
+    <link rel="stylesheet" href="/static/i18n.css" />
   </head>
   <body data-workspace-view="graph">
     <div class="ambient ambient-one"></div>
     <div class="ambient ambient-two"></div>
-    <header class="topbar">
+    <header class="topbar" aria-label="Navigation principale" data-i18n-aria-label="shell.mainNavigation">
       <a class="brand" href="/">
         <span class="brand-mark">SV</span>
-        <span><strong>La Serre des Venins</strong><small>Studio local</small></span>
+        <span><strong>SerreStudio</strong><small data-i18n="shell.studioLocal">Studio local</small></span>
       </a>
-      <span id="app-version" class="app-version" title="Version actuelle">v0.2.7</span>
-      <nav class="app-nav" aria-label="Espaces du studio" role="tablist">
+      <span id="app-version" class="app-version" title="Version actuelle" data-i18n-title="shell.currentVersion">v0.2.8</span>
+      <nav class="studio-context" aria-label="Contexte de création" data-i18n-aria-label="shell.context">
+        <div class="context-segment context-project">
+          <span data-i18n="shell.project">Projet</span>
+          <select id="project-select" aria-label="Projet actif" data-i18n-aria-label="shell.activeProject"><option>Chargement…</option></select>
+          <div class="context-project-actions">
+            <button id="project-create-open" class="context-action" type="button" title="Créer un projet" aria-label="Créer un projet"><span aria-hidden="true">＋</span><span data-i18n="shell.newProject">Nouveau</span></button>
+          </div>
+        </div>
+        <span class="context-chevron" aria-hidden="true">›</span>
+        <div class="context-segment context-series">
+          <span data-i18n="shell.series">Série</span>
+          <div class="context-series-actions">
+            <button class="context-link" type="button" data-context-action="bible" title="Ouvrir la Bible canonique de la série" data-i18n-title="shell.canonTitle">La Serre des Venins</button>
+            <button id="series-cast-open" class="series-resource" type="button" title="Ouvrir le casting canonique de la série" aria-label="Personnages, ressource de série" data-i18n-title="shell.charactersTitle" data-i18n-aria-label="shell.charactersAria"><span aria-hidden="true">♟</span><span data-i18n="shell.charactersResource">Personnages</span></button>
+          </div>
+        </div>
+        <span class="context-chevron" aria-hidden="true">›</span>
+        <label class="context-segment context-episode">
+          <span data-i18n="shell.episode">Épisode</span>
+          <select id="episode-select" aria-label="Épisode actif" data-i18n-aria-label="shell.activeEpisode"><option>Chargement…</option></select>
+        </label>
+        <span class="context-chevron" aria-hidden="true">›</span>
+        <button id="context-shot" class="context-segment context-link context-shot" type="button" data-context-action="shot" title="Ouvrir le plan actif" data-i18n-title="shell.openActiveShot">
+          <span data-i18n="shell.shot">Plan</span><strong id="context-shot-label">—</strong>
+        </button>
+      </nav>
+      <nav class="app-nav legacy-workspace-nav" aria-label="Espaces du studio" data-i18n-aria-label="shell.legacySpaces" role="tablist" hidden aria-hidden="true">
         <button type="button" role="tab" data-workspace-target="graph" class="selected">Production</button>
         <button type="button" role="tab" data-workspace-target="plan">Plan</button>
         <button type="button" role="tab" data-workspace-target="outputs">Sorties</button>
         <button type="button" role="tab" data-workspace-target="settings">Réglages</button>
       </nav>
-      <label class="project-switcher" title="Changer de projet">
-        <span>Projet</span>
-        <select id="project-select" aria-label="Projet actif"><option>Chargement…</option></select>
-      </label>
-      <button id="project-create-open" class="topbar-icon" type="button" title="Créer un projet" aria-label="Créer un projet">＋</button>
-      <div class="connection"><span id="connection-dot" class="dot"></span><span id="connection-label">Connexion…</span></div>
-      <button id="getting-started-open" class="guide-toggle" type="button" title="Ouvrir le guide de démarrage">
-        <span aria-hidden="true">?</span><strong>Guide</strong>
-      </button>
-      <button id="notification-toggle" class="notification-toggle" type="button" aria-expanded="false" aria-controls="notification-panel">
-        <span>Journal</span><strong id="notification-badge" class="hidden">0</strong>
-      </button>
-      <button id="settings-toggle" class="button ghost">Réglages ComfyUI</button>
+      <div class="studio-tools" role="toolbar" aria-label="Outils du studio" data-i18n-aria-label="shell.tools">
+        <button class="studio-tool" type="button" data-tool-action="assets" title="Voir les médias et sorties du plan" data-i18n-title="shell.assetsTitle"><span aria-hidden="true">◫</span><strong data-i18n="shell.assets">Assets</strong></button>
+        <button id="notification-toggle" class="studio-tool notification-toggle" type="button" aria-expanded="false" aria-controls="notification-panel" aria-label="Journal" title="Journal" data-i18n-aria-label="shell.journal" data-i18n-title="shell.journal"><span aria-hidden="true">☷</span><strong data-i18n="shell.journal">Journal</strong><i id="notification-badge" class="hidden">0</i></button>
+        <button id="getting-started-open" class="studio-tool guide-toggle" type="button" title="Ouvrir le guide de démarrage" data-i18n-title="shell.guideTitle"><span aria-hidden="true">?</span><strong data-i18n="shell.guide">Guide</strong></button>
+        <button id="settings-toggle" class="studio-tool" type="button" title="Configurer les moteurs et le stockage" data-i18n-title="shell.settingsTitle"><span aria-hidden="true">⚙</span><strong data-i18n="shell.settings">Réglages</strong></button>
+        <button class="service-status" type="button" title="État de ComfyUI et Ollama" aria-label="État de ComfyUI et Ollama" data-i18n-title="shell.serviceStatus" data-i18n-aria-label="shell.serviceStatus"><span id="connection-dot" class="dot"></span><span id="connection-label">Connexion…</span></button>
+        <label class="language-switcher" title="Langue de l’interface" data-i18n-title="shell.language">
+          <span class="sr-only" data-i18n="shell.language">Langue de l’interface</span>
+          <select id="language-select" aria-label="Langue de l’interface" data-i18n-aria-label="shell.language"><option value="fr">FR</option><option value="en">EN</option></select>
+        </label>
+      </div>
     </header>
     <aside id="notification-panel" class="notification-panel hidden" aria-label="Journal du projet">
       <header><div><small>PROJET ACTIF</small><strong>Journal d’activité</strong></div><button id="notification-read-all" type="button">Tout marquer comme lu</button></header>
@@ -74,10 +100,7 @@
             <p class="eyebrow">ÉPISODE EN PRODUCTION</p>
             <h2 id="episode-title">Chargement de l’épisode…</h2>
           </div>
-          <label class="episode-picker">
-            Épisode
-            <select id="episode-select" aria-label="Épisode"></select>
-          </label>
+          <span class="episode-picker-hint" data-i18n="episode.selectionHint">Sélection depuis le contexte ci-dessus</span>
         </div>
         <p id="episode-logline" class="episode-logline"></p>
         <div class="episode-meta">
@@ -121,7 +144,7 @@
             <span>PLAN ACTIF</span>
             <strong id="graph-active-shot">Chargement…</strong>
           </div>
-          <div id="graph-shot-track" class="graph-shot-track" role="tablist" aria-label="Plans de l’épisode"></div>
+          <div id="graph-shot-track" class="graph-shot-track" role="tablist" aria-label="Plans de l’épisode" data-i18n-aria-label="episode.episodeShots"></div>
           <div class="graph-episode-progress">
             <span>PROGRESSION DE L’ÉPISODE</span>
             <strong id="graph-episode-progress-label">0 / 0 clips finalisés</strong>
@@ -154,7 +177,7 @@
               </button>
               <button class="graph-node state-ready" type="button" data-node-id="shot" data-x="680" data-y="340">
                 <span class="graph-node-index">03</span><span class="graph-node-type">CONTRAT</span>
-                <strong>Shot JSON</strong><small>Plan validé</small>
+                <strong>Validation du découpage</strong><small>Contrat technique · shot.json</small>
                 <span class="graph-node-status">Prêt</span>
               </button>
               <button class="graph-node state-ready graph-node-branch" type="button" data-node-id="cast" data-x="390" data-y="80">
@@ -266,7 +289,7 @@
         </div>
         <div class="roadmap">
           <div class="road-node active"><span>01</span><strong>Histoire</strong><small>texte / Ollama</small></div>
-          <i>→</i><div class="road-node active"><span>02</span><strong>Shot</strong><small>JSON validé</small></div>
+          <i>→</i><div class="road-node active"><span>02</span><strong data-i18n="coherence.gate">Validation du découpage</strong><small>règles + IA + humain</small></div>
           <i>→</i><div class="road-node active"><span>03</span><strong>Keyframe</strong><small>SDXL / import</small></div>
           <i>→</i><div class="road-node future"><span>04</span><strong>Voix</strong><small>TTS / import</small></div>
           <i>→</i><div class="road-node active"><span>05</span><strong>Mouvement</strong><small>LTX / import</small></div>
@@ -277,7 +300,7 @@
       <section class="workspace-grid">
         <div class="panel editor-panel">
           <div class="panel-heading compact-heading">
-            <div><p class="eyebrow">CONTRAT DU PLAN</p><h2>Shot JSON</h2></div>
+            <div><p class="eyebrow" data-i18n="coherence.technicalDetail">DÉTAIL TECHNIQUE DE LA GATE</p><h2>shot.json</h2></div>
             <label class="mini-upload">Déposer JSON<input id="shot-file" type="file" accept="application/json,.json" /></label>
           </div>
           <textarea id="shot-editor" spellcheck="false" aria-label="Shot JSON"></textarea>
@@ -290,17 +313,17 @@
             <div class="stage-body">
               <strong>Histoire / texte</strong><p>Brief, scénario ou sortie préparée ailleurs</p>
               <div class="segmented" data-source="story"><button class="selected" data-value="model">Ollama Director</button><button data-value="manual">Importer</button></div>
-              <textarea id="story-editor" class="narrative-input" placeholder="Écris une situation, ou importe un scénario…"></textarea>
+              <textarea id="story-editor" class="narrative-input" placeholder="Écris une situation, ou importe un scénario…" data-i18n-placeholder="episode.storyPlaceholder"></textarea>
               <label class="dropzone hidden" data-dropzone="story">Glisse un texte ici<input type="file" accept="text/plain,text/markdown,.txt,.md" /></label>
               <div class="narrative-controls">
-                <select id="ollama-model" aria-label="Modèle Ollama"><option>Détection d’Ollama…</option></select>
+                <select id="ollama-model" aria-label="Modèle Ollama" data-i18n-aria-label="episode.ollamaModel"><option>Détection d’Ollama…</option></select>
                 <button id="draft-shot" class="button secondary" disabled>Proposer le Shot</button>
               </div>
               <small id="ollama-state" class="stage-status">Connexion au Director local…</small>
             </div>
           </article>
           <article class="stage-card" data-job-stage="input">
-            <div class="stage-number">01</div><div class="stage-body"><strong>Validation</strong><p>Schéma Pydantic strict</p><small class="stage-status">En attente</small><button class="stage-run" type="button" data-stage-action="validate">Valider ce plan</button></div>
+            <div class="stage-number">01</div><div class="stage-body"><strong data-i18n="coherence.gate">Validation du découpage</strong><p data-i18n="coherence.gateDetail">Règles strictes + comité IA local + décision humaine</p><small class="stage-status">En attente</small><button class="stage-run" type="button" data-stage-action="validate" data-i18n="coherence.run">Contrôler la cohérence</button></div>
           </article>
           <article class="stage-card" data-job-stage="prompt">
             <div class="stage-number">02</div><div class="stage-body"><strong>Prompt</strong><p>Sémantique → instructions visuelles</p><small class="stage-status">En attente</small><button class="stage-run" type="button" data-stage-action="prompt">Construire le prompt</button></div>
@@ -344,7 +367,7 @@
       <section id="preview-panel" class="panel preview-panel">
         <div class="panel-heading compact-heading output-heading">
           <div><p class="eyebrow">SORTIES</p><h2>Contrôle humain</h2></div>
-          <div class="output-history-controls"><label>Version<select id="run-history-select" aria-label="Version générée"><option>Aucun rendu</option></select></label><button id="restore-run" class="button ghost" type="button" disabled>Restaurer</button><span id="job-badge" class="badge">Aucun rendu</span></div>
+          <div class="output-history-controls"><label>Version<select id="run-history-select" aria-label="Version générée" data-i18n-aria-label="outputs.generatedVersion"><option>Aucun rendu</option></select></label><button id="restore-run" class="button ghost" type="button" disabled>Restaurer</button><span id="job-badge" class="badge">Aucun rendu</span></div>
         </div>
         <div class="output-layout">
           <div class="previews">
@@ -369,6 +392,7 @@
         <footer><button class="button primary" type="submit">Créer et ouvrir</button></footer>
       </form>
     </dialog>
+    <script src="/static/i18n.js" defer></script>
     <script src="/static/notifications.js" defer></script>
     <script src="/static/projects.js" defer></script>
     <script src="/static/app.js" defer></script>
@@ -410,6 +434,7 @@
       </section>
     </dialog>
 
+    <script src="/static/coherence.js" defer></script>
     <script src="/static/graph.js" defer></script>
     <script src="/static/workflow-graph.js" defer></script>
     <script src="/static/episode-canvas.js" defer></script>

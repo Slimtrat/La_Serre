@@ -17,20 +17,20 @@ const projectSwitcher = (() => {
 
   const deleteDiscoveryButton = document.createElement("button");
   deleteDiscoveryButton.id = "project-discovery-delete";
-  deleteDiscoveryButton.className = "topbar-icon hidden";
+  deleteDiscoveryButton.className = "context-action hidden";
   deleteDiscoveryButton.type = "button";
   deleteDiscoveryButton.title = "Supprimer le projet Découverte";
   deleteDiscoveryButton.setAttribute("aria-label", "Supprimer le projet Découverte");
-  deleteDiscoveryButton.textContent = "×";
+  deleteDiscoveryButton.textContent = "Supprimer";
   openButton.after(deleteDiscoveryButton);
 
   const manageButton = document.createElement("button");
   manageButton.id = "project-manage-open";
-  manageButton.className = "topbar-icon";
+  manageButton.className = "context-action";
   manageButton.type = "button";
   manageButton.title = "Emplacement et gestion des projets";
   manageButton.setAttribute("aria-label", "Emplacement et gestion des projets");
-  manageButton.textContent = "⌂";
+  manageButton.textContent = window.SerreI18n?.t("shell.manageProjects") || "Projets";
   deleteDiscoveryButton.after(manageButton);
 
   document.body.insertAdjacentHTML("beforeend", `

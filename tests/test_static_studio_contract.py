@@ -19,15 +19,32 @@ def test_casting_is_visible_and_graph_edges_explain_their_connections() -> None:
     onepage = (STATIC / "onepage.css").read_text(encoding="utf-8")
     graph = (STATIC / "graph.js").read_text(encoding="utf-8")
     episode = (STATIC / "episode.js").read_text(encoding="utf-8")
+    shell = (STATIC / "workspace-shell.js").read_text(encoding="utf-8")
 
     assert ".episode-panel .episode-details {" in onepage
     assert ".episode-panel .episode-details[open] .episode-details-grid" in onepage
     assert 'window.SerreEpisode = Object.freeze({ openCasting, closeCasting })' in episode
-    assert 'window.SerreEpisode?.openCasting({ returnFocus: document.activeElement })' in graph
+    assert 'window.SerreWorkspace?.show("bible")' in graph
+    assert 'window.SerreBible?.selectCategory?.("characters")' in graph
+    assert 'document.querySelector("#series-cast-open")' in shell
     assert 'panel?.focus({ preventScroll: true })' in episode
     assert 'edge.description || "Dépendance du pipeline de production."' in graph
     assert "showEdgeTooltip" in graph
     assert "graph-link-hit" in graph
+
+
+def test_coherence_gate_is_loaded_and_callable_from_business_nodes() -> None:
+    index = (STATIC / "index.html").read_text(encoding="utf-8")
+    coherence = (STATIC / "coherence.js").read_text(encoding="utf-8")
+
+    assert "/static/coherence.css" in index
+    assert "/static/coherence.js" in index
+    assert 'data-stage-action="validate"' in index
+    assert "Validation du découpage" in index
+    assert 'request("/api/coherence/review"' in coherence
+    assert '"/approve"' in coherence
+    assert "textContent = text" in coherence
+    assert "window.SerreCoherence = Object.freeze" in coherence
 
 
 def test_getting_started_is_first_run_guided_and_reopenable() -> None:
@@ -38,7 +55,7 @@ def test_getting_started_is_first_run_guided_and_reopenable() -> None:
     assert "/static/getting-started.js" in index
     assert 'id="getting-started-open"' in index
     assert 'const STEP_COUNT = 9' in guide
-    assert 'serre-studio-getting-started-v0.2.7' in guide
+    assert 'serre-studio-getting-started-v0.2.8' in guide
     assert 'localStorage.setItem(STORAGE_KEY, "seen")' in guide
     assert 'window.addEventListener("studio:status"' in guide
     assert 'window.SerreStudio.api("/api/status")' in guide

@@ -17,6 +17,8 @@ def test_renderer_consumes_graph_dto_instead_of_business_definitions() -> None:
     assert 'action.kind === "stage"' in graph
     assert 'action.kind === "workflow"' in graph
     assert 'action.kind === "import"' in graph
+    assert 'action.kind === "validate"' in graph
+    assert "window.SerreCoherence?.run" in graph
 
 
 def test_renderer_opens_containers_and_persists_each_context() -> None:
