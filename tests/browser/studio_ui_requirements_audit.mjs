@@ -47,6 +47,22 @@ async function waitForLanguage(page, language) {
   await page.waitForFunction((expected) => document.documentElement.lang === expected, language);
 }
 
+async function openTools(page) {
+  const menu = page.locator("#studio-tools-menu");
+  if (await menu.isHidden()) await page.locator("#studio-tools-menu-toggle").click();
+  await menu.waitFor({ state: "visible" });
+}
+
+async function closeTools(page) {
+  const menu = page.locator("#studio-tools-menu");
+  if (await menu.isVisible()) await page.locator("#studio-tools-menu-toggle").click();
+}
+
+async function clickTool(page, selector) {
+  await openTools(page);
+  await page.locator(selector).click();
+}
+
 async function dialogBounds(page) {
   const bounds = await page.locator("#getting-started-dialog").boundingBox();
   expect(bounds, "Le guide ouvert doit avoir des dimensions visibles");
@@ -113,7 +129,7 @@ page.on("console", (message) => {
 await page.addInitScript(() => {
   if (sessionStorage.getItem("serre-studio-ui-audit-initialized")) return;
   sessionStorage.setItem("serre-studio-ui-audit-initialized", "true");
-  localStorage.setItem("serre-studio-getting-started-v0.2.8", "seen");
+  localStorage.setItem("serre-studio-getting-started-v0.2.9", "seen");
   localStorage.setItem("serre-studio-language", "fr");
   localStorage.removeItem("serre-studio-getting-started-position-v1");
 });
@@ -138,11 +154,17 @@ await check("Projet → Série → Épisode → Plan est lisible et navigable", 
   expect(await page.locator("body").getAttribute("data-workspace-view") === "graph", "Plan ne revient pas au graphe");
 });
 
-await check("Assets, File, Journal, Guide et Réglages sont identifiables", async () => {
+await check("les actions fréquentes restent visibles et les outils secondaires sont regroupés", async () => {
   const toolbarText = normalize(await page.locator(".studio-tools").innerText());
-  for (const label of ["Assets", "File", "Journal", "Guide", "Réglages"]) {
+  for (const label of ["File", "Journal", "Outils"]) {
     expect(toolbarText.includes(label), `${label} est absent de la barre d’outils : ${toolbarText}`);
   }
+  await openTools(page);
+  const menuText = normalize(await page.locator("#studio-tools-menu").innerText());
+  for (const label of ["Assets", "Démo", "Guide", "Réglages"]) {
+    expect(menuText.includes(label), `${label} est absent du menu Outils : ${menuText}`);
+  }
+  await closeTools(page);
 });
 
 await check("l’état des moteurs est séparé de la navigation", async () => {
@@ -159,6 +181,7 @@ await check("chaque contrôle primaire desktop a un nom accessible", async () =>
 });
 
 await check("FR → EN traduit les surfaces majeures et les attributs", async () => {
+  await openTools(page);
   await page.locator("#language-select").selectOption("fr");
   await waitForLanguage(page, "fr");
   expect(await page.locator("#graph-zoom-out").getAttribute("aria-label") === "Dézoomer", "Les contrôles du graphe ne sont pas en français");
@@ -173,6 +196,7 @@ await check("FR → EN traduit les surfaces majeures et les attributs", async ()
   expect(await page.locator("#project-select").getAttribute("aria-label") === "Active project", "aria-label Projet non traduit");
   expect(await page.locator("#settings-toggle").getAttribute("title") === "Configure engines and storage", "title Réglages non traduit");
   expect(await page.locator("#series-cast-open").getAttribute("aria-label") === "Characters, series resource", "aria-label Personnages non traduit");
+  await closeTools(page);
 });
 
 await check("les surfaces dynamiques majeures suivent EN", async () => {
@@ -187,7 +211,7 @@ await check("les surfaces dynamiques majeures suivent EN", async () => {
   await page.waitForSelector("#bible-workspace:not(.hidden)");
   expect(normalize(await page.locator("#bible-title").innerText()).includes("Canon Bible"), "Bible dynamique non traduite");
   await page.locator("#context-shot").click();
-  await page.locator('[data-tool-action="assets"]').click();
+  await clickTool(page, '[data-tool-action="assets"]');
   expect(await page.locator("body").getAttribute("data-workspace-view") === "outputs", "Assets ne navigue pas vers les sorties");
   expect(normalize(await page.locator("#preview-panel h2").innerText()) === "Human review", "Sorties dynamiques non traduites");
   await page.locator("#context-shot").click();
@@ -206,18 +230,21 @@ await check("la langue EN persiste après reload et le fallback reste français"
 
 await check("le tutoriel s’ouvre, se ferme et restaure le focus", async () => {
   const opener = page.locator("#getting-started-open");
-  await opener.click();
+  await clickTool(page, "#getting-started-open");
   expect(await page.locator("#getting-started-dialog").getAttribute("open") !== null, "Le guide ne s’ouvre pas");
   expect(normalize(await page.locator("[data-guide-brand]").innerText()) === "Bien démarrer", "Le guide ne suit pas la langue FR");
+  await openTools(page);
   await page.locator("#language-select").selectOption("en");
   await waitForLanguage(page, "en");
   expect(normalize(await page.locator("[data-guide-brand]").innerText()) === "Getting started", "Le guide ouvert ne suit pas le passage EN");
   await page.locator("#language-select").selectOption("fr");
+  await closeTools(page);
   await waitForLanguage(page, "fr");
   await page.locator('[data-guide-action="close"]').click();
   expect(await page.locator("#getting-started-dialog").getAttribute("open") === null, "Le bouton fermer ne ferme pas le guide");
-  expect(await page.evaluate(() => document.activeElement?.id) === "getting-started-open", "Le focus ne revient pas au bouton Guide");
-  await opener.click();
+  const focused = await page.evaluate(() => document.activeElement?.id);
+  expect(["getting-started-open", "studio-tools-menu-toggle"].includes(focused), "Le focus ne revient pas à un accès visible du Guide");
+  await clickTool(page, "#getting-started-open");
 });
 
 await check("le sélecteur FR/EN du guide reste synchronisé avec toute l’interface", async () => {
@@ -260,7 +287,7 @@ await check("le drag pointeur déplace vraiment le guide et persiste", async () 
   await page.locator('[data-guide-action="close"]').click();
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => window.SerreGettingStarted);
-  await page.locator("#getting-started-open").click();
+  await clickTool(page, "#getting-started-open");
   await page.waitForFunction((expected) => {
     const rect = document.querySelector("#getting-started-dialog")?.getBoundingClientRect();
     return rect && Math.abs(rect.left - expected.x) <= 2 && Math.abs(rect.top - expected.y) <= 2;
@@ -291,7 +318,7 @@ await check("le clavier déplace, recentre, ancre et ferme le guide", async () =
 });
 
 await page.setViewportSize({ width: 640, height: 700 });
-await page.locator("#getting-started-open").click();
+await clickTool(page, "#getting-started-open");
 await page.waitForTimeout(100);
 await check("le guide reste utilisable dans un viewport étroit", async () => {
   const guide = await dialogBounds(page);
@@ -324,6 +351,7 @@ await check("le viewport étroit conserve la hiérarchie de contexte", async () 
 await check("chaque icône primaire étroite garde un nom accessible", async () => {
   const unnamed = await unnamedTopbarControls(page);
   expect(unnamed.length === 0, `Contrôles étroits sans nom : ${unnamed.join(", ")}`);
+  await openTools(page);
   const requiredNames = [
     ["[data-tool-action=assets]", /Assets|médias|media/i],
     ["#production-queue-toggle", /File|Queue|production/i],
@@ -338,6 +366,7 @@ await check("chaque icône primaire étroite garde un nom accessible", async () 
     narrowMetrics.accessibleNames[selector] = snapshot.replace(/^\s*-\s*button\s*/, "").trim();
     expect(expected.test(snapshot), `${selector} a un nom accessible non sémantique : ${snapshot}`);
   }
+  await closeTools(page);
 });
 
 await check("aucune erreur JavaScript n’est émise pendant le parcours", async () => {

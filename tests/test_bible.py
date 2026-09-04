@@ -14,6 +14,7 @@ from engine.world.models import (
     CharacterProfile,
     LocationProfile,
     ProjectBible,
+    RelationshipState,
     ToneProfile,
     WorldRule,
 )
@@ -125,6 +126,26 @@ def test_bible_enforces_unique_identity_and_valid_relationship_graph(
 
     with pytest.raises(ValidationError, match="names must be unique"):
         registry.put_character(character("other-iris", "IRIS"))
+
+
+def test_directional_relationship_tracks_explicit_toxicity() -> None:
+    relationship = RelationshipState(
+        id="iris-vers-belladone",
+        source="iris",
+        target="belladone",
+        label="Fascination dangereuse",
+        summary="Iris désire Belladone mais ne lui accorde aucune confiance.",
+        desire=85,
+        trust=-70,
+        anger=25,
+        fear=60,
+        attachment=75,
+        toxicity=92,
+    )
+
+    assert relationship.source == "iris"
+    assert relationship.target == "belladone"
+    assert relationship.toxicity == 92
 
 
 def test_shot_is_resolved_against_canon_and_divergence_is_rejected(

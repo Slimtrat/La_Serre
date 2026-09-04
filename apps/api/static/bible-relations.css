@@ -1,0 +1,292 @@
+.bible-friendly-editor {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  padding-right: 4px;
+}
+.bible-guided-heading {
+  margin: 0 0 10px;
+  color: var(--green);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.bible-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.bible-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+.bible-field:has(textarea),
+.bible-fieldset,
+.relationship-direction-editor { grid-column: 1 / -1; }
+.bible-field > span,
+.relationship-direction-editor > strong {
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.bible-field input,
+.bible-field textarea,
+.bible-field select {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: none;
+  background: rgba(4, 10, 7, .72);
+  font: 10px/1.4 Inter, system-ui, sans-serif;
+}
+.bible-field textarea { min-height: 66px; resize: vertical; }
+.bible-field input:focus,
+.bible-field textarea:focus,
+.bible-field select:focus { border-color: rgba(143, 207, 157, .48); box-shadow: 0 0 0 2px rgba(143, 207, 157, .08); }
+.bible-fieldset,
+.relationship-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin: 0;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.bible-fieldset legend,
+.relationship-metrics legend {
+  padding: 0 6px;
+  color: #97aa9c;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.bible-toggle-field,
+.bible-choice-grid label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text);
+  font-size: 10px;
+}
+.bible-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(4, 10, 7, .5);
+}
+.bible-json-advanced {
+  flex: 0 0 auto;
+  margin-top: 9px;
+  padding: 8px 10px;
+  border: 1px solid rgba(148, 120, 177, .2);
+  border-radius: 9px;
+  background: rgba(71, 42, 91, .05);
+}
+.bible-json-advanced summary {
+  color: #9c8ca9;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bible-json-advanced.edited summary::after { content: " •"; color: var(--warn); }
+.bible-json-advanced .bible-json-label { min-height: 190px; margin-top: 9px; }
+.bible-json-advanced #bible-editor { min-height: 170px; resize: vertical; }
+.bible-json-advanced #bible-json-apply { margin-top: 7px; }
+
+.bible-layout.relationship-mode {
+  grid-template-columns: 190px minmax(440px, 1.5fr) minmax(330px, .8fr);
+}
+.bible-layout.relationship-mode .bible-collection { display: flex; min-width: 0; flex-direction: column; padding: 0; overflow: hidden; }
+.bible-layout.relationship-mode .bible-collection > header { display: none; }
+.bible-relationship-graph {
+  display: grid;
+  min-height: 0;
+  flex: 1 1 auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(92, 40, 112, .11), transparent 42%),
+    linear-gradient(rgba(120, 155, 128, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120, 155, 128, .035) 1px, transparent 1px);
+  background-size: auto, 28px 28px, 28px 28px;
+}
+.relationship-graph-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(7, 14, 10, .92);
+}
+.relationship-graph-toolbar > div { display: grid; gap: 2px; margin-right: auto; }
+.relationship-graph-toolbar strong { font: 500 16px/1.1 Georgia, serif; }
+.relationship-graph-toolbar > div span { color: var(--muted); font-size: 8px; }
+.relationship-graph-toolbar > label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 8px; }
+.relationship-graph-toolbar select {
+  padding: 6px 23px 6px 8px;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #0a120d;
+  font-size: 9px;
+}
+.relationship-graph-viewport { position: relative; min-height: 0; overflow: hidden; }
+.relationship-edges,
+.relationship-person-nodes { position: absolute; inset: 0; width: 100%; height: 100%; }
+.relationship-edges { overflow: visible; }
+.relationship-person-nodes { pointer-events: none; }
+.relationship-arrow-healthy { fill: #70bc89; }
+.relationship-arrow-tense { fill: #a477ca; }
+.relationship-arrow-dangerous { fill: #e35b73; }
+.relationship-edge { transition: opacity .16s ease; }
+.relationship-edge.dimmed { opacity: .1; }
+.relationship-edge-line {
+  fill: none;
+  stroke: #70bc89;
+  stroke-width: var(--edge-width, 2);
+  stroke-linecap: round;
+  cursor: pointer;
+  pointer-events: stroke;
+  filter: drop-shadow(0 0 4px rgba(112, 188, 137, .3));
+}
+.relationship-edge.level-tense .relationship-edge-line { stroke: #a477ca; filter: drop-shadow(0 0 5px rgba(164, 119, 202, .42)); }
+.relationship-edge.level-dangerous .relationship-edge-line { stroke: #e35b73; filter: drop-shadow(0 0 7px rgba(227, 91, 115, .5)); }
+.relationship-edge-hit { fill: none; stroke: transparent; stroke-width: 18; cursor: pointer; pointer-events: stroke; }
+.relationship-edge-hit:focus { outline: none; stroke: rgba(255, 255, 255, .1); }
+.relationship-edge-label {
+  fill: #a7b2a9;
+  paint-order: stroke;
+  stroke: #08100b;
+  stroke-width: 5px;
+  stroke-linejoin: round;
+  font: 700 18px/1 Inter, sans-serif;
+  pointer-events: none;
+}
+.relationship-person-node {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  width: 154px;
+  min-height: 74px;
+  padding: 10px 12px;
+  transform: translate(-50%, -50%);
+  color: var(--text);
+  border: 1px solid rgba(143, 207, 157, .2);
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(18, 32, 23, .98), rgba(7, 13, 9, .98));
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .36), inset 0 1px rgba(255, 255, 255, .03);
+  cursor: grab;
+  text-align: left;
+  touch-action: none;
+  pointer-events: auto;
+}
+.relationship-person-node:active { cursor: grabbing; }
+.relationship-person-node:hover,
+.relationship-person-node.selected { border-color: rgba(163, 124, 199, .68); box-shadow: 0 0 0 2px rgba(163, 124, 199, .12), 0 12px 28px #0008; }
+.relationship-person-node strong { overflow: hidden; color: #dce9df; font: 600 13px/1.2 Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
+.relationship-person-node span { margin-top: 3px; overflow: hidden; color: #8ea095; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.relationship-person-node small { margin-top: 8px; color: #687a6d; font: 7px/1.2 Consolas, monospace; }
+.relationship-graph-empty {
+  position: absolute;
+  z-index: 1;
+  inset: 50% auto auto 50%;
+  width: min(330px, 75%);
+  margin: 0;
+  padding: 16px;
+  transform: translate(-50%, -50%);
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  background: rgba(5, 11, 8, .82);
+  font-size: 10px;
+  text-align: center;
+}
+.relationship-popover {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  width: 240px;
+  gap: 4px;
+  padding: 11px;
+  color: var(--text);
+  border: 1px solid rgba(163, 124, 199, .44);
+  border-radius: 10px;
+  background: rgba(10, 13, 11, .97);
+  box-shadow: 0 15px 40px #000b;
+  pointer-events: none;
+}
+.relationship-popover[hidden] { display: none; }
+.relationship-popover strong { font: 600 12px/1.2 Georgia, serif; }
+.relationship-popover span { color: #b49bc9; font-size: 9px; }
+.relationship-popover b { color: #e7768a; font-size: 9px; }
+.relationship-popover p { margin: 4px 0; color: #aab8ae; font-size: 9px; line-height: 1.35; }
+.relationship-popover small { color: #718076; font-size: 7px; line-height: 1.4; }
+.bible-relationship-graph > footer {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 7px 11px;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  background: rgba(7, 14, 10, .92);
+  font-size: 8px;
+}
+.bible-relationship-graph > footer .legend-healthy { color: #70bc89; }
+.bible-relationship-graph > footer .legend-tense { color: #a477ca; }
+.bible-relationship-graph > footer .legend-dangerous { color: #e35b73; }
+.bible-relationship-graph > footer small { margin-left: auto; font-size: 7px; }
+
+.relationship-direction-editor {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid rgba(163, 124, 199, .25);
+  border-radius: 10px;
+  background: rgba(89, 45, 112, .06);
+}
+.relationship-direction-editor > strong { color: #bba4ce; font-size: 9px; }
+.relationship-direction-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; align-items: end; gap: 7px; }
+.relationship-direction-arrow { align-self: center; padding-top: 15px; color: #c276d3; font-size: 22px; }
+.relationship-swap { width: 34px; min-width: 34px; padding-inline: 0; }
+.relationship-metrics { grid-column: 1 / -1; margin-top: 10px; }
+.relationship-metric { display: grid; grid-template-columns: 1fr auto; gap: 3px 8px; color: #94a298; font-size: 9px; }
+.relationship-metric output { color: var(--text); font: 9px Consolas, monospace; }
+.relationship-metric input { grid-column: 1 / -1; width: 100%; accent-color: #9170b1; }
+.relationship-metric.metric-toxicity { padding: 8px; border: 1px solid rgba(227, 91, 115, .22); border-radius: 8px; background: rgba(134, 34, 53, .07); }
+.relationship-metric.metric-toxicity input { accent-color: #e35b73; }
+
+@media (max-width: 1100px) {
+  .bible-layout.relationship-mode { grid-template-columns: 150px minmax(390px, 1fr) minmax(300px, .72fr); }
+  .relationship-edge-label { font-size: 16px; }
+}
+@media (max-width: 780px) {
+  .bible-layout.relationship-mode {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(330px, 1.2fr) minmax(320px, 1fr);
+    overflow: auto;
+  }
+  .bible-layout.relationship-mode .bible-categories { display: none; }
+  .bible-layout.relationship-mode .bible-collection { min-height: 330px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .bible-layout.relationship-mode .bible-inspector { min-height: 320px; }
+  .relationship-graph-toolbar > div span,
+  .bible-relationship-graph > footer small { display: none; }
+  .relationship-graph-toolbar { flex-wrap: wrap; }
+  .relationship-person-node { width: 130px; min-height: 62px; padding: 8px; }
+  .bible-form-grid,
+  .bible-fieldset,
+  .relationship-metrics { grid-template-columns: 1fr; }
+}

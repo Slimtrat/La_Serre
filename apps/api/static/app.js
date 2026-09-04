@@ -95,7 +95,7 @@ function renderModels(models) {
     link.href = model.url;
     link.target = "_blank";
     link.rel = "noreferrer";
-    link.textContent = model.installed ? "Source" : "Télécharger ↗";
+    link.textContent = installed ? "Source" : "Télécharger ↗";
     row.append(info, state, link);
     list.append(row);
   }

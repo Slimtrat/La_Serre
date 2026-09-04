@@ -350,6 +350,19 @@ pytest
 python -m tools.run_studio
 ```
 
+### Démo express sans GPU
+
+Le menu **Outils → Démo** ouvre une mini-production isolée du pipeline ComfyUI.
+Décrivez une histoire, puis utilisez **Laisser l’IA imaginer** sur chacun des cinq
+maillons : histoire, découpage, trois images, son et mini-vidéo. Chaque proposition
+doit être validée ou refusée avant que la suivante soit accessible. Un refus
+invalide les sorties qui en dépendent, tandis que la barre d’activité expose la
+progression et le journal complet.
+
+La démo produit localement un MP4 d’environ cinq secondes en 480 × 270 avec
+FFmpeg. Son rendu 0 GPU sert à expliquer la chaîne et les contrôles humains ; il
+ne remplace pas les workflows ComfyUI destinés à la qualité finale.
+
 ### Application desktop
 
 ```powershell

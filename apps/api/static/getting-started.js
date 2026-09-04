@@ -1,5 +1,5 @@
 (() => {
-  const STORAGE_KEY = "serre-studio-getting-started-v0.2.8";
+  const STORAGE_KEY = "serre-studio-getting-started-v0.2.9";
   const POSITION_KEY = "serre-studio-getting-started-position-v1";
   const LANGUAGE_KEY = "serre-studio-getting-started-language-v1";
   const STEP_COUNT = 9;
@@ -21,7 +21,7 @@
 
   const UI_COPY = {
     fr: {
-      brand: "Bien démarrer", subtitle: "PARCOURS SUR LE GRAPHE · STUDIO 0.2.8",
+      brand: "Bien démarrer", subtitle: "PARCOURS SUR LE GRAPHE · STUDIO 0.2.9",
       drag: "Déplacer le guide. Flèches : déplacer, Maj + flèches : déplacement rapide, Origine : recentrer, Fin : ancrer à droite.",
       close: "Fermer le guide", reset: "Recentrer la fenêtre", skip: "Fermer",
       previous: "Précédent", next: "Suivant", languageGroup: "Langue du guide",
@@ -36,6 +36,7 @@
       readinessLoading: "Diagnostic local en cours…",
       readiness: "Atelier local : {ready}/4 prêts · {installed}/{total} modèles",
       discover: "Découvrir le Studio", discoverDetail: "Explorer Belladone et produire un premier plan.",
+      expressDemo: "Produire une mini-vidéo", expressDemoDetail: "Cinq étapes guidées, validations humaines, 0 GPU.",
       newProject: "Nouveau projet", newProjectDetail: "Commencer dans un catalogue vierge et isolé.",
       createMine: "Créer mon projet", createMineDetail: "Catalogue vierge, sorties isolées, aucun média recopié.",
       remove: "Retirer Découverte", removeReady: "Retirer seulement la démonstration de la liste.",
@@ -43,7 +44,7 @@
       removeDone: "Découverte a déjà été retiré.",
     },
     en: {
-      brand: "Getting started", subtitle: "LIVE GRAPH TOUR · STUDIO 0.2.8",
+      brand: "Getting started", subtitle: "LIVE GRAPH TOUR · STUDIO 0.2.9",
       drag: "Move the guide. Arrow keys: move, Shift + arrows: move faster, Home: center, End: dock right.",
       close: "Close the guide", reset: "Center the window", skip: "Close",
       previous: "Previous", next: "Next", languageGroup: "Guide language",
@@ -57,6 +58,7 @@
       readinessLoading: "Checking the local setup…",
       readiness: "Local setup: {ready}/4 ready · {installed}/{total} models",
       discover: "Discover the Studio", discoverDetail: "Explore Belladone and produce a first shot.",
+      expressDemo: "Make a mini-video", expressDemoDetail: "Five guided steps, human approvals, zero GPU.",
       newProject: "New project", newProjectDetail: "Start with a blank, isolated catalogue.",
       createMine: "Create my project", createMineDetail: "Blank catalogue, isolated outputs, no copied demo media.",
       remove: "Remove Discovery", removeReady: "Remove only the demo entry from the list.",
@@ -162,6 +164,10 @@
         <button type="button" data-guide-action="new-project">
           <span aria-hidden="true">＋</span><strong>${h(t("newProject"))}</strong>
           <small>${h(t("newProjectDetail"))}</small>
+        </button>
+        <button type="button" data-guide-action="express-demo">
+          <span aria-hidden="true">✦</span><strong>${h(t("expressDemo"))}</strong>
+          <small>${h(t("expressDemoDetail"))}</small>
         </button>
       </div>
       ${renderReadiness()}`;
@@ -762,6 +768,10 @@
     if (action === "previous") goTo(currentStep - 1);
     if (action === "next") await advance();
     if (action === "discover") await startDiscovery();
+    if (action === "express-demo") {
+      close(true);
+      window.dispatchEvent(new CustomEvent("studio:open-demo"));
+    }
     if (action === "new-project") startNewProject();
     if (action === "remove-discovery") await removeDiscovery();
     if (action === "settings") {
@@ -795,7 +805,10 @@
     if (remember) markSeen();
     if (dialog?.open) dialog.close();
     document.documentElement.classList.remove("getting-started-open");
-    if (lastFocused?.isConnected) lastFocused.focus({ preventScroll: true });
+    const returnTarget = lastFocused?.isConnected && lastFocused.getClientRects().length
+      ? lastFocused
+      : document.querySelector("#studio-tools-menu-toggle");
+    returnTarget?.focus({ preventScroll: true });
   }
 
   function shouldAutoOpen() {

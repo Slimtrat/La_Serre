@@ -14,6 +14,7 @@ from apps.api.assets import AssetSlot, AssetStore
 from apps.api.bible_routes import create_bible_router
 from apps.api.coherence_routes import create_coherence_router
 from apps.api.context_graph import create_context_graph_router
+from apps.api.demo_routes import create_demo_router
 from apps.api.episode_job_manager import EpisodeJobManager
 from apps.api.episode_routes import create_episode_router
 from apps.api.job_manager import JobManager
@@ -128,6 +129,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.include_router(create_coherence_router(current_settings, catalog))
     app.include_router(create_narrative_router(current_settings, assets))
+    app.include_router(
+        create_demo_router(lambda: current_settings().output_dir, notifications)
+    )
     app.include_router(create_production_queue_router(production_queue))
     app.include_router(
         create_project_storage_router(
@@ -279,7 +283,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             for item in await asyncio.to_thread(model_installer().inspect)
         }
         models = [{**model, **download_status.get(str(model["filename"]), {})} for model in models]
-        models_ready = all(bool(model["installed"]) for model in models)
+        models_ready = all(
+            bool(model["installed"])
+            if comfyui
+            else model.get("state") == "installed"
+            for model in models
+        )
         nodes_ready = not missing_nodes
         return {
             "version": __version__,

@@ -36,7 +36,7 @@ const bibleStudio = (() => {
     relationships: {
       id: "relation-a-b", source: "personnage-a", target: "personnage-b",
       label: "Relation", summary: "État narratif actuel de leur relation",
-      desire: 0, trust: 0, anger: 0, fear: 0, attachment: 0,
+      desire: 0, trust: 0, anger: 0, fear: 0, attachment: 0, toxicity: 0,
     },
     world_rules: {
       id: "nouvelle-regle", statement: "Règle canonique du monde",
@@ -82,10 +82,14 @@ const bibleStudio = (() => {
     '<footer><strong>Identité unique</strong><span>Les plans référencent ces objets par leur identifiant canonique.</span></footer></aside>' +
     '<section class="bible-collection"><header><div><p class="eyebrow">REGISTRE</p><h3 id="bible-collection-title">Direction & ton</h3></div>' +
     '<button id="bible-create" class="button secondary" type="button">Ajouter</button></header>' +
-    '<div id="bible-entity-list" class="bible-entity-list"></div></section>' +
+    '<div id="bible-entity-list" class="bible-entity-list"></div>' +
+    '<section id="bible-relationship-graph" class="bible-relationship-graph hidden" aria-label="Graphe directionnel des relations"></section></section>' +
     '<section class="bible-inspector"><header><div><p class="eyebrow">INSPECTOR</p><h3 id="bible-entity-title">Direction artistique</h3></div>' +
     '<span id="bible-editor-state">Lecture</span></header><p id="bible-entity-summary"></p>' +
+    '<div id="bible-friendly-editor" class="bible-friendly-editor" aria-label="Éditeur guidé"></div>' +
+    '<details id="bible-json-advanced" class="bible-json-advanced"><summary>Mode avancé · JSON</summary>' +
     '<label class="bible-json-label">Contrat canonique JSON<textarea id="bible-editor" spellcheck="false"></textarea></label>' +
+    '<button id="bible-json-apply" class="button ghost" type="button">Appliquer au formulaire</button></details>' +
     '<p id="bible-validation" role="status"></p><footer>' +
     '<button id="bible-delete" class="button ghost" type="button">Supprimer</button>' +
     '<button id="bible-save" class="button primary" type="button">Enregistrer la révision</button></footer></section></div>' +
@@ -152,6 +156,9 @@ const bibleStudio = (() => {
     dirty = false;
     validation.textContent = "";
     renderList();
+    window.dispatchEvent(new CustomEvent("studio:bible-entity-selected", {
+      detail: { category, entity: structuredClone(entity), isNew },
+    }));
   }
 
   function renderCategories() {
@@ -199,6 +206,7 @@ const bibleStudio = (() => {
   function selectCategory(next) {
     if (dirty && !window.confirm("Abandonner les modifications non enregistrées ?")) return;
     category = next;
+    panel.querySelector(".bible-layout").classList.toggle("relationship-mode", category === "relationships");
     panel.querySelector("#bible-collection-title").textContent = CATEGORIES[category].label;
     createButton.classList.toggle("hidden", category === "direction");
     renderCategories();
@@ -212,6 +220,9 @@ const bibleStudio = (() => {
       deleteButton.disabled = true;
       renderList();
     }
+    window.dispatchEvent(new CustomEvent("studio:bible-category-selected", {
+      detail: { category, bible: structuredClone(bible) },
+    }));
   }
 
   function renderImpact() {
@@ -261,6 +272,9 @@ const bibleStudio = (() => {
     if (current) setEditor(current);
     else selectCategory(category);
     renderImpact();
+    window.dispatchEvent(new CustomEvent("studio:bible-loaded", {
+      detail: { bible: structuredClone(bible), category, selectedId },
+    }));
   }
 
   async function request(path, options = {}) {
@@ -288,6 +302,9 @@ const bibleStudio = (() => {
     selectCategory(category);
     renderImpact();
     validation.textContent = "";
+    window.dispatchEvent(new CustomEvent("studio:bible-loaded", {
+      detail: { bible: structuredClone(bible), category, selectedId },
+    }));
   }
 
   async function save() {
@@ -349,7 +366,32 @@ const bibleStudio = (() => {
 
   function createEntity() {
     const template = TEMPLATES[category];
-    if (template) setEditor(structuredClone(template), true);
+    if (!template) return;
+    const draft = structuredClone(template);
+    if (category === "relationships") {
+      const characters = bible?.characters || [];
+      draft.source = characters[0]?.id || "";
+      draft.target = characters.find((item) => item.id !== draft.source)?.id || "";
+      draft.id = [draft.source, "vers", draft.target].filter(Boolean).join("-") || "nouvelle-relation";
+    }
+    setEditor(draft, true);
+  }
+
+  function selectEntity(entityId) {
+    const entity = entities().find((item) => item.id === entityId);
+    if (!entity) return false;
+    if (dirty && !window.confirm("Abandonner les modifications non enregistrées ?")) return false;
+    setEditor(entity);
+    return true;
+  }
+
+  function state() {
+    return {
+      bible: bible ? structuredClone(bible) : null,
+      category,
+      selectedId,
+      dirty,
+    };
   }
 
   editor.addEventListener("input", () => {
@@ -378,6 +420,6 @@ const bibleStudio = (() => {
   }
 
   load().catch(showError);
-  window.SerreBible = { load, save, selectCategory };
+  window.SerreBible = { load, save, selectCategory, selectEntity, state };
   return window.SerreBible;
 })();
