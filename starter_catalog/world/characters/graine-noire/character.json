@@ -1,0 +1,35 @@
+{
+  "id": "graine-noire",
+  "name": "La Graine Noire",
+  "role": "Héritage interdit et antagoniste miniature",
+  "visual_description": "A glossy black botanical seed shaped like a small anatomical heart, split by one thin violet seam, with tiny rootlets like veins and no human face, limbs or readable species",
+  "wardrobe": "Its only covering is a wet obsidian shell with a subtle violet inner glow and delicate vein-like roots that move with deliberate intelligence",
+  "signature_details": [
+    "heart-shaped obsidian shell",
+    "single glowing violet seam",
+    "vein-like black rootlets",
+    "slow visible heartbeat pulse"
+  ],
+  "palette": [
+    "obsidian #050408",
+    "black violet #160D20",
+    "venom purple #8E35C7",
+    "bruise blue #323C79"
+  ],
+  "personality": {
+    "patience": 0.98,
+    "cruel_playfulness": 0.88,
+    "possessiveness": 0.95,
+    "verbosity": 0.08
+  },
+  "wants": [
+    "force Belladone and Aconit to reveal what binds them",
+    "take root in the greenhouse"
+  ],
+  "fears": [
+    "a sincere truth freely spoken",
+    "being burned before germination"
+  ],
+  "voice_description": "Tiny sexless French whisper doubled by a low subterranean resonance, intimate and unnervingly amused",
+  "generation_negative_prompt": "cute baby face, eyes, mouth, humanoid body, ordinary bean, bright cheerful green, gore, blood, oversized monster"
+}

@@ -13,7 +13,12 @@ from apps.desktop.runtime import (
     configure_logging,
     prepare_runtime_directory,
 )
+from apps.desktop.service_launcher import (
+    create_local_service_supervisor,
+    set_active_service_supervisor,
+)
 from apps.desktop.window import DesktopDependencyError, launch_native_window
+from engine.config import Settings
 
 
 def parser() -> argparse.ArgumentParser:
@@ -45,11 +50,14 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     runtime_root = prepare_runtime_directory(args.data_dir)
     log_path = configure_logging(runtime_root, verbose=args.verbose or args.debug)
+    service_supervisor = create_local_service_supervisor(Settings.load(), runtime_root)
     server = EmbeddedStudioServer(
         port=args.port,
         log_level="debug" if args.verbose else "info",
     )
     try:
+        set_active_service_supervisor(service_supervisor)
+        service_supervisor.start()
         launch_native_window(
             server,
             runtime_root,
@@ -62,4 +70,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         logging.getLogger(__name__).exception("Desktop startup failed")
         print(f"{APP_NAME}: {exc}\nLog: {log_path}", file=sys.stderr)
         return 1
+    finally:
+        service_supervisor.stop()
+        set_active_service_supervisor(None)
     return 0

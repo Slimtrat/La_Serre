@@ -50,6 +50,12 @@
 }
 
 .graph-workbench {
+  --graph-core: #4e9fff;
+  --graph-core-soft: rgba(78, 159, 255, .26);
+  --graph-optional: #f4a261;
+  --graph-optional-soft: rgba(244, 162, 97, .22);
+  --graph-stale: #d8a33f;
+  --graph-error: #e05a68;
   margin-bottom: 22px;
   overflow: hidden;
   background:
@@ -162,44 +168,86 @@
 }
 
 #graph-arrow path {
-  fill: #536158;
+  fill: var(--graph-core);
 }
 
 .graph-link {
   fill: none;
-  stroke: #3d4941;
+  stroke: #52606d;
   stroke-width: 3;
-  opacity: .7;
-  transition: stroke .2s ease, opacity .2s ease;
+  opacity: .58;
+  transition: stroke .2s ease, stroke-width .2s ease, opacity .2s ease, filter .2s ease;
 }
 
-.graph-link.link-ready {
-  stroke: #729f7c;
-  opacity: .9;
+.graph-link.edge-core {
+  stroke: var(--graph-core);
+  opacity: .76;
 }
 
-.graph-link.link-running {
-  stroke: var(--violet);
-  stroke-dasharray: 10 8;
-  animation: graph-flow 1s linear infinite;
+.graph-link.edge-optional {
+  stroke: var(--graph-optional);
+  stroke-width: 2;
+  stroke-dasharray: 6 9;
+  opacity: .52;
 }
 
-.graph-link.link-future,
-.graph-link.link-pending,
-.graph-link.link-optional {
-  stroke-dasharray: 7 8;
-  opacity: .42;
+.graph-link.edge-state-idle { opacity: .48; }
+.graph-link.edge-state-ready { opacity: .72; }
+.graph-link.edge-state-done { opacity: .9; }
+.graph-link.edge-state-blocked {
+  stroke: #63707a;
+  stroke-dasharray: 5 9;
+  opacity: .28;
 }
 
-.graph-link.link-failed {
-  stroke: var(--danger);
+.graph-link.edge-state-stale {
+  stroke: var(--graph-stale);
+  stroke-dasharray: 4 7;
+  opacity: .78;
+}
+
+.graph-link.edge-state-error {
+  stroke: var(--graph-error);
+  opacity: 1;
+}
+
+.graph-link.edge-active,
+.graph-link.activity-link {
+  stroke-dasharray: 11 8;
+  animation: graph-flow .9s linear infinite;
+  opacity: 1;
+  filter: drop-shadow(0 0 5px rgba(78, 159, 255, .72));
+}
+
+.graph-link.edge-optional.edge-active,
+.graph-link.edge-optional.activity-link {
+  stroke: var(--graph-optional);
+  filter: drop-shadow(0 0 4px rgba(244, 162, 97, .6));
 }
 
 .graph-link.activity-link {
-  stroke: #c5a4ea;
+  stroke-width: 5;
+}
+
+.graph-link.impact-link:not(.activity-link) {
+  opacity: .92;
+}
+
+.graph-link.focus-path {
   stroke-width: 5;
   opacity: 1;
-  filter: drop-shadow(0 0 5px rgba(163, 135, 196, .72));
+  filter: drop-shadow(0 0 4px rgba(78, 159, 255, .54));
+}
+
+.graph-link.focus-optional {
+  stroke-width: 3;
+  opacity: .92;
+  filter: drop-shadow(0 0 3px rgba(244, 162, 97, .45));
+}
+
+.graph-link.focus-muted {
+  opacity: .13;
+  filter: none;
 }
 
 .graph-link.connection-hover {
@@ -229,7 +277,7 @@
   background:
     linear-gradient(145deg, rgba(30, 40, 33, .98), rgba(15, 22, 18, .98));
   box-shadow: 0 18px 36px rgba(0, 0, 0, .28), inset 0 1px rgba(255, 255, 255, .025);
-  transition: border-color .18s ease, box-shadow .18s ease, opacity .18s ease;
+  transition: border-color .18s ease, box-shadow .18s ease, opacity .18s ease, filter .18s ease;
 }
 
 .graph-node::before {
@@ -239,7 +287,34 @@
   top: 0;
   bottom: 0;
   width: 4px;
-  background: #4d5a51;
+  background: #596873;
+}
+
+.graph-node.structure-core::before,
+.graph-node.structure-container::before {
+  background: var(--graph-core);
+}
+
+.graph-node.structure-optional {
+  border-color: rgba(244, 162, 97, .24);
+  background: linear-gradient(145deg, rgba(43, 34, 28, .96), rgba(20, 21, 18, .98));
+}
+
+.graph-node.structure-optional::before {
+  width: 3px;
+  background: var(--graph-optional);
+}
+
+.graph-node.structure-container {
+  outline: 1px solid rgba(78, 159, 255, .13);
+  outline-offset: -6px;
+  background:
+    linear-gradient(145deg, rgba(25, 38, 49, .96), rgba(14, 22, 25, .98));
+}
+
+.graph-node.structure-container .graph-node-type::after {
+  content: " · CONTENEUR";
+  color: rgba(126, 184, 255, .72);
 }
 
 .graph-node:hover {
@@ -254,17 +329,39 @@
 }
 
 .graph-node.selected {
-  border-color: var(--green);
-  box-shadow: 0 22px 50px rgba(0, 0, 0, .45), 0 0 0 3px rgba(143, 207, 157, .13);
+  border-color: var(--graph-core);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, .45), 0 0 0 3px var(--graph-core-soft);
 }
 
 .graph-node.activity-focus {
-  border-color: #c5a4ea;
-  box-shadow: 0 22px 50px rgba(0, 0, 0, .45), 0 0 0 4px rgba(163, 135, 196, .2);
+  border-color: var(--graph-core);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, .45), 0 0 0 4px var(--graph-core-soft);
 }
 
 .graph-node.activity-related {
-  border-color: rgba(163, 135, 196, .48);
+  border-color: rgba(78, 159, 255, .4);
+}
+
+.graph-node.focus-node {
+  opacity: 1;
+  border-color: var(--graph-core);
+}
+
+.graph-node.structure-optional.focus-node,
+.graph-node.focus-optional {
+  opacity: 1;
+  border-color: var(--graph-optional);
+  box-shadow: 0 20px 42px rgba(0, 0, 0, .42), 0 0 0 3px var(--graph-optional-soft);
+}
+
+.graph-node.focus-path {
+  opacity: 1;
+  border-color: rgba(78, 159, 255, .65);
+}
+
+.graph-node.focus-muted {
+  opacity: .2;
+  filter: grayscale(.55) saturate(.5);
 }
 
 .graph-node.connection-hover {
@@ -351,17 +448,56 @@
   text-transform: uppercase;
 }
 
-.graph-node.state-ready::before { background: var(--green); }
-.graph-node.state-ready .graph-node-status { color: var(--green); }
-.graph-node.state-running::before { background: var(--violet); }
-.graph-node.state-running .graph-node-status { color: #c4a9df; }
-.graph-node.state-running { border-color: rgba(163, 135, 196, .5); }
-.graph-node.state-pending { opacity: .82; }
-.graph-node.state-optional::before { background: var(--warn); }
-.graph-node.state-optional .graph-node-status { color: var(--warn); }
-.graph-node.state-future { opacity: .53; filter: saturate(.65); }
-.graph-node.state-failed::before { background: var(--danger); }
-.graph-node.state-failed .graph-node-status { color: var(--danger); }
+.graph-node.state-idle .graph-node-status { color: #82909a; }
+.graph-node.state-ready {
+  border-color: rgba(78, 159, 255, .48);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, .28), 0 0 0 2px rgba(78, 159, 255, .08);
+}
+.graph-node.state-ready .graph-node-status { color: #8bc0ff; }
+.graph-node.state-done .graph-node-status { color: #9fc6ef; }
+.graph-node.state-active {
+  border-color: var(--graph-core);
+  animation: graph-active-node 1.6s ease-in-out infinite;
+}
+.graph-node.state-active .graph-node-status { color: #acd2ff; }
+.graph-node.structure-optional.state-active {
+  border-color: var(--graph-optional);
+  animation-name: graph-optional-active;
+}
+.graph-node.structure-optional.state-active .graph-node-status,
+.graph-node.structure-optional.state-done .graph-node-status,
+.graph-node.structure-optional.state-ready .graph-node-status {
+  color: #ffc28d;
+}
+.graph-node.state-blocked {
+  opacity: .56;
+  border-style: dashed;
+  filter: saturate(.5);
+}
+.graph-node.state-stale {
+  border-color: rgba(216, 163, 63, .72);
+}
+.graph-node.state-stale::before { background: var(--graph-stale); }
+.graph-node.state-stale .graph-node-status { color: #e5bc68; }
+.graph-node.state-error {
+  opacity: 1;
+  border-color: rgba(224, 90, 104, .78);
+}
+.graph-node.state-error::before { background: var(--graph-error); }
+.graph-node.state-error .graph-node-status { color: #f0808d; }
+
+@keyframes graph-active-node {
+  50% { box-shadow: 0 22px 48px rgba(0, 0, 0, .42), 0 0 0 5px rgba(78, 159, 255, .18); }
+}
+
+@keyframes graph-optional-active {
+  50% { box-shadow: 0 22px 48px rgba(0, 0, 0, .42), 0 0 0 4px rgba(244, 162, 97, .16); }
+}
+
+.graph-world.has-focus-path .graph-node.focus-muted {
+  opacity: .2;
+  filter: grayscale(.55) saturate(.5);
+}
 
 .graph-node.has-live-preview {
   z-index: 6;
@@ -458,9 +594,61 @@
   to { background-position: -120% 0; }
 }
 
-.graph-node-branch {
+.graph-node-branch:not(.structure-optional) {
   background:
     linear-gradient(145deg, rgba(34, 30, 42, .96), rgba(17, 20, 19, .98));
+}
+
+.graph-legend {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 7;
+  display: flex;
+  max-width: calc(100% - 224px);
+  flex-wrap: wrap;
+  gap: 7px 14px;
+  padding: 8px 10px;
+  color: #91a0a9;
+  pointer-events: none;
+  border: 1px solid rgba(156, 181, 202, .16);
+  border-radius: 9px;
+  background: rgba(8, 13, 10, .88);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .28);
+  backdrop-filter: blur(7px);
+  font-size: 9px;
+  letter-spacing: .035em;
+}
+
+.graph-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.graph-legend-item i {
+  display: inline-block;
+  width: 22px;
+  height: 0;
+  border-top: 2px solid currentColor;
+}
+
+.graph-legend-item.legend-core { color: var(--graph-core); }
+.graph-legend-item.legend-optional { color: var(--graph-optional); }
+.graph-legend-item.legend-optional i {
+  border-top-style: dashed;
+  border-top-width: 1px;
+}
+.graph-legend-item.legend-active { color: #acd2ff; }
+.graph-legend-item.legend-active i {
+  border-top-style: dashed;
+  animation: graph-legend-active 1.2s ease-in-out infinite;
+}
+.graph-legend-item.legend-error { color: var(--graph-error); }
+
+@keyframes graph-legend-active {
+  50% { opacity: .35; }
 }
 
 .graph-minimap {
@@ -493,9 +681,13 @@
 }
 
 .graph-minimap-node.state-ready { background: var(--green); }
-.graph-minimap-node.state-running { background: var(--violet); }
-.graph-minimap-node.state-failed { background: var(--danger); }
-.graph-minimap-node.state-future { opacity: .35; }
+.graph-minimap-node.structure-core,
+.graph-minimap-node.structure-container { background: var(--graph-core); }
+.graph-minimap-node.structure-optional { background: var(--graph-optional); }
+.graph-minimap-node.state-active { box-shadow: 0 0 5px currentColor; }
+.graph-minimap-node.state-error { background: var(--graph-error); }
+.graph-minimap-node.state-stale { background: var(--graph-stale); }
+.graph-minimap-node.state-blocked { opacity: .35; }
 
 .graph-minimap-window {
   inset: auto;
@@ -719,6 +911,15 @@
     height: 58px;
   }
 
+  .graph-legend {
+    right: 166px;
+    max-width: none;
+  }
+
+  .graph-legend-item span {
+    display: none;
+  }
+
   .graph-hints {
     flex-wrap: wrap;
     gap: 6px 14px;
@@ -736,6 +937,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .graph-link.link-running { animation: none; }
+  .graph-link.edge-active,
+  .graph-link.activity-link,
+  .graph-node.state-active,
+  .graph-legend-item.legend-active i { animation: none; }
+  .graph-link,
+  .graph-node { transition: none; }
   .graph-node-live-waiting { animation: none; }
 }

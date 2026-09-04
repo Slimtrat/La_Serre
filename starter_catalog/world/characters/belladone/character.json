@@ -1,0 +1,38 @@
+{
+  "id": "belladone",
+  "name": "Belladone",
+  "role": "Héroïne imprudente et charmeuse",
+  "visual_description": "Predominantly botanical flower-woman with a lightly humanized lavender face emerging from a broad deep-plum belladonna corolla, large expressive violet eyes, petal curls instead of human hair, leaf-and-vine limbs and no visible human skin texture",
+  "wardrobe": "Her silhouette is formed entirely by layered plum petals, dark olive sepals and flexible climbing vines, with no ordinary fabric clothing, shoes or human accessories",
+  "signature_details": [
+    "broad asymmetrical purple bell-flower corolla",
+    "tiny black heart marking under the right eye",
+    "cluster of exactly three glossy black belladonna berries at the left hip",
+    "purple heart-shaped nectar gem at the throat"
+  ],
+  "palette": [
+    "deep plum #4B185F",
+    "orchid purple #A95ACC",
+    "lavender #C989E8",
+    "olive leaf #48562D",
+    "poison black #0B0710"
+  ],
+  "personality": {
+    "curiosity": 0.98,
+    "playfulness": 0.94,
+    "prudence": 0.12,
+    "romantic_bravado": 0.91,
+    "hidden_tenderness": 0.72
+  },
+  "wants": [
+    "transform every danger into a game",
+    "make Aconit admit that she cares",
+    "discover why the forbidden inheritance chose them"
+  ],
+  "fears": [
+    "being treated like a fragile ornamental flower",
+    "revealing sincere attachment before Aconit does"
+  ],
+  "voice_description": "Warm playful French contralto, smiling diction, intimate delivery and a dangerous little laugh",
+  "generation_negative_prompt": "photorealistic human woman, human skin pores, human ears, human hair, ordinary dress, realistic hands, separate hat, red palette, more or fewer than three signature berries"
+}

@@ -48,3 +48,4 @@ def test_desktop_spec_does_not_bundle_machine_local_workflows() -> None:
     spec = Path("tools/serre_studio.spec").read_text(encoding="utf-8")
 
     assert '"workflows" / "local", "workflows/local"' not in spec
+    assert '"starter_catalog", "starter_catalog"' in spec

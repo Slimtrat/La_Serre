@@ -94,6 +94,33 @@ const studioGraph = (() => {
     ["review", "motion"], ["shot", "voice"], ["voice", "mix"],
     ["motion", "montage"], ["mix", "montage"], ["montage", "export"],
   ];
+  const nodeStructures = Object.freeze({
+    story: "container",
+    director: "core",
+    shot: "container",
+    cast: "optional",
+    keyframe: "core",
+    review: "core",
+    motion: "core",
+    voice: "optional",
+    mix: "optional",
+    montage: "core",
+    export: "container",
+  });
+  const optionalEdgeKeys = new Set([
+    "cast>director",
+    "cast>keyframe",
+    "shot>voice",
+    "voice>mix",
+    "mix>montage",
+  ]);
+  const runtimeStates = new Set(["idle", "ready", "active", "done", "blocked", "stale", "error"]);
+  const legacyRuntimeStates = Object.freeze({
+    running: "active",
+    pending: "ready",
+    future: "blocked",
+    failed: "error",
+  });
   const edgeDescriptions = {
     "story>director": "Le texte fournit l’intention narrative à mettre en scène.",
     "cast>director": "Le casting contraint les personnages et leur identité visuelle.",
@@ -124,6 +151,7 @@ const studioGraph = (() => {
   let outputs = {};
   let liveJobId = null;
   let activityNodeId = null;
+  let focusNodeId = null;
   let draggingNode = null;
   let panning = null;
 
@@ -158,6 +186,64 @@ const studioGraph = (() => {
     return Math.min(maximum, Math.max(minimum, value));
   }
 
+  function canonicalRuntimeState(state) {
+    if (state === "optional") return "idle";
+    const canonical = legacyRuntimeStates[state] || state;
+    return runtimeStates.has(canonical) ? canonical : "idle";
+  }
+
+  function edgeStructure(from, to) {
+    return optionalEdgeKeys.has(from + ">" + to) ? "optional" : "core";
+  }
+
+  function installArrowMarkers() {
+    const definitionsElement = links.querySelector("defs");
+    if (!definitionsElement) return;
+    const markers = {
+      core: "#4e9fff",
+      optional: "#f4a261",
+      stale: "#d8a33f",
+      error: "#e05a68",
+    };
+    Object.entries(markers).forEach(([name, color]) => {
+      if (definitionsElement.querySelector("#graph-arrow-" + name)) return;
+      const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+      marker.id = "graph-arrow-" + name;
+      marker.setAttribute("markerWidth", "10");
+      marker.setAttribute("markerHeight", "10");
+      marker.setAttribute("refX", "8");
+      marker.setAttribute("refY", "5");
+      marker.setAttribute("orient", "auto");
+      const arrow = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      arrow.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
+      arrow.setAttribute("fill", color);
+      marker.appendChild(arrow);
+      definitionsElement.appendChild(marker);
+    });
+  }
+
+  function buildLegend() {
+    const legend = document.createElement("aside");
+    legend.className = "graph-legend";
+    legend.setAttribute("aria-label", "Légende du graphe");
+    [
+      ["core", "Flux principal"],
+      ["optional", "Branche optionnelle"],
+      ["active", "Étape active"],
+      ["error", "Erreur"],
+    ].forEach(([kind, label]) => {
+      const item = document.createElement("span");
+      item.className = "graph-legend-item legend-" + kind;
+      const sample = document.createElement("i");
+      sample.setAttribute("aria-hidden", "true");
+      const text = document.createElement("span");
+      text.textContent = label;
+      item.append(sample, text);
+      legend.appendChild(item);
+    });
+    viewport.appendChild(legend);
+  }
+
   function persistLayout() {
     const layout = {};
     nodes.forEach((node) => {
@@ -190,18 +276,33 @@ const studioGraph = (() => {
 
   function drawEdges() {
     Array.from(links.querySelectorAll(".graph-link,.graph-link-hit")).forEach((path) => path.remove());
+    const propagation = propagationFrom(activityNodeId);
     edges.forEach(([from, to]) => {
       const source = nodeById[from];
       const target = nodeById[to];
       if (!source || !target) return;
+      const structure = edgeStructure(from, to);
+      const targetState = canonicalRuntimeState(target.dataset.state);
       const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
       path.setAttribute("d", connectionPath(source, target));
-      path.setAttribute("marker-end", "url(#graph-arrow)");
-      path.setAttribute("class", "graph-link link-" + (target.dataset.state || "idle"));
+      const marker = targetState === "error" || targetState === "stale" ? targetState : structure;
+      path.setAttribute("marker-end", "url(#graph-arrow-" + marker + ")");
+      path.setAttribute("class", "graph-link edge-" + structure + " edge-state-" + targetState);
       path.dataset.from = from;
       path.dataset.to = to;
-      if (activityNodeId && (from === activityNodeId || to === activityNodeId)) {
+      path.dataset.structure = structure;
+      if (source.dataset.state === "active" || target.dataset.state === "active") {
+        path.classList.add("edge-active");
+      }
+      if (activityNodeId && from === activityNodeId) {
         path.classList.add("activity-link");
+      }
+      if (propagation.edges.has(from + ">" + to)) path.classList.add("impact-link");
+      if (focusNodeId) {
+        const isFocused = from === focusNodeId || to === focusNodeId;
+        path.classList.toggle("focus-path", isFocused && structure === "core");
+        path.classList.toggle("focus-optional", isFocused && structure === "optional");
+        path.classList.toggle("focus-muted", !isFocused);
       }
       links.appendChild(path);
       const hit = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -234,7 +335,8 @@ const studioGraph = (() => {
   }
 
   function showEdgeTooltip(event, from, to, path) {
-    edgeTooltipRoute.textContent = nodeTitle(from) + " → " + nodeTitle(to);
+    const kind = edgeStructure(from, to) === "optional" ? "branche optionnelle" : "flux principal";
+    edgeTooltipRoute.textContent = nodeTitle(from) + " → " + nodeTitle(to) + " · " + kind;
     edgeTooltipDescription.textContent = edgeDescriptions[from + ">" + to]
       || "Dépendance du pipeline de production.";
     edgeTooltip.classList.remove("hidden");
@@ -271,7 +373,8 @@ const studioGraph = (() => {
       marker.style.top = Number(node.dataset.y) * ratioY + "px";
       marker.style.width = Math.max(8, node.offsetWidth * ratioX) + "px";
       marker.style.height = Math.max(5, node.offsetHeight * ratioY) + "px";
-      marker.className = "graph-minimap-node state-" + (node.dataset.state || "idle");
+      marker.className = "graph-minimap-node structure-" + node.dataset.structure
+        + " state-" + canonicalRuntimeState(node.dataset.state);
     });
     const visibleX = clamp(-view.x / view.scale, 0, WORLD_WIDTH);
     const visibleY = clamp(-view.y / view.scale, 0, WORLD_HEIGHT);
@@ -286,11 +389,13 @@ const studioGraph = (() => {
   function nodeState(id, state, label) {
     const node = nodeById[id];
     if (!node) return;
+    const runtimeState = canonicalRuntimeState(state);
     Array.from(node.classList).filter((name) => name.startsWith("state-")).forEach((name) => node.classList.remove(name));
-    node.classList.add("state-" + state);
-    node.dataset.state = state;
+    node.classList.add("state-" + runtimeState);
+    node.dataset.state = runtimeState;
+    node.dataset.runtimeState = runtimeState;
     const status = node.querySelector(".graph-node-status");
-    if (label) status.textContent = label;
+    if (label && status) status.textContent = label;
     if (id === selectedId) renderInspector(id);
     drawEdges();
     updateMinimap();
@@ -311,20 +416,55 @@ const studioGraph = (() => {
         to,
         fromLabel: nodeTitle(from),
         toLabel: nodeTitle(to),
+        structure: edgeStructure(from, to),
         description: edgeDescriptions[from + ">" + to] || "Dépendance du pipeline de production.",
       }));
   }
 
-  function focusActivityStage(stageId) {
-    activityNodeId = stageNodeById[stageId] || stageId || null;
+  function propagationFrom(nodeId) {
+    const impactedNodes = new Set();
+    const impactedEdges = new Set();
+    if (!nodeId || !nodeById[nodeId]) return { nodes: impactedNodes, edges: impactedEdges };
+    const queue = [nodeId];
+    impactedNodes.add(nodeId);
+    while (queue.length) {
+      const current = queue.shift();
+      edges.filter(([from]) => from === current).forEach(([from, to]) => {
+        impactedEdges.add(from + ">" + to);
+        if (impactedNodes.has(to)) return;
+        impactedNodes.add(to);
+        queue.push(to);
+      });
+    }
+    return { nodes: impactedNodes, edges: impactedEdges };
+  }
+
+  function applyFocusPath(id) {
+    focusNodeId = id && nodeById[id] ? id : null;
+    world.classList.toggle("has-focus-path", Boolean(focusNodeId));
+    const connections = new Map();
+    if (focusNodeId) {
+      edges.filter(([from, to]) => from === focusNodeId || to === focusNodeId)
+        .forEach(([from, to]) => connections.set(from === focusNodeId ? to : from, edgeStructure(from, to)));
+    }
     nodes.forEach((node) => {
       const nodeId = node.dataset.nodeId;
-      const related = activityNodeId && edges.some(
-        ([from, to]) => (from === activityNodeId && to === nodeId)
-          || (to === activityNodeId && from === nodeId),
-      );
+      const relation = connections.get(nodeId);
+      node.classList.toggle("focus-node", nodeId === focusNodeId);
+      node.classList.toggle("focus-path", relation === "core");
+      node.classList.toggle("focus-optional", relation === "optional");
+      node.classList.toggle("focus-muted", Boolean(focusNodeId) && nodeId !== focusNodeId && !relation);
+    });
+  }
+
+  function focusActivityStage(stageId) {
+    activityNodeId = stageNodeById[stageId] || stageId || null;
+    const propagation = propagationFrom(activityNodeId);
+    nodes.forEach((node) => {
+      const nodeId = node.dataset.nodeId;
       node.classList.toggle("activity-focus", nodeId === activityNodeId);
-      node.classList.toggle("activity-related", Boolean(related));
+      node.classList.toggle("activity-related", Boolean(activityNodeId)
+        && nodeId !== activityNodeId && propagation.nodes.has(nodeId));
     });
     drawEdges();
   }
@@ -506,6 +646,8 @@ const studioGraph = (() => {
   function selectNode(id) {
     selectedId = id;
     nodes.forEach((node) => node.classList.toggle("selected", node.dataset.nodeId === id));
+    applyFocusPath(id);
+    drawEdges();
     renderInspector(id);
   }
 
@@ -555,12 +697,19 @@ const studioGraph = (() => {
   function uploadToNode(id, file) {
     const slot = definitions[id]?.slot;
     if (!slot || !file) return;
-    nodeState(id, "running", "Import en cours…");
-    window.SerreStudio?.uploadAsset(slot, file).catch(() => nodeState(id, "failed", "Import échoué"));
+    nodeState(id, "active", "Import en cours…");
+    window.SerreStudio?.uploadAsset(slot, file).catch(() => nodeState(id, "error", "Import échoué"));
   }
 
   nodes.forEach((node) => {
-    node.dataset.state = Array.from(node.classList).find((name) => name.startsWith("state-"))?.replace("state-", "") || "idle";
+    const legacyState = Array.from(node.classList).find((name) => name.startsWith("state-"))?.replace("state-", "") || "idle";
+    const runtimeState = canonicalRuntimeState(legacyState);
+    const structure = nodeStructures[node.dataset.nodeId] || "core";
+    Array.from(node.classList).filter((name) => name.startsWith("state-")).forEach((name) => node.classList.remove(name));
+    node.classList.add("state-" + runtimeState, "structure-" + structure);
+    node.dataset.state = runtimeState;
+    node.dataset.runtimeState = runtimeState;
+    node.dataset.structure = structure;
     node.addEventListener("click", (event) => {
       if (node.dataset.wasDragged === "true") {
         node.dataset.wasDragged = "false";
@@ -669,26 +818,26 @@ const studioGraph = (() => {
   window.addEventListener("studio:episode-loaded", (event) => {
     const detail = event.detail;
     if (!detail?.episode) return;
-    nodeState("story", "ready", "Épisode chargé");
-    nodeState("cast", "ready", (detail.characters?.length || 0) + " personnages canoniques");
-    nodeState("shot", "ready", (detail.shots?.length || 0) + " plans disponibles");
+    nodeState("story", "done", "Épisode chargé");
+    nodeState("cast", "done", (detail.characters?.length || 0) + " personnages canoniques");
+    nodeState("shot", "done", (detail.shots?.length || 0) + " plans disponibles");
   });
   window.addEventListener("studio:shot-selected", (event) => {
     const shot = event.detail?.shot;
-    if (shot?.shot_id) nodeState("shot", "ready", shot.shot_id + " sélectionné");
+    if (shot?.shot_id) nodeState("shot", "done", shot.shot_id + " sélectionné");
   });
   window.addEventListener("studio:assets", (event) => {
     const detail = event.detail || {};
     outputs = detail.outputs || {};
-    if (detail.assets?.story) nodeState("story", "ready", "Texte importé");
-    if (detail.assets?.audio) nodeState("voice", "ready", "Son disponible");
+    if (detail.assets?.story) nodeState("story", "done", "Texte importé");
+    if (detail.assets?.audio) nodeState("voice", "done", "Son disponible");
     if (detail.assets?.keyframe || outputs.keyframe) {
-      nodeState("keyframe", "ready", detail.assets?.keyframe ? "Image importée" : "Image générée");
-      nodeState("review", "running", "À approuver");
+      nodeState("keyframe", "done", detail.assets?.keyframe ? "Image importée" : "Image générée");
+      nodeState("review", "active", "À approuver");
     }
     if (detail.assets?.video || outputs.video) {
-      nodeState("motion", "ready", detail.assets?.video ? "Vidéo importée" : "Clip généré");
-      nodeState("review", "ready", "Sorties disponibles");
+      nodeState("motion", "done", detail.assets?.video ? "Vidéo importée" : "Clip généré");
+      nodeState("review", "done", "Sorties disponibles");
     }
     inspectorPreview(selectedId);
   });
@@ -697,7 +846,7 @@ const studioGraph = (() => {
     const mapping = { story: "story", keyframe: "keyframe", audio: "voice", video: "motion" };
     if (slot === "keyframe") outputs.keyframe = event.detail?.record?.url;
     if (slot === "video") outputs.video = event.detail?.record?.url;
-    if (mapping[slot]) nodeState(mapping[slot], "ready", "Import terminé");
+    if (mapping[slot]) nodeState(mapping[slot], "done", "Import terminé");
     inspectorPreview(selectedId);
   });
   window.addEventListener("studio:job", (event) => {
@@ -707,30 +856,30 @@ const studioGraph = (() => {
     (job.stages || []).forEach((stage) => {
       const id = stageNodeById[stage.id || stage.name];
       if (!id) return;
-      const state = stage.status === "completed" ? "ready" : stage.status === "running" ? "running" : stage.status === "failed" ? "failed" : "pending";
+      const state = stage.status === "completed" ? "done" : stage.status === "running" ? "active" : stage.status === "failed" ? "error" : "ready";
       const label = stage.status === "completed" ? "Terminé" : stage.status === "running" ? "En cours…" : stage.status === "failed" ? "Échec" : "En attente";
       nodeState(id, state, label);
     });
-    if (job.status === "AWAITING_KEYFRAME_APPROVAL") nodeState("review", "running", "Décision requise");
-    if (job.status === "GENERATED") nodeState("review", "ready", "Plan généré");
+    if (job.status === "AWAITING_KEYFRAME_APPROVAL") nodeState("review", "active", "Décision requise");
+    if (job.status === "GENERATED") nodeState("review", "done", "Plan généré");
     renderLivePreview(job);
   });
   window.addEventListener("studio:status", (event) => {
     const available = Boolean(event.detail?.comfyui);
     ["keyframe", "motion"].forEach((id) => {
-      if (["ready", "running"].includes(nodeById[id].dataset.state)) return;
-      nodeState(id, "pending", available ? "Modèle prêt" : "ComfyUI hors ligne · import possible");
+      if (["done", "active"].includes(nodeById[id].dataset.state)) return;
+      nodeState(id, available ? "ready" : "blocked", available ? "Modèle prêt" : "ComfyUI hors ligne · import possible");
     });
   });
   window.addEventListener("studio:narrative-status", (event) => {
     const ready = Boolean(event.detail?.ready);
-    nodeState("director", ready ? "idle" : "pending", ready ? "Disponible" : "Ollama hors ligne");
+    nodeState("director", ready ? "idle" : "blocked", ready ? "Disponible" : "Ollama hors ligne");
   });
   window.addEventListener("studio:narrative-job", (event) => {
     const state = event.detail?.state || "idle";
     const labels = { running: "Découpage en cours…", ready: "Shot proposé", failed: "Échec du Director" };
     nodeState("director", state, labels[state] || "Disponible");
-    if (state === "ready") nodeState("shot", "ready", "Proposition validée");
+    if (state === "ready") nodeState("shot", "done", "Proposition validée");
   });
 
   window.addEventListener("resize", () => {
@@ -738,6 +887,8 @@ const studioGraph = (() => {
     updateMinimap();
   });
 
+  installArrowMarkers();
+  buildLegend();
   buildMinimap();
   renderView(false);
   requestAnimationFrame(() => {
@@ -746,7 +897,14 @@ const studioGraph = (() => {
   });
   renderInspector(selectedId);
 
-  return { fitGraph, selectNode, nodeState, connectionsForStage, focusActivityStage };
+  return {
+    fitGraph,
+    selectNode,
+    nodeState,
+    connectionsForStage,
+    focusActivityStage,
+    showImpactFrom: focusActivityStage,
+  };
 })();
 
 window.SerreGraph = studioGraph;

@@ -48,3 +48,26 @@ async def test_episode_media_endpoint_serves_only_known_outputs(tmp_path: Path) 
     assert video.status_code == 200
     assert video.content == b"finished-episode"
     assert refused.status_code == 404
+
+
+async def test_project_explorer_endpoint_supports_an_empty_project(
+    tmp_path: Path,
+) -> None:
+    app = create_app(
+        Settings(
+            _env_file=None,
+            private_content_dir=tmp_path / "private",
+            output_dir=tmp_path / "output",
+        )
+    )
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/episodes/project-explorer")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "title": "La Serre des Venins",
+        "state": "idea",
+        "progress": {"completed": 0, "total": 0, "percent": 0, "states": {}},
+        "seasons": [],
+    }

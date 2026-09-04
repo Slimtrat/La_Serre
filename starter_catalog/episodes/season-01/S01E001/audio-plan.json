@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "voices": {
+    "belladone": {
+      "backend": "sapi",
+      "voice": "Microsoft Hortense Desktop",
+      "rate": 2,
+      "volume": 96
+    },
+    "aconit": {
+      "backend": "sapi",
+      "voice": "Microsoft Hortense Desktop",
+      "rate": -1,
+      "volume": 92
+    },
+    "graine-noire": {
+      "backend": "sapi",
+      "voice": "Microsoft Zira Desktop",
+      "rate": -5,
+      "volume": 82
+    }
+  },
+  "cues": {
+    "S01E001-S02": {"offset_seconds": 0.55, "gain_db": 0.0},
+    "S01E001-S03": {"offset_seconds": 0.75, "gain_db": -1.0},
+    "S01E001-S04": {"offset_seconds": 0.7, "gain_db": 0.0},
+    "S01E001-S05": {"offset_seconds": 0.9, "gain_db": -1.0},
+    "S01E001-S06": {"offset_seconds": 0.8, "gain_db": 0.0},
+    "S01E001-S07": {"offset_seconds": 0.8, "gain_db": -1.0},
+    "S01E001-S08": {"offset_seconds": 0.65, "gain_db": -3.0},
+    "S01E001-S09": {"offset_seconds": 0.8, "gain_db": 0.0},
+    "S01E001-S10": {"offset_seconds": 1.4, "gain_db": -3.0}
+  },
+  "music_gain_db": -22,
+  "ambience_gain_db": -28
+}

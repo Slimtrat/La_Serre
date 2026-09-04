@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "frame_asset": null,
+  "framed_shots": [],
+  "captions": {
+    "S01E001-S01": "ÉPISODE 1 — L’HÉRITAGE INTERDIT",
+    "S01E001-S10": "LA SERRE SAIT QUAND TU MENS"
+  },
+  "caption_positions": {
+    "S01E001-S01": "top",
+    "S01E001-S10": "bottom"
+  }
+}

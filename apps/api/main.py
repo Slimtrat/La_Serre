@@ -33,6 +33,7 @@ from apps.api.schemas import (
 from apps.api.stage_actions import ShotStageService, StageKind
 from apps.api.workflow_graph import WORKFLOW_GRAPH_KINDS, build_workflow_graph
 from apps.api.workflow_setup import WorkflowSetup
+from apps.desktop.service_launcher import service_supervisor_listing
 from apps.version import __version__
 from engine.config import Settings
 from engine.generation.comfy.client import ComfyClient
@@ -111,7 +112,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-    app.include_router(create_episode_router(catalog))
+    app.include_router(
+        create_episode_router(catalog, lambda: current_settings().output_dir)
+    )
     app.include_router(create_narrative_router(current_settings, assets))
 
     @app.get("/api/projects")
@@ -191,6 +194,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/health")
     async def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/api/runtime/services")
+    def runtime_services() -> dict[str, object]:
+        return service_supervisor_listing()
 
     @app.get("/ready")
     @app.get("/api/status")

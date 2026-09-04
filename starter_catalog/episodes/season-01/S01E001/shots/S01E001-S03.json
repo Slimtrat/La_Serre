@@ -1,0 +1,17 @@
+{
+  "id": "S01E001-S03",
+  "duration": 5.0,
+  "location": "serre-des-venins",
+  "location_description": "A vast nocturnal Victorian poison greenhouse with black wrought-iron ribs, fogged glass panes, a huge moon beyond the roof, tangled sentient vines, toxic bell flowers, blue aconites and a round veined marble pedestal at its center",
+  "characters": [
+    {"id": "belladone", "name": "Belladone", "emotion": "caught but entirely unrepentant", "position": "foreground left with one vine almost touching the lock", "visual_description": "Predominantly botanical flower-woman with a lightly humanized lavender face emerging from a broad deep-plum belladonna corolla, large expressive violet eyes, petal curls instead of human hair, leaf-and-vine limbs and no visible human skin texture", "wardrobe": "Her silhouette is formed entirely by layered plum petals, dark olive sepals and flexible climbing vines, with no ordinary fabric clothing, shoes or human accessories", "signature_details": ["broad asymmetrical purple bell-flower corolla", "tiny black heart marking under the right eye", "cluster of exactly three glossy black belladonna berries at the left hip", "purple heart-shaped nectar gem at the throat"], "reference_images": ["../../../../references/episode-01-storyboard.png"]},
+    {"id": "aconit", "name": "Aconit", "emotion": "controlled alarm and tired familiarity", "position": "midground right emerging upright from blue flowers", "visual_description": "Predominantly botanical monkshood flower-woman with a lightly humanized cool-blue face nested inside a tall cobalt aconite hood, narrow expressive indigo eyes, petal planes instead of human hair, sharp leaf-and-vine limbs and no visible human skin texture", "wardrobe": "Her severe silhouette is formed entirely by overlapping indigo petals, a pointed blue monkshood hood and a dark silver-green leaf collar, with no ordinary fabric clothing, shoes or human accessories", "signature_details": ["tall pointed cobalt monkshood hood", "sharp layered leaf collar", "single silver crescent marking beneath the left eye", "two small blue aconite blossoms growing from the right shoulder vine"], "reference_images": ["../../../../references/episode-01-storyboard.png"]}
+  ],
+  "camera": {"shot_type": "balanced two-shot", "movement": "quick rack focus from Belladone's vine to Aconit", "lens": "50mm"},
+  "action": "Aconit unfolds from a stand of blue aconites and fixes Belladone's reaching vine with a severe look while the lock twitches",
+  "dialogue": {"speaker": "aconit", "text": "Ne le touche pas."},
+  "lighting": "split orchid and cobalt moonlight defining the two contrasting silhouettes",
+  "mood": "dry romantic-comedy timing over imminent danger",
+  "style": ["polished 2D cartoon", "gothic botanical fantasy", "painterly cel shading", "predominantly botanical character design", "vertical cinematic composition"],
+  "render": {"seed": 410003, "width": 576, "height": 1024, "fps": 24, "frames": 121, "negative_prompt": "photorealistic women, human skin, human hair, fabric gowns, identical purple characters, gore, text, subtitles, logo, watermark"}
+}
