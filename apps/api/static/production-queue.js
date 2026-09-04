@@ -25,7 +25,9 @@ const productionQueue = (() => {
   toggle.setAttribute("aria-expanded", "false");
   toggle.title = "File globale de production";
   toggle.innerHTML = '<span aria-hidden="true">≋</span><strong>File</strong><i class="hidden">0</i>';
-  topbar.insertBefore(toggle, document.querySelector(".project-switcher"));
+  const toolRail = document.querySelector(".studio-tools");
+  if (toolRail) toolRail.insertBefore(toggle, toolRail.firstChild);
+  else topbar.append(toggle);
 
   const drawer = document.createElement("aside");
   drawer.id = "production-queue";

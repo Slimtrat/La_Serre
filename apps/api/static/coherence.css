@@ -1,0 +1,72 @@
+.graph-coherence-report {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+  max-height: min(48vh, 440px);
+  margin: 12px 0;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid rgba(143, 207, 157, .24);
+  border-radius: 11px;
+  background: rgba(7, 12, 9, .82);
+}
+
+.graph-coherence-report[data-status="fail"] { border-color: rgba(225, 129, 129, .55); }
+.graph-coherence-report[data-status="warning"],
+.graph-coherence-report[data-status="incomplete"] { border-color: rgba(226, 187, 111, .45); }
+.coherence-report-heading,
+.coherence-finding-head,
+.coherence-report-actions,
+.coherence-sources { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.coherence-report-heading > div { display: grid; gap: 3px; }
+.coherence-kicker { color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.coherence-status { padding: 3px 7px; border-radius: 999px; background: rgba(143, 207, 157, .12); color: var(--green); font-size: 8px; font-weight: 900; }
+[data-status="fail"] .coherence-status { color: var(--danger); background: rgba(225, 129, 129, .12); }
+.coherence-sources { justify-content: flex-start; flex-wrap: wrap; color: var(--green); font-size: 9px; }
+.coherence-sources .is-muted { color: var(--muted); }
+.coherence-reviewers { display: flex; gap: 5px; overflow-x: auto; }
+.coherence-reviewer { display: grid; min-width: 112px; gap: 2px; padding: 7px; border: 1px solid var(--line); border-radius: 8px; }
+.coherence-reviewer strong { color: #ceb5e1; font-size: 9px; text-transform: capitalize; }
+.coherence-reviewer small { color: var(--muted); font-size: 8px; line-height: 1.35; }
+.coherence-reviewer.fail { border-color: rgba(225, 129, 129, .38); }
+.coherence-findings { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.coherence-finding { display: grid; gap: 5px; padding: 8px; border-left: 2px solid #6f7a72; background: rgba(255, 255, 255, .025); }
+.coherence-finding.blocker { border-color: var(--danger); }
+.coherence-finding.warning { border-color: #d9ae61; }
+.coherence-finding.suggestion { border-color: #8b79ab; }
+.coherence-finding-head { justify-content: flex-start; }
+.coherence-finding-head strong { font-size: 10px; }
+.coherence-severity { min-width: 54px; color: var(--muted); font-size: 7px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.coherence-finding p,
+.coherence-finding blockquote { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.45; }
+.coherence-finding blockquote { padding-left: 7px; border-left: 1px solid var(--violet); color: #c4b3d7; }
+.coherence-recommendation { color: var(--green); font-size: 8px; line-height: 1.4; }
+.coherence-finding code { overflow: hidden; color: #6f7b72; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.coherence-report-actions { justify-content: flex-start; flex-wrap: wrap; }
+.coherence-report-actions .button { padding: 6px 8px; font-size: 8px; }
+.coherence-approved { color: var(--green); font-size: 9px; font-weight: 800; }
+.coherence-empty { color: var(--green); font-size: 9px; }
+.coherence-error { color: var(--danger); font-size: 10px; }
+.graph-coherence-report.is-loading { grid-template-columns: auto 1fr; align-items: center; color: #ceb5e1; }
+.coherence-spinner { animation: coherence-pulse 1s ease-in-out infinite alternate; }
+@keyframes coherence-pulse { to { opacity: .35; transform: rotate(30deg) scale(.85); } }
+
+.graph-node-coherence {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin-top: 5px;
+  padding: 2px 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(143, 207, 157, .12);
+  color: var(--green);
+  font-size: 7px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.graph-node[data-coherence="fail"] .graph-node-coherence { background: rgba(225, 129, 129, .14); color: var(--danger); }
+.graph-node[data-coherence="warning"] .graph-node-coherence,
+.graph-node[data-coherence="incomplete"] .graph-node-coherence { background: rgba(226, 187, 111, .13); color: #e2bb72; }
+.graph-node[data-coherence="approved"] .graph-node-coherence { box-shadow: inset 0 0 0 1px rgba(143, 207, 157, .26); }

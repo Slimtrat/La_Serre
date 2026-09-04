@@ -17,7 +17,7 @@ const notificationCenter = (() => {
   }
 
   function formatDate(value) {
-    return new Intl.DateTimeFormat("fr-FR", {
+    return new Intl.DateTimeFormat(window.SerreI18n?.getLocale() || "fr-FR", {
       hour: "2-digit", minute: "2-digit", second: "2-digit",
     }).format(new Date(value));
   }

@@ -39,6 +39,7 @@ class GraphActionKind(StrEnum):
     WORKFLOW = "workflow"
     IMPORT = "import"
     DIRECTOR = "director"
+    VALIDATE = "validate"
 
 
 class GraphTarget(GraphModel):

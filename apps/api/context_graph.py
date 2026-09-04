@@ -22,6 +22,7 @@ from apps.api.graph_contract import (
 )
 from apps.api.project_explorer import ExplorerState, aggregate_state, inspect_shot_state
 from engine.narrative.episode_models import EpisodePackage, EpisodeStatus
+from engine.world.bible import BibleRegistry
 from engine.world.catalog import EpisodeCatalog
 
 SHOT_NODE_POSITIONS = {
@@ -105,8 +106,44 @@ class ContextGraphBuilder:
 
     def series(self) -> GraphDTO:
         summaries = self.catalog.list_episodes()
+        bible = BibleRegistry(self.catalog.root).load()
         states: list[GraphRuntimeState] = []
-        nodes: list[GraphNode] = []
+        nodes: list[GraphNode] = [
+            GraphNode(
+                id="series:cast",
+                label="Personnages",
+                subtitle=f"{len(bible.characters)} identités canoniques",
+                type_label="BIBLE · SÉRIE",
+                index="C",
+                structure=GraphStructure.OPTIONAL,
+                state=(
+                    GraphRuntimeState.DONE
+                    if bible.characters
+                    else GraphRuntimeState.BLOCKED
+                ),
+                status=(
+                    "Canon disponible" if bible.characters else "Casting à construire"
+                ),
+                position=GraphPosition(x=120, y=60),
+                description=(
+                    "Casting canonique partagé par tous les épisodes et tous les plans."
+                ),
+                provider="Bible de série",
+                actions=[
+                    self._workspace_action(
+                        "open-series-cast",
+                        "Ouvrir les personnages",
+                        "casting",
+                    ),
+                    self._validate_action(
+                        "validate-series-characters",
+                        "Vérifier la cohérence",
+                        "characters",
+                    ),
+                ],
+                metadata={"resource_scope": "series"},
+            )
+        ]
         edges: list[GraphEdge] = []
         previous_id: str | None = None
         for index, summary in enumerate(summaries):
@@ -148,16 +185,32 @@ class ContextGraphBuilder:
                             GraphScope.EPISODE,
                             summary.id,
                             primary=True,
-                        )
+                        ),
+                        self._validate_action(
+                            "validate-episode",
+                            "Contrôler la cohérence",
+                            "story",
+                        ),
                     ],
                     metadata={"episode_id": summary.id, "shot_count": summary.shot_count},
                 )
             )
             if previous_id:
                 edges.append(self._edge(previous_id, node_id, "Ordre de diffusion de la série."))
+            edges.append(
+                self._edge(
+                    "series:cast",
+                    node_id,
+                    (
+                        "Le casting de série contraint les voix et comportements "
+                        "de l’épisode."
+                    ),
+                    optional=True,
+                )
+            )
             previous_id = node_id
 
-        if not nodes:
+        if not summaries:
             nodes.append(
                 GraphNode(
                     id="series:empty",
@@ -168,7 +221,7 @@ class ContextGraphBuilder:
                     structure=GraphStructure.CONTAINER,
                     state=GraphRuntimeState.BLOCKED,
                     status="Aucun épisode",
-                    position=GraphPosition(x=160, y=270),
+                    position=GraphPosition(x=490, y=270),
                     description=(
                         "Ajoute un épisode au contenu privé du projet pour commencer "
                         "la production."
@@ -184,7 +237,10 @@ class ContextGraphBuilder:
             subtitle=f"{len(summaries)} épisode{'s' if len(summaries) != 1 else ''}",
             nodes=nodes,
             edges=edges,
-            viewport=GraphViewport(width=max(900, 280 + len(nodes) * 330), height=720),
+            viewport=GraphViewport(
+                width=max(1000, 610 + len(summaries) * 330),
+                height=720,
+            ),
             progress=self._progress(
                 states,
                 f"{sum(state is GraphRuntimeState.DONE for state in states)} / "
@@ -219,7 +275,14 @@ class ContextGraphBuilder:
                 description=package.episode.logline,
                 provider="Contrat Episode",
                 progress=self._progress(shot_states, "Progression des plans"),
-                actions=[self._workspace_action("open-episode", "Voir l’épisode", "plan")],
+                actions=[
+                    self._workspace_action("open-episode", "Voir l’épisode", "plan"),
+                    self._validate_action(
+                        "validate-episode-story",
+                        "Contrôler histoire & continuité",
+                        "story",
+                    ),
+                ],
             )
         ]
         previous_id = f"episode:{episode_id}"
@@ -253,7 +316,12 @@ class ContextGraphBuilder:
                             GraphScope.SHOT,
                             shot.id,
                             primary=True,
-                        )
+                        ),
+                        self._validate_action(
+                            "validate-shot-story",
+                            "Contrôler ce plan",
+                            "story",
+                        ),
                     ],
                     metadata={"shot_id": shot.id, "duration": shot.duration},
                 )
@@ -302,7 +370,16 @@ class ContextGraphBuilder:
                 position=GraphPosition(x=master_x, y=270),
                 description="Assemblage final des plans, de la bande-son et des sous-titres.",
                 provider="FFmpeg",
-                actions=[self._workspace_action("show-master", "Voir les sorties", "outputs")],
+                actions=[
+                    self._workspace_action(
+                        "show-master", "Voir les sorties", "outputs"
+                    ),
+                    self._validate_action(
+                        "validate-master",
+                        "Contrôle final de cohérence",
+                        "master",
+                    ),
+                ],
             )
         )
         edges.append(self._edge(previous_id, master_id, "Le dernier plan rejoint le master."))
@@ -498,7 +575,16 @@ class ContextGraphBuilder:
                 "container",
                 "Le matériau narratif du plan.",
                 "Ollama ou fichier texte",
-                [self._workspace_action("edit-story", "Éditer l’histoire", "plan#story-editor")],
+                [
+                    self._workspace_action(
+                        "edit-story", "Éditer l’histoire", "plan#story-editor"
+                    ),
+                    self._validate_action(
+                        "validate-shot-story",
+                        "Comparer à l’histoire",
+                        "story",
+                    ),
+                ],
                 slot="story",
             ),
             self._node_spec(
@@ -522,18 +608,25 @@ class ContextGraphBuilder:
             ),
             self._node_spec(
                 "shot",
-                "Shot JSON",
-                "Plan validé",
-                "CONTRAT",
+                "Validation du découpage",
+                "Gate humaine · shot.json",
+                "GATE",
                 "03",
                 "container",
-                "Contrat reproductible du cadrage, de l’action et des personnages.",
-                "Schéma Pydantic",
+                "Contrôle histoire, canon, personnages et dialogues avant production.",
+                "Règles strictes · comité IA local · décision humaine",
                 [
-                    self._workspace_action(
-                        "open-shot-json", "Ouvrir le Shot JSON", "plan#shot-editor"
+                    self._validate_action(
+                        "validate-shot-contract",
+                        "Lancer le contrôle",
+                        "all",
+                        primary=True,
                     ),
-                    self._generate_action("generate-shot", "Générer le plan", "all"),
+                    self._workspace_action(
+                        "open-shot-json",
+                        "Voir le contrat technique",
+                        "plan#shot-editor",
+                    ),
                 ],
             ),
             self._node_spec(
@@ -545,7 +638,14 @@ class ContextGraphBuilder:
                 "optional",
                 "Références canoniques des personnages visibles.",
                 "Bible privée du projet",
-                [self._workspace_action("show-cast", "Voir le casting", "casting")],
+                [
+                    self._workspace_action("show-cast", "Voir le casting", "casting"),
+                    self._validate_action(
+                        "validate-shot-characters",
+                        "Contrôler les personnages",
+                        "characters",
+                    ),
+                ],
             ),
             self._node_spec(
                 "keyframe",
@@ -649,7 +749,16 @@ class ContextGraphBuilder:
                 "core",
                 "Ordonne les clips et synchronise leur bande-son.",
                 "FFmpeg",
-                [self._workspace_action("show-montage", "Voir les sorties", "outputs")],
+                [
+                    self._workspace_action(
+                        "show-montage", "Voir les sorties", "outputs"
+                    ),
+                    self._validate_action(
+                        "validate-shot-master",
+                        "Contrôle narratif final",
+                        "master",
+                    ),
+                ],
             ),
             self._node_spec(
                 "export",
@@ -867,6 +976,22 @@ class ContextGraphBuilder:
             label=label,
             kind=GraphActionKind.STAGE,
             value=value,
+        )
+
+    @staticmethod
+    def _validate_action(
+        action_id: str,
+        label: str,
+        value: str,
+        *,
+        primary: bool = False,
+    ) -> GraphAction:
+        return GraphAction(
+            id=action_id,
+            label=label,
+            kind=GraphActionKind.VALIDATE,
+            value=value,
+            primary=primary,
         )
 
     @staticmethod

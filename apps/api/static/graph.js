@@ -538,6 +538,8 @@ const studioGraph = (() => {
   function renderInspector(id) {
     const definition = definitionFor(id);
     if (!definition) return;
+    const coherenceContext = { graph: graphDefinition, node: definition, nodeId: id };
+    window.SerreCoherence?.reset(id);
     document.querySelector("#graph-inspector-index").textContent = definition.index || "•";
     document.querySelector("#graph-inspector-type").textContent = definition.type_label;
     document.querySelector("#graph-inspector-title").textContent = definition.label;
@@ -561,6 +563,7 @@ const studioGraph = (() => {
       drop.textContent = "Dépose un fichier pour « " + definition.label + " ».";
     }
     inspectorPreview(id);
+    window.SerreCoherence?.loadLatest(coherenceContext).catch(reportError);
   }
 
   async function runAction(action) {
@@ -572,6 +575,13 @@ const studioGraph = (() => {
       return;
     }
     if (action.kind === "workflow") return window.SerreWorkflowGraph?.open(action.value);
+    if (action.kind === "validate") {
+      return window.SerreCoherence?.run(action.value, {
+        graph: graphDefinition,
+        node: definitionFor(selectedId),
+        nodeId: selectedId,
+      });
+    }
     if (action.kind === "import") {
       document.querySelector("[data-dropzone='" + action.value + "'] input")?.click();
       return;
@@ -581,8 +591,8 @@ const studioGraph = (() => {
 
   function openWorkspaceTarget(value) {
     if (value === "casting") {
-      window.SerreWorkspace?.show("plan");
-      window.SerreEpisode?.openCasting({ returnFocus: document.activeElement });
+      window.SerreWorkspace?.show("bible");
+      window.SerreBible?.selectCategory?.("characters");
       return;
     }
     const [viewName, anchor] = value.split("#", 2);
@@ -1132,6 +1142,32 @@ const studioGraph = (() => {
     };
     nodeState("director", state, labels[state] || "Disponible");
     if (state === "ready") nodeState("shot", "done", "Proposition validée");
+  });
+  window.addEventListener("studio:coherence", (event) => {
+    const report = event.detail?.report;
+    const id = event.detail?.nodeId;
+    const node = nodeById[id];
+    if (!report || !node) return;
+    node.dataset.coherence = report.status;
+    let badge = node.querySelector(".graph-node-coherence");
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "graph-node-coherence";
+      node.appendChild(badge);
+    }
+    const blockers = (report.findings || []).filter((item) => item.severity === "blocker").length;
+    const warnings = (report.findings || []).filter((item) => item.severity === "warning").length;
+    badge.textContent = blockers ? blockers + " bloquant(s)" : warnings ? warnings + " à vérifier" : "Cohérent";
+    badge.title = report.summary;
+    drawEdges();
+  });
+  window.addEventListener("studio:coherence-approved", (event) => {
+    const id = event.detail?.nodeId;
+    const node = nodeById[id];
+    if (!node) return;
+    node.dataset.coherence = "approved";
+    const badge = node.querySelector(".graph-node-coherence");
+    if (badge) badge.textContent = "Validé humainement";
   });
   window.addEventListener("resize", () => {
     drawEdges();

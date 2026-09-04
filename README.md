@@ -110,6 +110,9 @@ Voir [`docs/episode-production-contract.md`](docs/episode-production-contract.md
 contrat entre scénario, intentions de jeu, poses multiples, cadre fantasy, musique et
 sous-titres visibles.
 
+Voir [`docs/narrative-coherence.md`](docs/narrative-coherence.md) pour les règles de
+cohérence, le comité IA local appelable depuis les nœuds métier et la gate humaine.
+
 ## Studio hybride
 
 Les slots `story`, `shot`, `keyframe`, `audio` et `video` partagent un contrat
