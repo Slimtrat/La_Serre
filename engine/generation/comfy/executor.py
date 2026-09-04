@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -37,7 +38,14 @@ class ComfyWorkflowExecutor:
         loaded = self.loader.load(profile_path)
         workflow = self.mapper.map(loaded, context)
         prompt_id = await self.client.submit_workflow(workflow)
-        await self.client.wait(prompt_id, timeout_seconds)
+        try:
+            await self.client.wait(prompt_id, timeout_seconds)
+        except asyncio.CancelledError:
+            try:
+                await asyncio.shield(self.client.cancel(prompt_id))
+            except Exception:
+                pass
+            raise
         outputs = await self.client.get_outputs(prompt_id)
         if loaded.profile.output_node_ids:
             allowed = set(loaded.profile.output_node_ids)

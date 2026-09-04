@@ -327,6 +327,178 @@
 
 .getting-started-controls > div { display: flex; gap: 7px; }
 
+.guide-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.guide-choice-grid > button {
+  display: grid;
+  min-height: 148px;
+  grid-template-rows: auto auto 1fr;
+  justify-items: start;
+  gap: 8px;
+  padding: 18px;
+  color: var(--text);
+  cursor: pointer;
+  border: 1px solid rgba(163, 135, 196, .28);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(163, 135, 196, .14), transparent 48%),
+    rgba(255, 255, 255, .025);
+  text-align: left;
+  transition: transform .16s ease, border-color .16s ease, background-color .16s ease;
+}
+
+.guide-choice-grid > button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(193, 162, 226, .72);
+  background-color: rgba(163, 135, 196, .08);
+}
+
+.guide-choice-grid > button:focus-visible {
+  outline: 2px solid #b7d7ff;
+  outline-offset: 3px;
+}
+
+.guide-choice-grid > button:disabled {
+  cursor: not-allowed;
+  filter: saturate(.35);
+  opacity: .46;
+  transform: none;
+}
+
+.guide-choice-grid > button > span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  color: #e5d1f7;
+  border: 1px solid rgba(163, 135, 196, .42);
+  border-radius: 10px;
+  background: rgba(163, 135, 196, .12);
+  font: 18px/1 Georgia, serif;
+}
+
+.guide-choice-grid > button > strong { font: 19px/1.15 Georgia, serif; }
+.guide-choice-grid > button > small { color: var(--muted); font-size: 10px; line-height: 1.55; }
+
+.guide-readiness-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 9px 11px;
+  color: var(--warn);
+  border: 1px solid rgba(226, 187, 120, .22);
+  border-radius: 9px;
+  background: rgba(226, 187, 120, .055);
+  font-size: 9px;
+}
+
+.guide-readiness-summary.ready { color: var(--green); border-color: rgba(143, 207, 157, .24); }
+.guide-readiness-summary button {
+  margin-left: auto;
+  padding: 4px 7px;
+  color: inherit;
+  cursor: pointer;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+}
+
+.guide-context-card {
+  padding: 16px;
+  border: 1px solid rgba(126, 180, 255, .26);
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, rgba(59, 129, 224, .1), transparent 65%),
+    rgba(255, 255, 255, .022);
+}
+
+.guide-context-badge {
+  display: inline-flex;
+  padding: 4px 7px;
+  color: #b7d7ff;
+  border: 1px solid rgba(126, 180, 255, .34);
+  border-radius: 999px;
+  font: 8px/1 "Cascadia Code", Consolas, monospace;
+  letter-spacing: .12em;
+}
+
+.guide-context-card p { margin: 12px 0; color: #c5d0c8; font-size: 11px; line-height: 1.55; }
+.guide-context-card small { color: var(--muted); font: 9px/1.4 "Cascadia Code", Consolas, monospace; }
+
+.getting-started-dialog.contextual {
+  position: fixed;
+  inset: 66px 18px auto auto;
+  width: min(420px, calc(100vw - 36px));
+  height: min(650px, calc(100vh - 84px));
+  margin: 0;
+  z-index: 72;
+  border-color: rgba(126, 180, 255, .32);
+  border-radius: 15px;
+  box-shadow: 0 22px 72px #000c;
+}
+
+.getting-started-dialog.contextual .getting-started-heading { padding: 12px 14px; }
+.getting-started-dialog.contextual .getting-started-brand > span { width: 30px; height: 30px; font-size: 14px; }
+.getting-started-dialog.contextual .getting-started-brand strong { font-size: 16px; }
+.getting-started-dialog.contextual .getting-started-brand small { font-size: 8px; }
+.getting-started-dialog.contextual .getting-started-body { grid-template-columns: 60px minmax(0, 1fr); }
+.getting-started-dialog.contextual .getting-started-nav { gap: 3px; padding: 8px 7px; }
+.getting-started-dialog.contextual .getting-started-nav button {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  padding: 5px;
+}
+.getting-started-dialog.contextual .getting-started-nav button > strong { display: none; }
+.getting-started-dialog.contextual .getting-started-nav button > span { width: 25px; height: 25px; }
+.getting-started-dialog.contextual .getting-started-content { padding: 18px 16px; }
+.getting-started-dialog.contextual .getting-started-content h2 { font-size: 25px; }
+.getting-started-dialog.contextual .getting-started-content .guide-lead { margin: 10px 0 14px; font-size: 11px; }
+.getting-started-dialog.contextual .getting-started-footer { grid-template-columns: 60px minmax(0, 1fr); }
+.getting-started-dialog.contextual .getting-started-footer > small { padding-inline: 9px; }
+.getting-started-dialog.contextual .getting-started-controls { padding: 9px; }
+.getting-started-dialog.contextual .getting-started-controls .button { padding-inline: 8px; font-size: 8px; }
+.getting-started-dialog.contextual .guide-choice-grid { grid-template-columns: 1fr; }
+.getting-started-dialog.contextual .guide-choice-grid > button { min-height: 112px; }
+
+.graph-node.guide-expected {
+  z-index: 8;
+  outline: 2px solid #8ec1ff;
+  outline-offset: 5px;
+  box-shadow:
+    0 0 0 8px rgba(80, 153, 246, .09),
+    0 0 34px rgba(80, 153, 246, .5),
+    var(--node-shadow, 0 10px 30px rgba(0, 0, 0, .32));
+  animation: guide-expected-pulse 1.7s ease-in-out infinite;
+}
+
+.graph-node.guide-expected::after {
+  content: "ÉTAPE DU GUIDE";
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  padding: 4px 7px;
+  transform: translateX(-50%);
+  color: #07111d;
+  border-radius: 999px;
+  background: #b7d7ff;
+  box-shadow: 0 4px 15px rgba(49, 112, 196, .35);
+  font: 700 7px/1 "Cascadia Code", Consolas, monospace;
+  letter-spacing: .1em;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+@keyframes guide-expected-pulse {
+  0%, 100% { outline-color: rgba(142, 193, 255, .78); }
+  50% { outline-color: #d3e8ff; box-shadow: 0 0 0 12px rgba(80, 153, 246, .04), 0 0 44px rgba(80, 153, 246, .7); }
+}
+
 @media (max-width: 920px) {
   .guide-toggle strong { display: none; }
   .guide-toggle { padding-inline: 7px; }
@@ -356,4 +528,15 @@
   .getting-started-footer { grid-template-columns: 1fr; }
   .getting-started-footer > small { display: none; }
   .getting-started-controls { padding: 9px; }
+  .guide-choice-grid { grid-template-columns: 1fr; }
+  .getting-started-dialog.contextual {
+    inset: auto 6px 6px;
+    width: calc(100vw - 12px);
+    height: min(470px, calc(100vh - 12px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guide-choice-grid > button { transition: none; }
+  .graph-node.guide-expected { animation: none; }
 }

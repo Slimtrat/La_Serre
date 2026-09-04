@@ -94,3 +94,57 @@ def test_project_registry_serializes_concurrent_creations(tmp_path: Path) -> Non
     assert len(cast(list[object], projects.listing()["projects"])) == 7
     reloaded = registry(tmp_path)
     assert len(cast(list[object], reloaded.listing()["projects"])) == 7
+
+
+def test_discovery_can_be_unregistered_without_deleting_user_project(
+    tmp_path: Path,
+) -> None:
+    projects = registry(tmp_path)
+    discovery_marker = tmp_path / "private" / "episodes" / "discovery.txt"
+    discovery_marker.parent.mkdir(parents=True)
+    discovery_marker.write_text("starter", encoding="utf-8")
+    user = projects.create("Mon histoire", clone_content=False)
+    user_marker = Path(user.private_content_dir) / "episodes" / "mine.txt"
+    user_marker.write_text("user", encoding="utf-8")
+
+    removed = projects.delete_discovery("default")
+
+    assert removed.kind == "discovery"
+    assert discovery_marker.read_text(encoding="utf-8") == "starter"
+    assert user_marker.read_text(encoding="utf-8") == "user"
+    assert projects.active.id == user.id
+    listing = cast(list[dict[str, object]], projects.listing()["projects"])
+    assert {item["id"] for item in listing} == {user.id}
+    assert registry(tmp_path).active.id == user.id
+
+
+def test_discovery_deletion_never_accepts_user_project_or_last_project(
+    tmp_path: Path,
+) -> None:
+    projects = registry(tmp_path)
+
+    with pytest.raises(ValueError, match="Crée d’abord"):
+        projects.delete_discovery("default")
+
+    user = projects.create("Projet protégé", clone_content=False)
+    with pytest.raises(ValueError, match="Seul le projet Découverte"):
+        projects.delete_discovery(user.id)
+
+    assert Path(user.private_content_dir).is_dir()
+
+
+def test_legacy_registry_infers_project_kind_safely(tmp_path: Path) -> None:
+    projects = registry(tmp_path)
+    user = projects.create("Projet legacy", clone_content=False)
+    payload = json.loads(projects.config_path.read_text(encoding="utf-8"))
+    for item in payload["projects"]:
+        item.pop("kind")
+    projects.config_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    reloaded = registry(tmp_path)
+    listing = cast(list[dict[str, object]], reloaded.listing()["projects"])
+    by_id = {str(item["id"]): item for item in listing}
+
+    assert by_id["default"]["kind"] == "discovery"
+    assert by_id[user.id]["kind"] == "user"
+    assert by_id["default"]["deletable"] is True

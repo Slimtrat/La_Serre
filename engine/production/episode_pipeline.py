@@ -15,6 +15,7 @@ from engine.audio.score import ProceduralScoreComposer
 from engine.audio.speech import SpeechSynthesizer, voice_preset_for_performance
 from engine.director.models import DialoguePerformance
 from engine.media.ffmpeg import AssemblyRequest, MediaToolchain, SegmentInput
+from engine.narrative.episode_models import EpisodePackage
 from engine.production.artifacts import sha256_file, write_text_atomic
 from engine.production.presentation import EpisodePresentationPlan
 from engine.world.catalog import EpisodeCatalog
@@ -23,6 +24,23 @@ VIDEO_SUFFIXES = {".mp4", ".webm", ".mov", ".mkv"}
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
 AUDIO_SUFFIXES = {".wav", ".mp3", ".flac", ".ogg", ".m4a"}
 ProgressCallback = Callable[[str, str, str], None]
+
+
+def _episode_canonical_context(package: EpisodePackage) -> dict[str, object]:
+    contexts = {
+        shot.id: shot.canonical_context
+        for shot in package.shots
+        if shot.canonical_context is not None
+    }
+    return {
+        "revision": max(
+            (context.revision for context in contexts.values()),
+            default=0,
+        ),
+        "shots": {
+            shot_id: context.fingerprint for shot_id, context in contexts.items()
+        },
+    }
 
 
 @dataclass(frozen=True, slots=True)
@@ -279,6 +297,7 @@ class EpisodePipeline:
                 },
                 "inputs": {
                     "episode": str((episode_dir / "episode.json").resolve()),
+                    "canonical_context": _episode_canonical_context(package),
                     "shots": source_records,
                     "subtitles": self._source_record(subtitles, "episode") if subtitles else None,
                     "music": (

@@ -16,6 +16,7 @@ from engine.config import Settings
 from engine.director.models import Shot
 from engine.generation.comfy.client import ComfyClient
 from engine.production.shot_pipeline import ShotPipeline, ShotPipelineOptions
+from engine.world.bible import BibleRegistry
 
 STAGES = ("input", "prompt", "references", "keyframe", "video", "artifacts")
 
@@ -124,6 +125,7 @@ class JobManager:
         self.assets_provider = assets_provider
         self.jobs: dict[str, StudioJob] = {}
         self._tasks: set[asyncio.Task[None]] = set()
+        self._tasks_by_job: dict[str, asyncio.Task[None]] = {}
         self._gpu_slot = asyncio.Semaphore(1)
 
     async def start(
@@ -150,6 +152,14 @@ class JobManager:
         self.jobs[job.id] = job
         try:
             settings = await asyncio.to_thread(self.settings_provider)
+            # Canonical context is attached when a shot comes from the project
+            # catalog. Legacy/direct API callers remain supported until they
+            # explicitly opt into the Bible-backed contract.
+            if shot.canonical_context is not None:
+                shot = await asyncio.to_thread(
+                    BibleRegistry(settings.private_content_dir).resolve_shot,
+                    shot,
+                )
         except Exception:
             job.status = "FAILED"
             job.message = "Impossible de résoudre le projet actif"
@@ -165,11 +175,36 @@ class JobManager:
             self._execute(job, settings, request_path, mode, force, keyframe_source)
         )
         self._tasks.add(task)
-        task.add_done_callback(self._tasks.discard)
+        self._tasks_by_job[job.id] = task
+        task.add_done_callback(lambda completed: self._forget_task(job.id, completed))
         return job
 
     def get(self, job_id: str) -> StudioJob | None:
         return self.jobs.get(job_id)
+
+    async def cancel(self, job_id: str) -> bool:
+        job = self.jobs.get(job_id)
+        task = self._tasks_by_job.get(job_id)
+        if job is None or task is None or task.done():
+            return False
+        job.status = "CANCELLED"
+        job.message = "Génération annulée par l’utilisateur"
+        job.active_workflow = None
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+        if job.completed_at is None:
+            job.completed_at = datetime.now(UTC)
+            job.record_event("job", "cancelled", job.message)
+            if job.notification_log is not None:
+                await asyncio.to_thread(self._notify_completion, job)
+        return True
+
+    def _forget_task(self, job_id: str, task: asyncio.Task[None]) -> None:
+        self._tasks.discard(task)
+        self._tasks_by_job.pop(job_id, None)
 
     def active_for_shot(self, shot_id: str) -> bool:
         return any(
@@ -300,9 +335,16 @@ class JobManager:
         if job.notification_log is None:
             return
         failed = job.status == "FAILED"
+        cancelled = job.status == "CANCELLED"
         job.notification_log.publish(
-            "error" if failed else "success",
-            "Échec de génération du plan" if failed else "Plan généré",
+            "error" if failed else "warning" if cancelled else "success",
+            (
+                "Échec de génération du plan"
+                if failed
+                else "Génération annulée"
+                if cancelled
+                else "Plan généré"
+            ),
             job.message,
             source="shot-job",
             context={
