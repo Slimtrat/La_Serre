@@ -56,7 +56,7 @@ class ProjectRegistry:
         self.projects_root = projects_root.resolve()
         fallback = StudioProject(
             id="default",
-            name="Projet principal",
+            name="Découverte — L’Héritage interdit",
             private_content_dir=str(base_settings.private_content_dir.resolve()),
             output_dir=str(base_settings.output_dir.resolve()),
             created_at=datetime.now(UTC).isoformat(),

@@ -1,0 +1,20 @@
+{
+  "id": "serre-des-venins",
+  "name": "La Serre des Venins",
+  "visual_description": "A vast nocturnal Victorian poison greenhouse with black wrought-iron ribs, fogged glass panes, a huge moon beyond the roof, tangled sentient vines, toxic bell flowers, blue aconites and a round veined marble pedestal at its center",
+  "signature_details": [
+    "black wrought-iron arches shaped like thorns",
+    "round veined marble pedestal at the center",
+    "huge moon visible through fogged roof glass",
+    "poison flowers that subtly turn toward whoever is speaking"
+  ],
+  "palette": [
+    "black violet #090612",
+    "moon lavender #B8A4D8",
+    "deep plum #3A144B",
+    "midnight blue #121B4A",
+    "olive leaf #3D4728",
+    "worn bronze #685044"
+  ],
+  "generation_negative_prompt": "daylight, modern furniture, clean laboratory, sunny garden, ordinary greenhouse, photorealistic people, readable signs, text, logos, gore"
+}

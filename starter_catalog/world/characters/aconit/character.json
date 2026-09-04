@@ -1,0 +1,38 @@
+{
+  "id": "aconit",
+  "name": "Aconit",
+  "role": "Gardienne prudente et intérêt romantique",
+  "visual_description": "Predominantly botanical monkshood flower-woman with a lightly humanized cool-blue face nested inside a tall cobalt aconite hood, narrow expressive indigo eyes, petal planes instead of human hair, sharp leaf-and-vine limbs and no visible human skin texture",
+  "wardrobe": "Her severe silhouette is formed entirely by overlapping indigo petals, a pointed blue monkshood hood and a dark silver-green leaf collar, with no ordinary fabric clothing, shoes or human accessories",
+  "signature_details": [
+    "tall pointed cobalt monkshood hood",
+    "sharp layered leaf collar",
+    "single silver crescent marking beneath the left eye",
+    "two small blue aconite blossoms growing from the right shoulder vine"
+  ],
+  "palette": [
+    "midnight indigo #18225D",
+    "cobalt blue #304BC0",
+    "electric periwinkle #7184FF",
+    "silver leaf #66756B",
+    "blue black #070A18"
+  ],
+  "personality": {
+    "prudence": 0.97,
+    "dry_humor": 0.82,
+    "self_control": 0.93,
+    "jealousy": 0.58,
+    "hidden_tenderness": 0.86
+  },
+  "wants": [
+    "keep the greenhouse and Belladone alive",
+    "identify the sender of the forbidden inheritance",
+    "remain emotionally unreadable"
+  ],
+  "fears": [
+    "losing control of her poison",
+    "being understood too clearly by Belladone"
+  ],
+  "voice_description": "Low precise French mezzo voice, restrained breath, dry timing and warmth carefully hidden under authority",
+  "generation_negative_prompt": "photorealistic human woman, human skin pores, human ears, human hair, ordinary blue gown, separate helmet, purple dominant palette, round soft silhouette, smiling broadly without narrative cause"
+}

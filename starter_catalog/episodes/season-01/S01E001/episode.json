@@ -1,0 +1,49 @@
+{
+  "id": "S01E001",
+  "season": 1,
+  "episode": 1,
+  "title": "L’Héritage interdit",
+  "logline": "Un coffre mordeur lie Belladone et Aconit à une graine qui se nourrit de leurs mensonges amoureux.",
+  "duration_target": 50.0,
+  "status": "draft",
+  "characters": [
+    "belladone",
+    "aconit",
+    "graine-noire"
+  ],
+  "locations": [
+    "serre-des-venins"
+  ],
+  "story": {
+    "hook": "À minuit, toutes les plantes de la serre reculent devant un coffre apparu sur le piédestal central.",
+    "setup": "Belladone prend le coffre pour un cadeau tandis qu’Aconit reconnaît immédiatement un piège.",
+    "conflict": "Le coffre mord, s’ouvre et libère une graine noire dont les racines attachent leurs poignets.",
+    "reveal": "La graine ne réagit pas au poison : elle se nourrit des mensonges que Belladone et Aconit se racontent sur leur attirance.",
+    "cliffhanger": "Après le déni provocateur de Belladone, la graine prononce « Mensonge » et toute la serre éclate d’un rire végétal."
+  },
+  "narrative_source": "Comédie noire romantique verticale. Belladone aborde le danger comme un flirt ; Aconit cache son inquiétude derrière une autorité sèche. Un héritage vivant les lie physiquement et révèle que la serre connaît déjà leurs sentiments.",
+  "shot_order": [
+    "S01E001-S01",
+    "S01E001-S02",
+    "S01E001-S03",
+    "S01E001-S04",
+    "S01E001-S05",
+    "S01E001-S06",
+    "S01E001-S07",
+    "S01E001-S08",
+    "S01E001-S09",
+    "S01E001-S10"
+  ],
+  "shot_sources": {
+    "S01E001-S01": "À minuit, les fleurs de la serre reculent devant un coffre noir qui bat sur le piédestal.",
+    "S01E001-S02": "Belladone découvre le coffre avec un enthousiasme gourmand.",
+    "S01E001-S03": "Aconit surgit et lui ordonne de ne pas toucher au coffre.",
+    "S01E001-S04": "Le coffre mord une vrille de Belladone, qui trouve cela charmant.",
+    "S01E001-S05": "Une inscription accuse les deux plantes de s’aimer encore ; Aconit nie.",
+    "S01E001-S06": "Belladone remarque avec plaisir le trouble d’Aconit.",
+    "S01E001-S07": "Aconit nie rougir pendant que le coffre s’ouvre sous leurs yeux.",
+    "S01E001-S08": "La Graine Noire les lie et annonce qu’une seule héritera.",
+    "S01E001-S09": "Belladone prétend détester partager, surtout Aconit ; la racine serre davantage.",
+    "S01E001-S10": "La graine dénonce son mensonge et toutes les fleurs de la serre rient."
+  }
+}

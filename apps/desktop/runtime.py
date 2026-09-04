@@ -15,6 +15,7 @@ from types import TracebackType
 
 import uvicorn
 
+from apps.desktop.starter import install_starter_catalog
 from apps.version import __version__
 from engine.generation.comfy.workflow_factory import WorkflowFactory
 
@@ -166,6 +167,7 @@ def prepare_runtime_directory(requested: Path | None = None) -> Path:
     for relative in ("output", ".private", "projects", "workflows/local", "logs"):
         (root / relative).mkdir(parents=True, exist_ok=True)
     _copy_bundled_examples(root)
+    install_starter_catalog(root)
     _install_default_workflows(root)
     os.chdir(root)
     return root

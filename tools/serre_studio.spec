@@ -10,6 +10,7 @@ data_files = list(webview_data)
 for source, destination in (
     (project_root / "apps" / "api" / "static", "apps/api/static"),
     (project_root / "examples", "examples"),
+    (project_root / "starter_catalog", "starter_catalog"),
     (project_root / "workflows" / "images", "workflows/images"),
     (project_root / "workflows" / "video", "workflows/video"),
 ):
