@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "id": "flux-character-master-v1",
+  "version": 1,
+  "label": "Référence personnage FLUX",
+  "description": "Crée l'image maître d'un personnage-plante, lisible comme plante et humanisée sans basculer vers une mascotte enfantine.",
+  "stage": "character_master",
+  "model_family": "FLUX.1-dev FP8 + LoRA 3D cartoon",
+  "workflow": "workflow.api.json",
+  "profile": "profile.json",
+  "required_nodes": [
+    "CLIPTextEncode",
+    "CheckpointLoaderSimple",
+    "ConditioningZeroOut",
+    "EmptyLatentImage",
+    "FluxGuidance",
+    "KSampler",
+    "LoraLoader",
+    "SaveImage",
+    "VAEDecode"
+  ],
+  "models": [
+    {
+      "role": "Référence personnage FLUX",
+      "filename": "flux1-dev-fp8.safetensors",
+      "folder": "checkpoints",
+      "url": null,
+      "source_note": "Télécharger un checkpoint FLUX.1-dev FP8 compatible avec CheckpointLoaderSimple."
+    },
+    {
+      "role": "Style 3D cartoon",
+      "filename": "FLUX_3Dcartoon.safetensors",
+      "folder": "loras",
+      "url": null,
+      "source_note": "LoRA utilisée par le workflow de référence fourni."
+    }
+  ],
+  "defaults": {
+    "width": 720,
+    "height": 1280,
+    "steps": 24,
+    "cfg": 1.0,
+    "flux_guidance": 3.5,
+    "lora_strength_model": 0.2,
+    "lora_strength_clip": 0.2,
+    "denoise": 1.0
+  },
+  "prompt_sections": [
+    "plant_species_geometry",
+    "humanized_face_anatomy",
+    "adult_body_proportions",
+    "surface_material",
+    "wardrobe_signature",
+    "neutral_reference_pose",
+    "camera_and_lighting",
+    "premium_cartoon_style"
+  ],
+  "receives": [
+    "character_bible",
+    "plant_reference",
+    "style_direction"
+  ],
+  "produces": [
+    "approved_character_reference"
+  ],
+  "next_templates": [
+    "sdxl-scene-anchor-v1"
+  ],
+  "limitations": [
+    "Ce graphe traduit les références en texte : il ne garantit pas seul l'identité pixel-précise entre deux générations.",
+    "Le prompt négatif est volontairement neutralisé à CFG 1.",
+    "Le même seed sert à comparer des variantes, pas à garantir la continuité."
+  ],
+  "provenance": [
+    "Topologie et réglages adaptés du workflow COMFYUI.rar fourni par l'utilisateur.",
+    "Le prompt privé et le personnage d'origine ne sont pas recopiés.",
+    "LoRA réduite à 0.20 pour conserver un visage adulte nuancé."
+  ]
+}

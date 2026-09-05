@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "id": "template-flux-character-master-v1",
+  "workflow": "workflow.api.json",
+  "bindings": [
+    {
+      "source": "prompt",
+      "node_id": "2",
+      "input": "text",
+      "required": true
+    },
+    {
+      "source": "seed",
+      "node_id": "5",
+      "input": "seed",
+      "required": true
+    },
+    {
+      "source": "width",
+      "node_id": "4",
+      "input": "width",
+      "required": true
+    },
+    {
+      "source": "height",
+      "node_id": "4",
+      "input": "height",
+      "required": true
+    },
+    {
+      "source": "lora_strength_model",
+      "node_id": "8",
+      "input": "strength_model",
+      "required": false
+    },
+    {
+      "source": "lora_strength_clip",
+      "node_id": "8",
+      "input": "strength_clip",
+      "required": false
+    },
+    {
+      "source": "flux_guidance",
+      "node_id": "9",
+      "input": "guidance",
+      "required": false
+    },
+    {
+      "source": "steps",
+      "node_id": "5",
+      "input": "steps",
+      "required": false
+    },
+    {
+      "source": "output_prefix",
+      "node_id": "7",
+      "input": "filename_prefix",
+      "required": true
+    }
+  ],
+  "output_node_ids": [
+    "7"
+  ]
+}

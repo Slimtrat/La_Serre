@@ -39,6 +39,7 @@ dev = [
 [project.scripts]
 generate-episode = "tools.generate_episode:main"
 generate-shot = "tools.generate_shot:main"
+generate-workflow-templates = "tools.generate_workflow_templates:main"
 serre-studio = "tools.run_studio:main"
 serre-desktop = "apps.desktop.cli:main"
 

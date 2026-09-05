@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "continuity_chain": [
+    "flux-character-master-v1",
+    "sdxl-scene-anchor-v1",
+    "sdxl-adjacent-pose-v1",
+    "ltx-triptych-animation-v1"
+  ],
+  "templates": [
+    {
+      "id": "flux-character-master-v1",
+      "label": "Référence personnage FLUX",
+      "stage": "character_master",
+      "manifest": "flux-character-master-v1/template.json"
+    },
+    {
+      "id": "sdxl-scene-anchor-v1",
+      "label": "Plan initial SDXL",
+      "stage": "scene_anchor",
+      "manifest": "sdxl-scene-anchor-v1/template.json"
+    },
+    {
+      "id": "sdxl-adjacent-pose-v1",
+      "label": "Pose adjacente SDXL",
+      "stage": "pose_continuation",
+      "manifest": "sdxl-adjacent-pose-v1/template.json"
+    },
+    {
+      "id": "ltx-triptych-animation-v1",
+      "label": "Animation trois poses LTX",
+      "stage": "video_triptych",
+      "manifest": "ltx-triptych-animation-v1/template.json"
+    }
+  ]
+}
