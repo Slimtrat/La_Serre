@@ -33,6 +33,7 @@
     <link rel="stylesheet" href="/static/desktop-lifecycle.css" />
     <link rel="stylesheet" href="/static/view-dock.css" />
     <link rel="stylesheet" href="/static/guided-workspace.css" />
+    <link rel="stylesheet" href="/static/workflow-template-catalogue.css" />
   </head>
   <body data-workspace-view="guided">
     <div class="ambient ambient-one"></div>
@@ -42,7 +43,7 @@
         <span class="brand-mark">SV</span>
         <span><strong>SerreStudio</strong><small data-i18n="shell.studioLocal">Studio local</small></span>
       </a>
-      <span id="app-version" class="app-version" title="Version actuelle" data-i18n-title="shell.currentVersion">v0.2.12</span>
+      <span id="app-version" class="app-version" title="Version actuelle" data-i18n-title="shell.currentVersion">v0.2.13</span>
       <nav class="studio-context" aria-label="Contexte de création" data-i18n-aria-label="shell.context">
         <div class="context-segment context-project">
           <span data-i18n="shell.project">Projet</span>
@@ -318,6 +319,7 @@
           <div><span>02</span><strong>Tu télécharges</strong><small>uniquement les modèles listés</small></div>
           <div><span>03</span><strong>Tu génères</strong><small>sans ouvrir le graphe ComfyUI</small></div>
         </div>
+        <div id="workflow-template-settings"></div>
         <div id="model-list" class="model-list"></div>
         <div class="model-actions">
           <small id="downloads-location">Surveillance du dossier Downloads…</small>
@@ -568,6 +570,7 @@
     <script src="/static/coherence.js" defer></script>
     <script src="/static/graph.js" defer></script>
     <script src="/static/workflow-graph.js" defer></script>
+    <script src="/static/workflow-template-catalogue.js" defer></script>
     <script src="/static/episode-canvas.js" defer></script>
     <script src="/static/episode-production.js" defer></script>
     <script src="/static/bible-view.js" defer></script>

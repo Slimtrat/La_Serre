@@ -113,12 +113,17 @@ const workflowGraph = (() => {
       graph = await window.SerreStudio.api("/api/workflow-graphs/" + kind);
       cache.set(kind, graph);
     }
-    currentGraph = graph;
-    document.querySelector("#workflow-graph-title").textContent = {
+    const title = {
       keyframe: "Pose initiale",
       "keyframe-guide": "Continuité entre les poses",
       video: "Animation multi-images",
     }[kind];
+    renderGraph(graph, title);
+  }
+
+  function renderGraph(graph, title) {
+    currentGraph = graph;
+    document.querySelector("#workflow-graph-title").textContent = title;
     document.querySelector("#workflow-graph-profile").textContent = graph.profile_id + " · " + graph.nodes.length + " nœuds · " + graph.edges.length + " liaisons";
     world.style.width = graph.width + "px";
     world.style.height = graph.height + "px";
@@ -129,10 +134,30 @@ const workflowGraph = (() => {
     });
   }
 
+  async function loadTemplate(templateId, label) {
+    currentKind = "template:" + templateId;
+    tabs.forEach((tab) => tab.classList.remove("selected"));
+    let graph = cache.get(currentKind);
+    if (!graph) {
+      graph = await window.SerreStudio.api("/api/workflow-templates/" + encodeURIComponent(templateId) + "/graph");
+      cache.set(currentKind, graph);
+    }
+    renderGraph(graph, label || templateId);
+  }
+
   async function open(kind = "keyframe") {
     if (!dialog.open) dialog.show();
     try {
       await load(kind);
+    } catch (error) {
+      window.SerreStudio.notify(error.message, true);
+    }
+  }
+
+  async function openTemplate(templateId, label) {
+    if (!dialog.open) dialog.show();
+    try {
+      await loadTemplate(templateId, label);
     } catch (error) {
       window.SerreStudio.notify(error.message, true);
     }
@@ -177,6 +202,6 @@ const workflowGraph = (() => {
     if (dialog.open && activeKind && currentKind !== activeKind) load(activeKind).catch(() => {});
   });
 
-  window.SerreWorkflowGraph = { open };
-  return { open };
+  window.SerreWorkflowGraph = { open, openTemplate };
+  return window.SerreWorkflowGraph;
 })();

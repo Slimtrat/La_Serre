@@ -535,6 +535,18 @@ const studioGraph = (() => {
     renderInspector(id);
   }
 
+  function centerNode(id) {
+    const node = nodeById[id];
+    if (!node) return;
+    const centerX = Number(node.dataset.x) + node.offsetWidth / 2;
+    const centerY = Number(node.dataset.y) + node.offsetHeight / 2;
+    view.x = viewport.clientWidth / 2 - centerX * view.scale;
+    view.y = viewport.clientHeight / 2 - centerY * view.scale;
+    world.classList.add("camera-follow");
+    renderView(true);
+    window.setTimeout(() => world.classList.remove("camera-follow"), 650);
+  }
+
   function runtimeNameForNode(id) {
     if (id === "director") return "ollama";
     if (["keyframe", "motion"].includes(id)) return "comfyui";
@@ -616,6 +628,12 @@ const studioGraph = (() => {
   }
 
   function openWorkspaceTarget(value) {
+    if (value.startsWith("guided-stage:")) {
+      const stage = Number(value.split(":", 2)[1]);
+      window.SerreWorkspace?.show("guided");
+      window.SerreGuided?.goTo?.(stage);
+      return;
+    }
     if (value === "authoring-series") {
       window.SerreNarrativeWorkflow?.open("series");
       return;
@@ -1253,6 +1271,25 @@ const studioGraph = (() => {
     const badge = node.querySelector(".graph-node-coherence");
     if (badge) badge.textContent = "Validé humainement";
   });
+  window.addEventListener("studio:guided-autopilot-stage", (event) => {
+    if (graphDefinition?.scope !== "series") return;
+    const stageMap = {
+      direction: "journey:idea",
+      architecture: "journey:universe",
+      episode: "journey:episode",
+      storyboard: "journey:storyboard",
+      visual_pipeline: "journey:production",
+    };
+    const nodeId = stageMap[event.detail?.stage_id];
+    if (!nodeId || !nodeById[nodeId]) return;
+    const state = event.detail.status === "running" ? "active" : event.detail.status === "completed" ? "done" : event.detail.status === "failed" ? "error" : "ready";
+    nodeState(nodeId, state, event.detail.summary || event.detail.label);
+    if (event.detail.status === "running") {
+      activityNodeId = nodeId;
+      selectNode(nodeId);
+      centerNode(nodeId);
+    }
+  });
   window.addEventListener("resize", () => {
     drawEdges();
     updateMinimap();
@@ -1273,6 +1310,7 @@ const studioGraph = (() => {
     showImpactFrom: focusActivityStage,
     load: loadGraph,
     navigate: navigateTo,
+    centerNode,
     current: () => graphDefinition,
   };
 })();

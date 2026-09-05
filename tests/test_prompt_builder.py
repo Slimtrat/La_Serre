@@ -18,7 +18,8 @@ def test_prompt_builder_preserves_semantics_and_identity_language() -> None:
         beat.model_dump(mode="json") for beat in shot.visual_beats
     ]
     assert "SHOT TIMELINE" in result.positive
-    assert "greenhouse architecture" in result.positive
+    assert "Do not import motifs, furniture or locations from another series" in result.positive
+    assert "marble table, door placement" not in result.positive
 
 
 def test_visual_beat_prompt_puts_the_exact_pose_first() -> None:
@@ -28,4 +29,6 @@ def test_visual_beat_prompt_puts_the_exact_pose_first() -> None:
     result = PromptBuilder.visual_beat_prompt(package, "Belladone catches the black ring")
 
     assert result.startswith("PRIMARY FRAME INSTRUCTION")
-    assert result.index("Belladone catches the black ring") < result.index("CHARACTERS:")
+    assert result.index("Belladone catches the black ring") < result.index(
+        "CHARACTERS VISIBLE IN FRAME:"
+    )

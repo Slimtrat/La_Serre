@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import StrEnum
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -34,9 +35,18 @@ class VisualBeat(StrictModel):
     description: str = Field(min_length=1)
 
 
+class DialogueMode(StrEnum):
+    """How a spoken line relates to the visible frame."""
+
+    ON_SCREEN = "on_screen"
+    OFF_SCREEN = "off_screen"
+    VOICE_OVER = "voice_over"
+
+
 class Dialogue(StrictModel):
     speaker: str = Field(min_length=1)
     text: str = Field(min_length=1)
+    mode: DialogueMode = DialogueMode.ON_SCREEN
     performance: DialoguePerformance | None = None
 
 
@@ -87,7 +97,7 @@ class Shot(StrictModel):
     duration: float = Field(gt=0, le=12)
     location: str = Field(min_length=1)
     location_description: str = Field(min_length=1)
-    characters: list[ShotCharacter] = Field(min_length=1, max_length=3)
+    characters: list[ShotCharacter] = Field(default_factory=list, max_length=3)
     camera: Camera
     action: str = Field(min_length=1)
     visual_beats: list[VisualBeat] = Field(default_factory=list, max_length=3)
@@ -103,8 +113,12 @@ class Shot(StrictModel):
         character_ids = {character.id for character in self.characters}
         if len(character_ids) != len(self.characters):
             raise ValueError("character ids must be unique within a shot")
-        if self.dialogue and self.dialogue.speaker not in character_ids:
-            raise ValueError("dialogue speaker must be visible in the shot")
+        if (
+            self.dialogue
+            and self.dialogue.mode is DialogueMode.ON_SCREEN
+            and self.dialogue.speaker not in character_ids
+        ):
+            raise ValueError("on-screen dialogue speaker must be visible in the shot")
         if self.visual_beats:
             if len(self.visual_beats) != 3:
                 raise ValueError("visual_beats must contain start, middle and end")

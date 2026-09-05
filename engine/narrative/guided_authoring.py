@@ -53,6 +53,7 @@ class GuidedAuthoringState(GuidedModel):
     brief: GuidedProjectBrief = Field(default_factory=GuidedProjectBrief)
     characters: list[GuidedCharacterDraft] = Field(default_factory=list)
     active_episode_id: str | None = Field(default=None, pattern=r"^S\d{2}E\d{3}$")
+    selected_templates: dict[str, str] = Field(default_factory=dict)
 
 
 class GuidedProposal(GuidedModel):

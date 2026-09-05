@@ -252,7 +252,10 @@ class OllamaNarrativeAuthor:
             model=model,
             system=(
                 "Tu es le showrunner d’une série courte. Transforme l’intention en brief "
-                "actionnable, respecte la Bible fournie et n’invente pas une contrainte absente."
+                "actionnable. La Bible fournie est l’autorité éditoriale : préserve son humour, "
+                "son rythme, ses silences, ses contradictions intentionnelles et ses limites. "
+                "N’invente aucune contrainte absente et ne déduis jamais la personnalité depuis "
+                "l’apparence d’un personnage."
             ),
             user=_context(source, custom_prompt, bible),
         )
@@ -271,7 +274,9 @@ class OllamaNarrativeAuthor:
             system=(
                 "Tu es le scénariste en chef. Propose une progression concrète, des épisodes "
                 "distincts et des cliffhangers. Les character_ids et location_ids doivent venir "
-                "strictement de la Bible."
+                "strictement de la Bible. Ses règles de ton et de dialogue sont prioritaires. "
+                "Préserve les silences et contradictions utiles; personnalité, comportement et "
+                "apparence restent des dimensions séparées."
             ),
             user=_context(brief.model_dump_json(indent=2), custom_prompt, bible),
         )
@@ -291,7 +296,8 @@ class OllamaNarrativeAuthor:
             system=(
                 "Tu es le validateur général. Cherche contradictions de Bible, répétitions, "
                 "chronologie, évolution, durée et cohérence des personnages. Tu n’édites rien : "
-                "tu rends un verdict explicable."
+                "tu rends un verdict explicable. Ne signale pas comme erreur une contradiction "
+                "ou un silence explicitement prévu par la Bible éditoriale."
             ),
             user=_context(
                 json.dumps(
@@ -320,8 +326,9 @@ class OllamaNarrativeAuthor:
             model=model,
             system=(
                 "Tu écris un épisode court prêt à relire. Respecte la Bible et les identifiants "
-                "canoniques. Retourne uniquement une proposition : l’humain décidera de "
-                "l’appliquer."
+                "canoniques. Reproduis ses règles d’humour, de rythme, de silence et de "
+                "contradiction sans importer le ton d’une autre série. Retourne uniquement une "
+                "proposition : l’humain décidera de l’appliquer."
             ),
             user=_context(episode.model_dump_json(indent=2), custom_prompt, bible),
         )
@@ -340,7 +347,10 @@ class OllamaNarrativeAuthor:
             system=(
                 "Tu découpes l’épisode en plans de 1 à 12 secondes. Chaque plan doit faire avancer "
                 "l’action, utiliser seulement des IDs canoniques, et décrire caméra, lumière "
-                "et jeu."
+                "et jeu. Distingue mode=on_screen (locuteur visible), mode=off_screen (personnage "
+                "canonique hors cadre) et mode=voice_over (narration superposée aux images). Un "
+                "plan de voix off peut ne contenir aucun personnage visible. Préserve les silences "
+                "et le ton définis par la Bible."
             ),
             user=_context(episode.model_dump_json(indent=2), custom_prompt, bible),
         )
@@ -417,6 +427,11 @@ def build_shots(
         ]
         dialogue = None
         if blueprint.dialogue:
+            if blueprint.dialogue.speaker_id not in characters:
+                raise ValueError(
+                    "Le découpage référence un locuteur absent de la Bible : "
+                    f"{blueprint.dialogue.speaker_id}"
+                )
             performance = None
             if blueprint.dialogue.intention and blueprint.dialogue.emotion:
                 performance = DialoguePerformance(
@@ -426,6 +441,7 @@ def build_shots(
             dialogue = Dialogue(
                 speaker=blueprint.dialogue.speaker_id,
                 text=blueprint.dialogue.text,
+                mode=blueprint.dialogue.mode,
                 performance=performance,
             )
         seed = int.from_bytes(
@@ -461,6 +477,8 @@ def build_shots(
         )
         sources[shot_id] = blueprint.source_text
         cast.extend(blueprint.character_ids)
+        if blueprint.dialogue:
+            cast.append(blueprint.dialogue.speaker_id)
         sets.append(blueprint.location_id)
     updated = episode.model_copy(
         update={

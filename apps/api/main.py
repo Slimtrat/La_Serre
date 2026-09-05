@@ -19,6 +19,7 @@ from apps.api.demo_routes import create_demo_router
 from apps.api.editorial_routes import create_editorial_router
 from apps.api.episode_job_manager import EpisodeJobManager
 from apps.api.episode_routes import create_episode_router
+from apps.api.guided_autopilot_routes import create_guided_autopilot_router
 from apps.api.guided_routes import create_guided_router
 from apps.api.job_manager import JobManager
 from apps.api.narrative_routes import create_narrative_router
@@ -44,6 +45,7 @@ from apps.api.schemas import (
 from apps.api.stage_actions import ShotStageService, StageKind
 from apps.api.workflow_graph import WORKFLOW_GRAPH_KINDS, build_workflow_graph
 from apps.api.workflow_setup import WorkflowSetup
+from apps.api.workflow_template_routes import create_workflow_template_router
 from apps.desktop.service_launcher import (
     control_service,
     service_logs,
@@ -141,6 +143,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(create_coherence_router(current_settings, catalog))
     app.include_router(create_narrative_router(current_settings, assets, catalog))
     app.include_router(create_guided_router(current_settings))
+    app.include_router(create_guided_autopilot_router(current_settings))
+    app.include_router(create_workflow_template_router(current_settings))
     app.include_router(create_editorial_router(current_settings))
     app.include_router(
         create_demo_router(

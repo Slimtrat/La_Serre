@@ -22,6 +22,15 @@ def build_workflow_graph(
         if profile_path.is_file()
         else {}
     )
+    return build_workflow_graph_payload(kind, workflow, profile)
+
+
+def build_workflow_graph_payload(
+    kind: str,
+    workflow: dict[str, Any],
+    profile: dict[str, Any],
+) -> dict[str, Any]:
+    WorkflowLoader.validate_api_format(workflow, kind)
     bound_inputs = {
         (str(binding["node_id"]), str(binding["input"])): str(binding["source"])
         for binding in profile.get("bindings", [])

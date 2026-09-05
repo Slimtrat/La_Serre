@@ -201,6 +201,16 @@
   will-change: transform;
 }
 
+.graph-world.camera-follow {
+  transition: transform .58s cubic-bezier(.22, .78, .24, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .graph-world.camera-follow {
+    transition: none;
+  }
+}
+
 .graph-links {
   position: absolute;
   inset: 0;

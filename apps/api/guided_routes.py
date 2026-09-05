@@ -9,6 +9,10 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from engine.config import Settings
+from engine.generation.comfy.workflow_templates import (
+    TemplateStage,
+    WorkflowTemplateCatalogue,
+)
 from engine.narrative.guided_authoring import (
     GuidedAuthoringRegistry,
     GuidedAuthoringState,
@@ -60,6 +64,12 @@ class GuidedProposalRequest(StrictGuidedRequest):
 class GuidedProposalAcceptRequest(StrictGuidedRequest):
     expected_revision: int = Field(ge=0)
     edited_after: dict[str, object] | None = None
+
+
+class GuidedTemplateSelectionRequest(StrictGuidedRequest):
+    expected_revision: int = Field(ge=0)
+    stage: TemplateStage
+    template_id: str = Field(min_length=1, max_length=100)
 
 
 def create_guided_router(settings_provider: Callable[[], Settings]) -> APIRouter:
@@ -158,6 +168,28 @@ def create_guided_router(settings_provider: Callable[[], Settings]) -> APIRouter
         return _save_response(
             store,
             current.model_copy(update={"active_episode_id": payload.episode_id}),
+            payload.expected_revision,
+        )
+
+    @router.put("/template-selection")
+    def put_template_selection(
+        payload: GuidedTemplateSelectionRequest,
+    ) -> dict[str, object]:
+        templates = {
+            item.spec.id: item.spec for item in WorkflowTemplateCatalogue().build()
+        }
+        selected = templates.get(payload.template_id)
+        if selected is None or selected.stage != payload.stage:
+            raise HTTPException(
+                status_code=422,
+                detail="Ce template ne correspond pas à l’étape choisie",
+            )
+        store = registry()
+        current = store.load()
+        selections = {**current.selected_templates, payload.stage: payload.template_id}
+        return _save_response(
+            store,
+            current.model_copy(update={"selected_templates": selections}),
             payload.expected_revision,
         )
 

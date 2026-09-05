@@ -16,6 +16,9 @@ const guidedWorkspace = (() => {
   let mediaStatus = null;
   let activeStage = 0;
   let activeProposal = null;
+  let autopilotRun = null;
+  let autopilotTimer = null;
+  let autopilotSeen = new Map();
 
   function h(value) {
     return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;")
@@ -68,9 +71,10 @@ const guidedWorkspace = (() => {
     return `<div class="guided-shell">
       <header class="guided-header">
         <div><p class="eyebrow">CRÉATION GUIDÉE</p><h1 id="guided-title">Ton épisode, de l’idée au rendu</h1><p>Tu gardes la décision. L’IA propose, le Studio montre les conséquences.</p></div>
-        <div class="guided-header-actions"><div class="guided-progress"><strong data-guided-progress-label></strong><span class="guided-progress-track"><i data-guided-progress-bar></i></span></div><button class="button ghost" type="button" data-guided-action="advanced">Studio avancé ↗</button></div>
+        <div class="guided-header-actions"><div class="guided-progress"><strong data-guided-progress-label></strong><span class="guided-progress-track"><i data-guided-progress-bar></i></span></div><button class="button secondary" type="button" data-guided-action="autopilot">✦ Imaginer tout le parcours</button><button class="button ghost" type="button" data-guided-action="advanced">Tout le parcours dans le graphe ↗</button></div>
       </header>
       <nav class="guided-journey" aria-label="Parcours de création"></nav>
+      <section class="guided-autopilot hidden" aria-live="polite"></section>
       <div class="guided-main"><section class="guided-stage" aria-live="polite"></section><aside class="guided-context"></aside></div>
     </div>
     <div class="guided-proposal-backdrop hidden" data-proposal-close></div>
@@ -92,6 +96,30 @@ const guidedWorkspace = (() => {
 
   function stageHeading(index, title, copy, ready) {
     return `<header class="guided-stage-heading"><div><p class="eyebrow">ÉTAPE ${String(index + 1).padStart(2, "0")}</p><h2>${h(title)}</h2><p>${h(copy)}</p></div><span class="guided-stage-badge ${ready ? "ready" : ""}">${ready ? "PRÊT" : "EN COURS"}</span></header>`;
+  }
+  function candidateRows(value, prefix = "", depth = 0) {
+    if (depth > 2 || value === null || value === undefined) return [];
+    if (Array.isArray(value)) {
+      if (value.every((item) => typeof item !== "object")) {
+        return [[prefix, value.join(" · ")]];
+      }
+      return value.slice(0, 8).flatMap((item, index) => candidateRows(item, `${prefix} ${index + 1}`, depth + 1));
+    }
+    if (typeof value === "object") {
+      return Object.entries(value).flatMap(([key, item]) => candidateRows(item, prefix ? `${prefix} · ${key}` : key, depth + 1));
+    }
+    return [[prefix, String(value)]];
+  }
+  function renderAutopilot() {
+    const panel = root.querySelector(".guided-autopilot");
+    if (!panel) return;
+    panel.classList.toggle("hidden", !autopilotRun);
+    if (!autopilotRun) { panel.innerHTML = ""; return; }
+    const completed = autopilotRun.stages.filter((stage) => stage.status === "completed").length;
+    panel.innerHTML = `<header><div><p class="eyebrow">PARCOURS IA · CANDIDATS NON PUBLIÉS</p><h3>${autopilotRun.status === "completed" ? "Le parcours proposé est prêt à relire" : autopilotRun.status === "failed" ? "Le parcours s’est arrêté" : "Les IA construisent le projet étape par étape"}</h3></div><strong>${completed} / ${autopilotRun.stages.length}</strong></header><div class="guided-autopilot-track">${autopilotRun.stages.map((stage, index) => {
+      const rows = candidateRows(stage.candidate).slice(0, 14);
+      return `<article class="guided-autopilot-step ${stage.status}" data-autopilot-stage="${stage.id}"><span>${String(index + 1).padStart(2, "0")}</span><div><strong>${h(stage.label)}</strong><small>${h(stage.error || stage.summary || (stage.status === "running" ? "L’IA utilise la Bible et les étapes précédentes…" : "En attente"))}</small>${rows.length ? `<details><summary>Lire la proposition</summary><dl>${rows.map(([key, value]) => `<div><dt>${h(key.replaceAll("_", " "))}</dt><dd>${h(value)}</dd></div>`).join("")}</dl></details>` : ""}</div></article>`;
+    }).join("")}</div>`;
   }
   function lock(field, locked) {
     return `<span class="guided-lock"><input type="checkbox" data-lock-field="${field}" ${locked ? "checked" : ""}/> verrouiller</span>`;
@@ -165,7 +193,7 @@ const guidedWorkspace = (() => {
 
   function renderProduction() {
     const episode = currentEpisode();
-    return stageHeading(4, "Produis sans perdre le fil", "Le graphe avancé montre maintenant où tu es, mais le parcours reste ton fil rouge.", stageStates()[4]) + `<div class="guided-status-card"><h3>${episode?.shot_count ? "Les plans peuvent entrer en production" : "Le storyboard doit encore être validé"}</h3><p>Images de pose, mouvement, voix émotionnelles, musique, sous-titres puis montage final : chaque sortie reste remplaçable.</p></div><div class="guided-actions"><button class="button primary" type="button" data-guided-action="open-production" ${episode?.shot_count ? "" : "disabled"}>Ouvrir le graphe de production</button><button class="button ghost" type="button" data-guided-next="5">Voir le résultat →</button></div>${delegatedAiActions("production")}`;
+    return stageHeading(4, "Produis sans perdre le fil", "Le parcours visualise ce que chaque recette reçoit et transmet; le graphe avancé permet d’inspecter tous ses nœuds.", stageStates()[4]) + `<div class="guided-status-card"><h3>${episode?.shot_count ? "Les plans peuvent entrer en production" : "Le storyboard doit encore être validé"}</h3><p>Images de pose, mouvement, voix émotionnelles, musique, sous-titres puis montage final : chaque sortie reste remplaçable.</p></div><div id="guided-template-catalogue"></div><div class="guided-actions"><button class="button primary" type="button" data-guided-action="open-production" ${episode?.shot_count ? "" : "disabled"}>Ouvrir le graphe de production</button><button class="button ghost" type="button" data-guided-next="5">Voir le résultat →</button></div>${delegatedAiActions("production")}`;
   }
 
   function renderResult() {
@@ -181,8 +209,11 @@ const guidedWorkspace = (() => {
   function render() {
     if (!payload) return;
     renderJourney();
+    renderAutopilot();
     const renderers = [renderBrief, renderUniverse, renderEpisode, renderStoryboard, renderProduction, renderResult];
     root.querySelector(".guided-stage").innerHTML = renderers[activeStage]();
+    const templateRoot = root.querySelector("#guided-template-catalogue");
+    if (templateRoot) window.SerreWorkflowTemplates?.mountGuided?.(templateRoot);
     renderContext();
   }
 
@@ -285,18 +316,72 @@ const guidedWorkspace = (() => {
     try { mediaStatus = await request(`/api/episodes/${payload.state.active_episode_id}/media-status`); } catch (_error) { mediaStatus = null; }
   }
   async function load() {
-    [payload, bible] = await Promise.all([
+    const [guided, biblePayload, , latestAutopilot] = await Promise.all([
       request("/api/guided"),
       request("/api/bible"),
       loadEpisodes(),
+      request("/api/guided/autopilot-jobs/latest").catch(() => ({ run: null })),
     ]);
+    payload = guided;
+    bible = biblePayload;
+    autopilotRun = latestAutopilot.run;
     await loadMedia();
     if (!Number.isInteger(activeStage)) activeStage = nextIncomplete();
     render();
+    if (autopilotRun && ["queued", "running"].includes(autopilotRun.status)) scheduleAutopilotPoll();
   }
   function goTo(index) {
     activeStage = Math.max(0, Math.min(STAGES.length - 1, Number(index)));
     render();
+  }
+  async function selectTemplate(stage, templateId) {
+    payload = await request("/api/guided/template-selection", json("PUT", {
+      expected_revision: payload.state.revision,
+      stage,
+      template_id: templateId,
+    }));
+    render();
+    return payload;
+  }
+  function emitAutopilotProgress(run) {
+    run.stages.forEach((stage) => {
+      const previous = autopilotSeen.get(stage.id);
+      if (previous === stage.status) return;
+      autopilotSeen.set(stage.id, stage.status);
+      window.dispatchEvent(new CustomEvent("studio:guided-autopilot-stage", { detail: { run_id: run.id, stage_id: stage.id, label: stage.label, status: stage.status, summary: stage.summary || stage.error || "" } }));
+    });
+    const active = run.stages.find((stage) => stage.status === "running");
+    const status = run.status === "completed" ? "COMPLETED" : run.status === "failed" ? "FAILED" : "GENERATING";
+    window.dispatchEvent(new CustomEvent("studio:stage-job", { detail: { id: `guided-autopilot-${run.id}`, kind: "prompt", status, message: active ? `IA · ${active.label}` : run.status === "completed" ? "Parcours IA prêt à relire." : "Parcours IA interrompu." } }));
+  }
+  function scheduleAutopilotPoll() {
+    window.clearTimeout(autopilotTimer);
+    autopilotTimer = window.setTimeout(() => { void pollAutopilot(); }, 750);
+  }
+  async function pollAutopilot() {
+    if (!autopilotRun) return;
+    const result = await request(`/api/guided/autopilot-jobs/${autopilotRun.id}`);
+    autopilotRun = result.run;
+    emitAutopilotProgress(autopilotRun);
+    renderAutopilot();
+    if (["queued", "running"].includes(autopilotRun.status)) scheduleAutopilotPoll();
+    else notify(autopilotRun.status === "completed" ? "Parcours IA complet : chaque proposition reste à valider." : "Le parcours IA s’est arrêté. Ouvre le parcours guidé pour voir la cause.", autopilotRun.status === "failed");
+  }
+  async function startAutopilot() {
+    if (activeStage === 0) await saveBrief();
+    const result = await request("/api/guided/autopilot-jobs", json("POST", {
+      expected_revision: payload.state.revision,
+      locale: window.SerreI18n?.getLanguage?.() === "en" ? "en" : "fr",
+      model: document.querySelector("#ollama-model")?.value || document.querySelector("#narrative-model")?.value || null,
+      prompt: "",
+    }));
+    autopilotRun = result.run;
+    autopilotSeen = new Map();
+    renderAutopilot();
+    window.SerreWorkspace?.show("graph");
+    await window.SerreGraph?.load?.("series", "series", { fit: true });
+    emitAutopilotProgress(autopilotRun);
+    scheduleAutopilotPoll();
   }
   function openCoauthor(step) {
     if (step === "production") {
@@ -325,7 +410,12 @@ const guidedWorkspace = (() => {
     }
     const action = event.target.closest("[data-guided-action]")?.dataset.guidedAction;
     if (!action) return;
-    if (action === "advanced" || action === "open-production") window.SerreWorkspace?.show("graph");
+    if (action === "advanced") {
+      window.SerreWorkspace?.show("graph");
+      await window.SerreGraph?.load?.("series", "series", { fit: true });
+    }
+    if (action === "autopilot") await startAutopilot();
+    if (action === "open-production") window.SerreWorkspace?.show("graph");
     if (action === "save-brief") await saveBrief();
     if (action === "add-character") await addCharacter();
     if (action === "create-episode") await createEpisode();
@@ -345,6 +435,6 @@ const guidedWorkspace = (() => {
     load().then(() => { activeStage = nextIncomplete(); render(); }).catch(fail);
   }
   init();
-  window.SerreGuided = Object.freeze({ load, goTo });
-  return { load, goTo };
+  window.SerreGuided = Object.freeze({ load, goTo, selectTemplate, current: () => payload });
+  return window.SerreGuided;
 })();

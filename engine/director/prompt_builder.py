@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict
 
-from engine.director.models import Shot
+from engine.director.models import DialogueMode, Shot
 
 
 class PromptPackage(BaseModel):
@@ -39,9 +39,19 @@ class PromptBuilder:
                 )
             )
 
+        characters = "\n\n".join(cast) if cast else "No character is visible in frame."
         dialogue = "No spoken dialogue in this shot."
         if shot.dialogue:
-            dialogue = f'{shot.dialogue.speaker} says in French: "{shot.dialogue.text}"'
+            delivery = {
+                DialogueMode.ON_SCREEN: "speaks on camera",
+                DialogueMode.OFF_SCREEN: "speaks from outside the frame",
+                DialogueMode.VOICE_OVER: "delivers voice-over narration",
+            }[shot.dialogue.mode]
+            dialogue = (
+                f'{shot.dialogue.speaker} {delivery}. Exact spoken line: '
+                f'"{shot.dialogue.text}". Do not make the speaker visible unless the cast '
+                "section explicitly places them in frame"
+            )
             if shot.dialogue.performance:
                 performance = shot.dialogue.performance
                 dialogue += (
@@ -56,9 +66,22 @@ class PromptBuilder:
                 for beat in shot.visual_beats
             )
 
+        editorial = "No additional series-level editorial direction."
+        visual_direction = "Use only the shot style and canonical location below."
+        if shot.canonical_context:
+            context = shot.canonical_context
+            editorial = "; ".join(context.tone) or editorial
+            visual_direction = "; ".join(
+                [*context.art_direction, *context.world_rules, *context.constraints]
+            ) or visual_direction
+
         positive = "\n\n".join(
             [
-                "CHARACTERS:\n" + "\n\n".join(cast),
+                "EDITORIAL REFERENCE: preserve tone, pacing, silences and contradictions:\n"
+                + editorial,
+                "SERIES VISUAL DIRECTION: never add an element not declared here or below:\n"
+                + visual_direction,
+                "CHARACTERS VISIBLE IN FRAME:\n" + characters,
                 f"LOCATION:\n{shot.location}. {shot.location_description}.",
                 f"ACTION:\n{shot.action}.",
                 f"SHOT TIMELINE:\n{timeline}",
@@ -66,12 +89,12 @@ class PromptBuilder:
                 (f"CAMERA:\n{shot.camera.shot_type}, {shot.camera.lens}, {shot.camera.movement}."),
                 f"LIGHTING:\n{shot.lighting}.",
                 f"MOOD:\n{shot.mood}.",
-                "STYLE:\n" + ", ".join(shot.style) + ". Cinematic realistic textures.",
+                "STYLE:\n" + ", ".join(shot.style) + ".",
                 (
-                    "CONTINUITY:\nKeep faces, bodies, hair, clothing, colors, accessories "
-                    "and plant motifs unchanged throughout the shot. Preserve the exact "
-                    "greenhouse architecture, marble table, door placement, weather, light "
-                    "direction and background objects between every pose."
+                    "CONTINUITY:\nPreserve every declared identity trait, body proportion, "
+                    "wardrobe detail, color, accessory, set geometry, prop, weather condition, "
+                    "light direction and background object between every pose. Do not import "
+                    "motifs, furniture or locations from another series."
                 ),
             ]
         )
@@ -104,7 +127,7 @@ class PromptBuilder:
         return (
             "PRIMARY FRAME INSTRUCTION — render this exact instant before anything else:\n"
             f"{description}.\nDo not include actions that happen earlier or later. "
-            "Keep the same character identity, botanical anatomy, set geometry, props, "
+            "Keep the same declared character identity, anatomy, set geometry, props, "
             "palette and light direction as the adjacent frame.\n\n"
             f"{prompt.positive}"
         )

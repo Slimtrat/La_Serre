@@ -6,6 +6,7 @@ from typing import Any, Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from engine.director.models import DialogueMode
 from engine.narrative.episode_models import EpisodeStory, NarrativeProvenance
 
 
@@ -127,6 +128,7 @@ class EpisodeDraftCandidate(StrictWorkflowModel):
 class ShotDialogueBlueprint(StrictWorkflowModel):
     speaker_id: str = Field(min_length=1)
     text: str = Field(min_length=1, max_length=1000)
+    mode: DialogueMode = DialogueMode.ON_SCREEN
     intention: str = Field(default="", max_length=500)
     emotion: str = Field(default="", max_length=200)
 
@@ -135,7 +137,7 @@ class ShotBlueprint(StrictWorkflowModel):
     source_text: str = Field(min_length=10, max_length=10_000)
     duration: float = Field(gt=0, le=12)
     location_id: str = Field(min_length=1)
-    character_ids: list[str] = Field(min_length=1, max_length=3)
+    character_ids: list[str] = Field(default_factory=list, max_length=3)
     shot_type: str = Field(min_length=1, max_length=100)
     camera_movement: str = Field(min_length=1, max_length=200)
     lens: str = Field(default="50mm", min_length=1, max_length=100)
@@ -146,9 +148,13 @@ class ShotBlueprint(StrictWorkflowModel):
     style: list[str] = Field(min_length=1, max_length=12)
 
     @model_validator(mode="after")
-    def dialogue_speaker_is_visible(self) -> ShotBlueprint:
-        if self.dialogue and self.dialogue.speaker_id not in self.character_ids:
-            raise ValueError("Dialogue speaker must be present in character_ids")
+    def on_screen_dialogue_speaker_is_visible(self) -> ShotBlueprint:
+        if (
+            self.dialogue
+            and self.dialogue.mode is DialogueMode.ON_SCREEN
+            and self.dialogue.speaker_id not in self.character_ids
+        ):
+            raise ValueError("On-screen dialogue speaker must be present in character_ids")
         return self
 
 

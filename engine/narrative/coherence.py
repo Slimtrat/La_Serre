@@ -10,7 +10,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from engine.director.models import Shot
+from engine.director.models import DialogueMode, Shot
 from engine.narrative.episode_models import EpisodePackage
 from engine.narrative.ollama import OllamaClient
 from engine.world.models import CharacterProfile, ProjectBible
@@ -163,9 +163,12 @@ class RuleBasedCoherenceValidator:
         bible: ProjectBible,
     ) -> list[CoherenceFinding]:
         findings: list[CoherenceFinding] = []
-        visible = {character.id for shot in package.shots for character in shot.characters}
+        present = {character.id for shot in package.shots for character in shot.characters}
+        present.update(
+            shot.dialogue.speaker for shot in package.shots if shot.dialogue is not None
+        )
         for character_id in package.episode.characters:
-            if character_id not in visible:
+            if character_id not in present:
                 findings.append(
                     self._finding(
                         "episode_character_unused",
@@ -270,7 +273,22 @@ class RuleBasedCoherenceValidator:
         if dialogue is not None:
             speaker = profiles.get(dialogue.speaker)
             visible_ids = {character.id for character in shot.characters}
-            if dialogue.speaker not in visible_ids:
+            if speaker is None:
+                findings.append(
+                    self._finding(
+                        "unknown_speaker",
+                        FindingSeverity.BLOCKER,
+                        "Locuteur inconnu",
+                        f"{dialogue.speaker} n’existe pas dans la Bible de la série.",
+                        "Choisis un locuteur canonique ou crée-le dans la Bible.",
+                        "shot.dialogue.speaker",
+                        dialogue.speaker,
+                    )
+                )
+            if (
+                dialogue.mode is DialogueMode.ON_SCREEN
+                and dialogue.speaker not in visible_ids
+            ):
                 findings.append(
                     self._finding(
                         "speaker_not_visible",
@@ -285,7 +303,14 @@ class RuleBasedCoherenceValidator:
                         dialogue.speaker,
                     )
                 )
-            if source_text and not quotes:
+            if (
+                source_text
+                and not quotes
+                and (
+                    dialogue.mode is DialogueMode.ON_SCREEN
+                    or _normalized(dialogue.text) not in _normalized(source_text)
+                )
+            ):
                 findings.append(
                     self._finding(
                         "invented_dialogue",

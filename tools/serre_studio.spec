@@ -15,6 +15,7 @@ for source, destination in (
     (project_root / "starter_catalog", "starter_catalog"),
     (project_root / "workflows" / "images", "workflows/images"),
     (project_root / "workflows" / "video", "workflows/video"),
+    (project_root / "workflows" / "templates", "workflows/templates"),
 ):
     if source.exists():
         data_files.append((str(source), destination))

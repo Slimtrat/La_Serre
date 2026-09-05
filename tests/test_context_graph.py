@@ -113,21 +113,37 @@ def test_empty_series_graph_is_actionable_and_valid(tmp_path: Path) -> None:
 
     assert graph.id == "series"
     assert graph.progress is not None
-    assert graph.progress.total == 0
+    assert graph.progress.total == 6
     assert [node.id for node in graph.nodes] == [
+        "journey:idea",
+        "journey:universe",
+        "journey:episode",
+        "journey:storyboard",
+        "journey:production",
+        "journey:result",
         "series:cast",
         "series:director",
         "series:screenwriter",
         "series:validator",
         "series:empty",
     ]
-    assert graph.nodes[0].label == "Personnages"
-    assert graph.nodes[0].state is GraphRuntimeState.BLOCKED
-    assert graph.nodes[1].label == "Director"
-    assert graph.nodes[2].state is GraphRuntimeState.BLOCKED
-    assert graph.nodes[3].state is GraphRuntimeState.BLOCKED
-    assert graph.nodes[4].label == "Projet sans épisode"
-    assert graph.nodes[4].state is GraphRuntimeState.BLOCKED
+    journey = graph.nodes[:6]
+    assert [node.label for node in journey] == [
+        "Idée",
+        "Univers",
+        "Épisode",
+        "Storyboard",
+        "Production",
+        "Résultat",
+    ]
+    assert graph.metadata["guided_journey"] is True
+    assert graph.nodes[6].label == "Personnages"
+    assert graph.nodes[6].state is GraphRuntimeState.BLOCKED
+    assert graph.nodes[7].label == "Director"
+    assert graph.nodes[8].state is GraphRuntimeState.BLOCKED
+    assert graph.nodes[9].state is GraphRuntimeState.BLOCKED
+    assert graph.nodes[10].label == "Projet sans épisode"
+    assert graph.nodes[10].state is GraphRuntimeState.BLOCKED
 
 
 async def test_context_graph_router_serves_common_dto_and_errors(tmp_path: Path) -> None:

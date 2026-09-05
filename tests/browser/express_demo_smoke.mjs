@@ -39,7 +39,7 @@ async function stageStatus(id, expected) {
 
 await page.goto(baseURL + "/?view=graph", { waitUntil: "networkidle" });
 await page.evaluate(() => {
-  localStorage.setItem("serre-studio-getting-started-v0.2.12", "seen");
+  localStorage.setItem("serre-studio-getting-started-v0.2.13", "seen");
 });
 await page.request.post(baseURL + "/api/demo/reset", { data: { locale: "fr", feedback: "" } });
 await page.reload({ waitUntil: "networkidle" });

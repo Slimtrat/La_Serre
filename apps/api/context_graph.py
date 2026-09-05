@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Iterable
 from pathlib import Path
+from typing import cast
 
 from fastapi import APIRouter, HTTPException
 
@@ -22,6 +23,7 @@ from apps.api.graph_contract import (
 )
 from apps.api.project_explorer import ExplorerState, aggregate_state, inspect_shot_state
 from engine.narrative.episode_models import EpisodePackage, EpisodeStatus
+from engine.narrative.guided_authoring import GuidedAuthoringRegistry, guided_completion
 from engine.narrative.narrative_workflow import NarrativeWorkflowRegistry
 from engine.narrative.workflow_models import StageStatus
 from engine.world.bible import BibleRegistry
@@ -110,8 +112,78 @@ class ContextGraphBuilder:
         summaries = self.catalog.list_episodes()
         bible = BibleRegistry(self.catalog.root).load()
         narrative = NarrativeWorkflowRegistry(self.catalog.root).load()
-        states: list[GraphRuntimeState] = []
+        guided = GuidedAuthoringRegistry(self.catalog.root).load()
+        completion = guided_completion(guided)
+        brief_completion = cast(dict[str, object], completion["brief"])
+        universe_completion = cast(dict[str, object], completion["universe"])
+        episode_packages = [self.catalog.load(summary.id) for summary in summaries]
+        has_storyboard = any(package.shots for package in episode_packages)
+        has_production = any(
+            inspect_shot_state(
+                self.catalog.root
+                / "episodes"
+                / f"season-{package.episode.season:02d}"
+                / package.episode.id
+                / "shots"
+                / f"{shot.id}.json",
+                self.output_root / shot.id,
+            )
+            in {"production", "complete"}
+            for package in episode_packages
+            for shot in package.shots
+        )
+        has_result = any(
+            (self.output_root / package.episode.id / "episode.mp4").is_file()
+            for package in episode_packages
+        )
+        journey_states = [
+            GraphRuntimeState.DONE
+            if bool(brief_completion["ready"])
+            else GraphRuntimeState.READY,
+            GraphRuntimeState.DONE
+            if bool(universe_completion["ready"])
+            else GraphRuntimeState.BLOCKED,
+            GraphRuntimeState.DONE if summaries else GraphRuntimeState.BLOCKED,
+            GraphRuntimeState.DONE if has_storyboard else GraphRuntimeState.BLOCKED,
+            GraphRuntimeState.DONE if has_production else GraphRuntimeState.BLOCKED,
+            GraphRuntimeState.DONE if has_result else GraphRuntimeState.BLOCKED,
+        ]
+        journey = [
+            ("idea", "Idée", "Décrire la promesse", "guided-stage:0"),
+            ("universe", "Univers", "Personnages et règles", "guided-stage:1"),
+            ("episode", "Épisode", "Écriture et validation", "guided-stage:2"),
+            ("storyboard", "Storyboard", "Actions et trois poses", "guided-stage:3"),
+            ("production", "Production", "Image, voix et mouvement", "guided-stage:4"),
+            ("result", "Résultat", "Montage et variantes", "guided-stage:5"),
+        ]
         nodes: list[GraphNode] = [
+            *[
+                GraphNode(
+                    id=f"journey:{stage_id}",
+                    label=label,
+                    subtitle=subtitle,
+                    type_label="PARCOURS GUIDÉ",
+                    index=str(index + 1).zfill(2),
+                    structure=GraphStructure.CORE,
+                    state=journey_states[index],
+                    status=self._state_label(journey_states[index]),
+                    position=GraphPosition(x=80 + index * 310, y=60),
+                    description=(
+                        "Étape du parcours produit. Son état provient des données réelles "
+                        "du projet et non d’une checklist séparée."
+                    ),
+                    provider="Création guidée",
+                    actions=[
+                        self._workspace_action(
+                            f"open-guided-{stage_id}",
+                            f"Ouvrir {label.lower()}",
+                            target,
+                        )
+                    ],
+                    metadata={"guided_stage": index},
+                )
+                for index, (stage_id, label, subtitle, target) in enumerate(journey)
+            ],
             GraphNode(
                 id="series:cast",
                 label="Personnages",
@@ -121,7 +193,7 @@ class ContextGraphBuilder:
                 structure=GraphStructure.OPTIONAL,
                 state=(GraphRuntimeState.DONE if bible.characters else GraphRuntimeState.BLOCKED),
                 status=("Canon disponible" if bible.characters else "Casting à construire"),
-                position=GraphPosition(x=120, y=60),
+                position=GraphPosition(x=1070, y=350),
                 description=("Casting canonique partagé par tous les épisodes et tous les plans."),
                 provider="Bible de série",
                 actions=[
@@ -146,7 +218,7 @@ class ContextGraphBuilder:
                 index="01",
                 state=self._series_stage_state(narrative.director.status),
                 status=narrative.director.status.value,
-                position=GraphPosition(x=120, y=250),
+                position=GraphPosition(x=80, y=350),
                 description="La direction créative qui contraint toute la série.",
                 provider="Atelier narratif",
                 actions=[
@@ -166,7 +238,7 @@ class ContextGraphBuilder:
                     blocked=narrative.director.status is not StageStatus.APPROVED,
                 ),
                 status=narrative.screenwriter.status.value,
-                position=GraphPosition(x=450, y=250),
+                position=GraphPosition(x=410, y=350),
                 description="Propose les arcs et épisodes sans les publier automatiquement.",
                 provider="Atelier narratif",
                 actions=[
@@ -186,7 +258,7 @@ class ContextGraphBuilder:
                     blocked=narrative.screenwriter.status is not StageStatus.APPROVED,
                 ),
                 status=narrative.validator.status.value,
-                position=GraphPosition(x=780, y=250),
+                position=GraphPosition(x=740, y=350),
                 description="Analyse et explique; aucun texte n’est modifié sans approbation.",
                 provider="Atelier narratif",
                 actions=[
@@ -197,6 +269,30 @@ class ContextGraphBuilder:
             ),
         ]
         edges: list[GraphEdge] = [
+            *[
+                self._edge(
+                    f"journey:{journey[index][0]}",
+                    f"journey:{journey[index + 1][0]}",
+                    (
+                        f"{journey[index][1]} transmet ses décisions validées à "
+                        f"{journey[index + 1][1]}."
+                    ),
+                    state=journey_states[index + 1],
+                )
+                for index in range(len(journey) - 1)
+            ],
+            self._edge(
+                "journey:idea",
+                "series:director",
+                "Le Director est le sous-workflow avancé de l’intention éditoriale.",
+                optional=True,
+            ),
+            self._edge(
+                "journey:universe",
+                "series:cast",
+                "La Bible canonique alimente l’univers du parcours guidé.",
+                optional=True,
+            ),
             self._edge(
                 "series:cast",
                 "series:director",
@@ -216,16 +312,15 @@ class ContextGraphBuilder:
         ]
         previous_id: str | None = None
         for index, summary in enumerate(summaries):
-            package = self.catalog.load(summary.id)
+            package = episode_packages[index]
             shot_states = [self._shot_explorer_state(package, shot.id) for shot in package.shots]
             explorer_state = aggregate_state(
                 shot_states,
                 base=self._episode_base_state(package.episode.status),
             )
             state = EXPLORER_RUNTIME[explorer_state]
-            states.append(state)
             node_id = f"episode:{summary.id}"
-            x = 120 + index * 330
+            x = 80 + index * 330
             progress = self._progress(
                 [EXPLORER_RUNTIME[item] for item in shot_states],
                 f"{sum(item == 'complete' for item in shot_states)} / {len(shot_states)} plans",
@@ -240,7 +335,7 @@ class ContextGraphBuilder:
                     structure=GraphStructure.CONTAINER,
                     state=state,
                     status=self._state_label(state),
-                    position=GraphPosition(x=x, y=500),
+                    position=GraphPosition(x=x, y=620),
                     description=summary.logline,
                     provider="Catalogue narratif",
                     progress=progress,
@@ -279,6 +374,14 @@ class ContextGraphBuilder:
                     "La gate générale approuvée autorise la création de cet épisode.",
                 )
             )
+            edges.append(
+                self._edge(
+                    "journey:episode",
+                    node_id,
+                    "L’étape Épisode ouvre ce contrat narratif et ses plans.",
+                    optional=True,
+                )
+            )
             previous_id = node_id
 
         if not summaries:
@@ -292,7 +395,7 @@ class ContextGraphBuilder:
                     structure=GraphStructure.CONTAINER,
                     state=GraphRuntimeState.BLOCKED,
                     status="Aucun épisode",
-                    position=GraphPosition(x=120, y=500),
+                    position=GraphPosition(x=80, y=620),
                     description=(
                         "Ajoute un épisode au contenu privé du projet pour commencer la production."
                     ),
@@ -315,15 +418,11 @@ class ContextGraphBuilder:
             nodes=nodes,
             edges=edges,
             viewport=GraphViewport(
-                width=max(1000, 610 + len(summaries) * 330),
-                height=720,
+                width=max(1940, 610 + len(summaries) * 330),
+                height=880,
             ),
-            progress=self._progress(
-                states,
-                f"{sum(state is GraphRuntimeState.DONE for state in states)} / "
-                f"{len(states)} épisodes",
-            ),
-            metadata={"episode_count": len(summaries)},
+            progress=self._progress(journey_states, "Parcours créatif complet"),
+            metadata={"episode_count": len(summaries), "guided_journey": True},
         )
 
     def episode(self, episode_id: str) -> GraphDTO:
