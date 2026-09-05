@@ -273,7 +273,7 @@
       window.dispatchEvent(new CustomEvent("studio:coherence", {
         detail: { report, nodeId: activeNodeId },
       }));
-      api?.notify?.(t("reportReady"), report.status === "fail");
+      api?.notify?.(t("reportReady"));
       return report;
     } catch (error) {
       const host = reportHost();

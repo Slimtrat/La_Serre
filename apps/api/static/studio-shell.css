@@ -81,6 +81,7 @@
 .notification-entry strong { font-size: 12px; }
 .notification-entry span { margin-top: 3px; color: #c1ccc4; font-size: 11px; line-height: 1.35; }
 .notification-entry small { margin-top: 5px; color: var(--muted); font-size: 9px; }
+.notification-entry .notification-new { display: inline; color: var(--green); font-size: 8px; font-style: normal; font-weight: 800; letter-spacing: .08em; }
 .project-create-dialog { width: min(480px, calc(100vw - 24px)); padding: 0; color: var(--text); border: 1px solid var(--line); border-radius: 16px; background: #111914; box-shadow: 0 30px 100px #000c; }
 .project-create-dialog::backdrop { background: rgba(3, 6, 4, .76); backdrop-filter: blur(4px); }
 .project-create-dialog form { display: grid; gap: 18px; padding: 22px; }

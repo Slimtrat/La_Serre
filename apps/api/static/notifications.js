@@ -17,13 +17,15 @@ const notificationCenter = (() => {
   }
 
   function formatDate(value) {
-    return new Intl.DateTimeFormat(window.SerreI18n?.getLocale() || "fr-FR", {
+    return new Intl.DateTimeFormat(window.SerreI18n?.getLocale?.() || "fr-FR", {
       hour: "2-digit", minute: "2-digit", second: "2-digit",
     }).format(new Date(value));
   }
 
   function render(payload) {
-    notifications = payload.notifications || [];
+    notifications = [...(payload.notifications || [])].sort(
+      (left, right) => Date.parse(right.timestamp) - Date.parse(left.timestamp),
+    );
     const unread = Number(payload.unread || 0);
     const unreadErrors = Number(payload.unread_errors || 0);
     badge.textContent = String(unread);
@@ -48,6 +50,12 @@ const notificationCenter = (() => {
       message.textContent = item.message;
       const meta = document.createElement("small");
       meta.textContent = `${formatDate(item.timestamp)} · ${item.source}`;
+      if (!item.read) {
+        const fresh = document.createElement("em");
+        fresh.className = "notification-new";
+        fresh.textContent = window.SerreI18n?.getLanguage?.() === "en" ? "NEW" : "NOUVEAU";
+        meta.prepend(fresh, " · ");
+      }
       entry.append(title, message, meta);
       row.append(entry);
       list.append(row);

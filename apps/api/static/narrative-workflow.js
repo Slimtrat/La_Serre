@@ -3,7 +3,7 @@ const narrativeAuthoring = (() => {
     fr: {
       open: "Écriture", openTitle: "Écrire la série et ses épisodes", title: "Atelier narratif",
       subtitle: "Une proposition IA reste candidate jusqu’à ton approbation.", model: "Modèle",
-      ollamaOffline: "Ollama hors ligne", close: "Fermer", seriesTab: "Série · Direction",
+      ollamaOffline: "Ollama hors ligne", narrativeModelMissing: "Modèle narratif requis · installe Qwen3 4B", close: "Fermer", seriesTab: "Série · Direction",
       episodeTab: "Épisode · Écriture & plans", director: "Director", screenwriter: "Scénariste",
       validator: "Validateur général", episode: "Épisode", breakdown: "Découpage en plans",
       stages: { intention: "01 · intention", architecture: "02 · architecture", guardrail: "03 · garde-fou" },
@@ -71,7 +71,7 @@ const narrativeAuthoring = (() => {
     en: {
       open: "Writing", openTitle: "Write the series and its episodes", title: "Story room",
       subtitle: "An AI proposal remains a candidate until you approve it.", model: "Model",
-      ollamaOffline: "Ollama offline", close: "Close", seriesTab: "Series · Direction",
+      ollamaOffline: "Ollama offline", narrativeModelMissing: "Narrative model required · install Qwen3 4B", close: "Close", seriesTab: "Series · Direction",
       episodeTab: "Episode · Writing & shots", director: "Director", screenwriter: "Screenwriter",
       validator: "General validator", episode: "Episode", breakdown: "Shot breakdown",
       stages: { intention: "01 · intent", architecture: "02 · architecture", guardrail: "03 · guardrail" },
@@ -317,7 +317,7 @@ const narrativeAuthoring = (() => {
     bindImport("breakdown-import", (data) => { breakdownCandidate = data.shots || data.candidate?.shots || []; modes.breakdown = "import"; renderBreakdown(); });
   }
   function showTab(tab) { dialog.querySelectorAll("[data-author-tab]").forEach((button) => button.classList.toggle("selected", button.dataset.authorTab === tab)); dialog.querySelectorAll("[data-author-panel]").forEach((panel) => panel.classList.toggle("hidden", panel.dataset.authorPanel !== tab)); if (tab === "episode") loadCurrentEpisode().catch((error) => notify(error.message, true)); }
-  async function loadModels() { const status = await request("/api/narrative/status"); const select = dialog.querySelector("#narrative-model"); select.replaceChildren(); if (!status.models?.length) return select.append(new Option(t("ollamaOffline"), "")); status.models.forEach((item) => select.append(new Option(item.name, item.name))); select.value = status.selected_model || status.models[0].name; }
+  async function loadModels() { const status = await request("/api/narrative/status"); const select = dialog.querySelector("#narrative-model"); select.replaceChildren(); if (!status.ready || !status.selected_model) return select.append(new Option(t(status.ollama_ready ? "narrativeModelMissing" : "ollamaOffline"), "")); status.models.forEach((item) => select.append(new Option(item.name, item.name))); select.value = status.selected_model; }
   async function open(tab = "series") { if (!dialog) mount(); dialog.showModal(); showTab(tab); await Promise.allSettled([loadWorkflow(), loadModels()]); }
   function relocalize() {
     if (!dialog) return;

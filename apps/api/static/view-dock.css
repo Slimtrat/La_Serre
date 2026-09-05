@@ -4,14 +4,14 @@
   top: 50%;
   left: 0;
   display: grid;
-  width: 172px;
-  padding: 10px 14px 10px 10px;
+  width: 180px;
+  padding: 10px 32px 10px 10px;
   border: 1px solid rgba(143, 207, 157, .25);
   border-left: 0;
   border-radius: 0 14px 14px 0;
   background: rgba(8, 14, 10, .97);
   box-shadow: 18px 20px 70px rgba(0, 0, 0, .55);
-  transform: translate(-158px, -50%);
+  transform: translate(-150px, -50%);
   transition: transform .2s ease, box-shadow .2s ease;
 }
 .studio-view-dock::before {
@@ -24,11 +24,20 @@
 .studio-view-dock:focus-within { box-shadow: 24px 24px 90px rgba(0, 0, 0, .72); transform: translate(0, -50%); }
 .view-dock-handle {
   position: absolute;
-  top: 50%;
-  right: 1px;
+  inset: 0 0 0 auto;
+  display: flex;
+  width: 30px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   color: var(--green);
-  font: 700 18px/1 Georgia, serif;
-  transform: translateY(-50%);
+  border-left: 1px solid rgba(143, 207, 157, .18);
+  background: linear-gradient(180deg, rgba(143, 207, 157, .08), transparent);
+}
+.view-dock-handle small { font-size: 7px; font-weight: 850; letter-spacing: .16em; writing-mode: vertical-rl; transform: rotate(180deg); }
+.view-dock-handle b { font: 700 18px/1 Georgia, serif; }
+.studio-view-dock:hover .view-dock-handle b,
+.studio-view-dock:focus-within .view-dock-handle b { transform: rotate(180deg); }
 }
 .studio-view-dock > header { display: grid; gap: 2px; padding: 3px 5px 10px; }
 .studio-view-dock > header small { color: var(--green); font-size: 7px; letter-spacing: .16em; }

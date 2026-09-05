@@ -52,7 +52,7 @@
 
   function formatDate(value) {
     if (!value) return "Date inconnue";
-    return new Intl.DateTimeFormat(window.SerreI18n?.getLocale() || "fr-FR", {
+    return new Intl.DateTimeFormat(window.SerreI18n?.getLocale?.() || "fr-FR", {
       dateStyle: "short",
       timeStyle: "short",
     }).format(new Date(value));

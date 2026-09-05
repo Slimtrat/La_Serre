@@ -45,6 +45,19 @@ def test_coherence_gate_is_loaded_and_callable_from_business_nodes() -> None:
     assert '"/approve"' in coherence
     assert "textContent = text" in coherence
     assert "window.SerreCoherence = Object.freeze" in coherence
+    assert 'api?.notify?.(t("reportReady"));' in coherence
+
+
+def test_notifications_are_newest_first_and_tolerate_stale_i18n_assets() -> None:
+    notifications = (STATIC / "notifications.js").read_text(encoding="utf-8")
+    editorial = (STATIC / "editorial-history.js").read_text(encoding="utf-8")
+    outputs = (STATIC / "output-console.js").read_text(encoding="utf-8")
+
+    assert "Date.parse(right.timestamp) - Date.parse(left.timestamp)" in notifications
+    assert "notification-new" in notifications
+    assert "getLocale?.()" in notifications
+    assert "getLocale?.()" in editorial
+    assert "getLocale?.()" in outputs
 
 
 def test_getting_started_is_first_run_guided_and_reopenable() -> None:
@@ -68,6 +81,7 @@ def test_all_workspaces_are_reachable_from_the_left_edge_dock() -> None:
     styles = (STATIC / "view-dock.css").read_text(encoding="utf-8")
 
     assert 'id="studio-view-dock"' in index
+    assert '<small>VUES</small><b>›</b>' in index
     for view in ("graph", "plan", "outputs", "bible", "settings"):
         assert f'data-workspace-target="{view}"' in index
     assert ".studio-view-dock:hover" in styles
