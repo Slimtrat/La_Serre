@@ -17,6 +17,14 @@ const browser = await chromium.launch({
 const page = await browser.newPage({ viewport: { width: 1280, height: 760 } });
 const errors = [];
 page.on("pageerror", (error) => errors.push(error.message));
+await page.route("**/api/demo/capabilities", (route) => route.fulfill({
+  status: 200,
+  contentType: "application/json",
+  body: JSON.stringify({
+    ollama: { ready: false, selected_model: null, models: [] },
+    stages: {},
+  }),
+}));
 
 function expect(condition, message) {
   if (!condition) throw new Error(message);
@@ -31,7 +39,7 @@ async function stageStatus(id, expected) {
 
 await page.goto(baseURL + "/?view=graph", { waitUntil: "networkidle" });
 await page.evaluate(() => {
-  localStorage.setItem("serre-studio-getting-started-v0.2.10", "seen");
+  localStorage.setItem("serre-studio-getting-started-v0.2.11", "seen");
 });
 await page.request.post(baseURL + "/api/demo/reset", { data: { locale: "fr", feedback: "" } });
 await page.reload({ waitUntil: "networkidle" });
@@ -50,6 +58,7 @@ expect(await dialog.locator('[data-demo-imagine="plan"]:not(:disabled)').count()
 await dialog.locator("#demo-story-input").fill("Belladone dérobe à Aconit une graine qui connaît leurs mensonges");
 await dialog.locator('.demo-inspector [data-demo-imagine="story"]').click();
 await stageStatus("story", "generated");
+expect((await dialog.locator(".demo-provenance strong").textContent()).includes("SANS IA"), "L’aperçu local n’est pas signalé honnêtement");
 expect(await page.locator("#activity-overlay").isVisible(), "La barre d’activité ne s’est pas ouverte");
 expect((await page.locator("#activity-segments i").count()) === 5, "La barre d’activité ne montre pas les cinq maillons");
 expect((await page.locator("#activity-state").textContent()).includes("Validation requise"), "L’activité n’indique pas la validation humaine");

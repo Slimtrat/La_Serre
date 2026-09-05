@@ -52,7 +52,7 @@ const facets = {
 
 const browser = await chromium.launch({ headless: true, executablePath: browserPath });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-await page.addInitScript(() => localStorage.setItem("serre-studio-getting-started-v0.2.10", "seen"));
+await page.addInitScript(() => localStorage.setItem("serre-studio-getting-started-v0.2.11", "seen"));
 let reused = null;
 const fulfillCatalog = (route) => route.fulfill({
   status: 200,

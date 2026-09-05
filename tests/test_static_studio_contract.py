@@ -55,12 +55,23 @@ def test_getting_started_is_first_run_guided_and_reopenable() -> None:
     assert "/static/getting-started.js" in index
     assert 'id="getting-started-open"' in index
     assert 'const STEP_COUNT = 9' in guide
-    assert 'serre-studio-getting-started-v0.2.10' in guide
+    assert 'serre-studio-getting-started-v0.2.11' in guide
     assert 'localStorage.setItem(STORAGE_KEY, "seen")' in guide
     assert 'window.addEventListener("studio:status"' in guide
     assert 'window.SerreStudio.api("/api/status")' in guide
     assert 'window.SerreWorkspace?.show("settings")' in guide
     assert "new URLSearchParams(window.location.search).has(\"view\")" in guide
+
+
+def test_all_workspaces_are_reachable_from_the_left_edge_dock() -> None:
+    index = (STATIC / "index.html").read_text(encoding="utf-8")
+    styles = (STATIC / "view-dock.css").read_text(encoding="utf-8")
+
+    assert 'id="studio-view-dock"' in index
+    for view in ("graph", "plan", "outputs", "bible", "settings"):
+        assert f'data-workspace-target="{view}"' in index
+    assert ".studio-view-dock:hover" in styles
+    assert ".studio-view-dock:focus-within" in styles
 
 
 def test_project_explorer_is_lightweight_synchronized_and_reopenable() -> None:

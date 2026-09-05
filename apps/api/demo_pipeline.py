@@ -25,6 +25,7 @@ MEDIA_TYPES = {
     "subtitles.srt": "application/x-subrip",
     "demo.mp4": "video/mp4",
 }
+_GENERATED_CONTENT_UNSET = object()
 
 
 class DemoPipeline:
@@ -52,6 +53,8 @@ class DemoPipeline:
         *,
         instruction: str = "",
         locale: str = "fr",
+        generated_content: object = _GENERATED_CONTENT_UNSET,
+        provenance: dict[str, object] | None = None,
     ) -> dict[str, Any]:
         with self._lock:
             state = self._load(locale)
@@ -66,7 +69,10 @@ class DemoPipeline:
             self._record(state, stage, "generating", "L’atelier léger prépare une proposition.")
             self._save(state)
             try:
-                content, assets = self._generate(stage, state, instruction.strip())
+                if generated_content is _GENERATED_CONTENT_UNSET:
+                    content, assets = self._generate(stage, state, instruction.strip())
+                else:
+                    content, assets = generated_content, []
             except Exception:
                 current["status"] = "failed"
                 self._record(state, stage, "failed", "La proposition n’a pas pu être produite.")
@@ -74,6 +80,7 @@ class DemoPipeline:
                 raise
             current["content"] = content
             current["assets"] = assets
+            current["provenance"] = provenance or self._local_provenance(stage)
             current["status"] = "generated"
             self._record(state, stage, "generated", "Proposition prête pour contrôle humain.")
             self._touch(state)
@@ -446,7 +453,7 @@ class DemoPipeline:
         now = datetime.now(UTC).isoformat()
         return {
             "id": "express-demo",
-            "version": 1,
+            "version": 2,
             "locale": "en" if locale == "en" else "fr",
             "mode": "zero-gpu",
             "created_at": now,
@@ -459,6 +466,7 @@ class DemoPipeline:
                     "content": None,
                     "assets": [],
                     "feedback": "",
+                    "provenance": None,
                 }
                 for index, stage in enumerate(STAGES)
             ],
@@ -473,7 +481,7 @@ class DemoPipeline:
             value = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             return self._fresh(locale)
-        if not isinstance(value, dict) or value.get("version") != 1:
+        if not isinstance(value, dict) or value.get("version") != 2:
             return self._fresh(locale)
         value["locale"] = "en" if locale == "en" else "fr"
         return value
@@ -503,12 +511,11 @@ class DemoPipeline:
                 filename = asset.get("filename") if isinstance(asset, dict) else None
                 if filename in MEDIA_TYPES:
                     (self._media_root() / str(filename)).unlink(missing_ok=True)
-            stage["status"] = (
-                "ready" if unlock_first and index == start else "locked"
-            )
+            stage["status"] = "ready" if unlock_first and index == start else "locked"
             stage["content"] = None
             stage["assets"] = []
             stage["feedback"] = ""
+            stage["provenance"] = None
 
     @staticmethod
     def _stage(state: dict[str, Any], stage: DemoStage) -> dict[str, Any]:
@@ -529,6 +536,24 @@ class DemoPipeline:
     @staticmethod
     def _touch(state: dict[str, Any]) -> None:
         state["updated_at"] = datetime.now(UTC).isoformat()
+
+    @staticmethod
+    def _local_provenance(stage: DemoStage) -> dict[str, object]:
+        providers = {
+            "story": ("studio-template", "Gabarit narratif local"),
+            "plan": ("studio-rules", "Découpage déterministe local"),
+            "frames": ("studio-renderer", "Illustration procédurale locale"),
+            "sound": ("studio-synth", "Synthèse sonore procédurale"),
+            "video": ("ffmpeg", "Assemblage vidéo local"),
+        }
+        provider, label = providers[stage]
+        return {
+            "provider": provider,
+            "label": label,
+            "mode": "preview",
+            "real_ai": False,
+            "generated_at": datetime.now(UTC).isoformat(),
+        }
 
     def _root(self) -> Path:
         return self._output_provider().resolve() / ".studio" / "express-demo"

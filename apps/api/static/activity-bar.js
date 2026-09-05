@@ -25,6 +25,7 @@ const serreActivity = (() => {
     frames: "Images",
     sound: "Son",
     video: "Mini-vidéo",
+    runtime: "Moteurs locaux",
     job: "Pipeline",
   };
   const KIND_LABELS = {
@@ -35,6 +36,7 @@ const serreActivity = (() => {
     voice: "Voix",
     music: "Musique",
     demo: "Démo express",
+    setup: "Préparation du Studio",
   };
 
   const overlay = document.createElement("aside");
@@ -166,7 +168,7 @@ const serreActivity = (() => {
       message: detail.message || "Traitement en cours",
       createdAt: detail.created_at || existing?.createdAt || new Date().toISOString(),
       completedAt: terminal ? new Date().toISOString() : null,
-      progress: {
+      progress: detail.progress || {
         percent: terminal && status !== "FAILED" ? 100 : terminal ? 0 : 8,
         completed: terminal && status !== "FAILED" ? 1 : 0,
         total: 1,
@@ -472,6 +474,12 @@ const serreActivity = (() => {
   window.addEventListener("studio:stage-job", (event) => render(normalizeStageJob(event.detail)));
   window.addEventListener("studio:narrative-job", (event) => render(normalizeNarrative(event.detail)));
   window.addEventListener("studio:demo-job", (event) => render(normalizeDemo(event.detail)));
+  window.addEventListener("studio:runtime-preparation", (event) => render(normalizeStageJob({
+    ...event.detail,
+    id: "runtime-preparation",
+    kind: "setup",
+    stage: "runtime",
+  })));
   window.addEventListener("studio:project-changing", () => {
     current = null;
     dismissedId = null;

@@ -84,12 +84,19 @@
 .demo-video { display: grid; justify-items: center; gap: 7px; }
 .demo-video video { width: min(100%, 560px); max-height: 315px; border: 1px solid rgba(163, 135, 196, .4); border-radius: 11px; background: #000; box-shadow: 0 18px 50px #0008; }
 .demo-video p { margin: 0; color: var(--muted); font-size: 8px; text-transform: uppercase; letter-spacing: .1em; }
+.demo-provenance { display: flex; align-items: center; gap: 8px; margin: 0 0 9px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255, 255, 255, .02); }
+.demo-provenance strong { flex: 0 0 auto; color: #a8b1ab; font-size: 7px; letter-spacing: .1em; }
+.demo-provenance span { min-width: 0; overflow: hidden; color: #758078; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.demo-provenance.is-ai { border-color: rgba(143, 207, 157, .35); background: rgba(143, 207, 157, .06); }
+.demo-provenance.is-ai strong { color: var(--green); }
+.demo-provenance.is-preview { border-color: rgba(163, 135, 196, .3); }
+.demo-provenance.is-preview strong { color: #c5a7d5; }
 .demo-feedback { margin: 0 0 9px; padding: 7px 9px; color: #e3aab5; border-left: 2px solid var(--danger); background: rgba(225, 129, 129, .06); font-size: 9px; }
 .demo-inspector > footer { display: flex; align-items: center; justify-content: space-between; gap: 9px; padding-top: 11px; border-top: 1px solid var(--line); }
 .demo-inspector > footer > div { display: flex; gap: 7px; }.demo-inspector > footer .button { min-height: 34px; padding: 8px 11px; font-size: 9px; }
 .demo-imagine { color: #e6c3f7; border-color: rgba(163, 135, 196, .45); background: rgba(105, 65, 128, .13); }
 .demo-footer { display: flex; min-height: 45px; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 13px; border-top: 1px solid var(--line); background: #0b120d; }
-.demo-footer small { color: var(--muted); font-size: 8px; }.demo-footer .button { padding: 7px 10px; font-size: 8px; }
+.demo-footer small { color: var(--muted); font-size: 8px; }.demo-footer > div { display: flex; flex: 0 0 auto; gap: 7px; }.demo-footer .button { padding: 7px 10px; font-size: 8px; }
 @media (max-width: 760px) {
   .demo-production-dialog, .demo-production-dialog.positioned { inset: 64px 6px 6px !important; width: auto; height: auto; transform: none; }
   .demo-progress { grid-template-columns: 1fr; gap: 7px; }.demo-progress > div { display: block; }.demo-progress span { display: block; margin-top: 4px; }

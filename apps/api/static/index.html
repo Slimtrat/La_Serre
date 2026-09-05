@@ -30,6 +30,7 @@
     <link rel="stylesheet" href="/static/narrative-workflow.css" />
     <link rel="stylesheet" href="/static/asset-drawer.css" />
     <link rel="stylesheet" href="/static/desktop-lifecycle.css" />
+    <link rel="stylesheet" href="/static/view-dock.css" />
   </head>
   <body data-workspace-view="graph">
     <div class="ambient ambient-one"></div>
@@ -39,7 +40,7 @@
         <span class="brand-mark">SV</span>
         <span><strong>SerreStudio</strong><small data-i18n="shell.studioLocal">Studio local</small></span>
       </a>
-      <span id="app-version" class="app-version" title="Version actuelle" data-i18n-title="shell.currentVersion">v0.2.10</span>
+      <span id="app-version" class="app-version" title="Version actuelle" data-i18n-title="shell.currentVersion">v0.2.11</span>
       <nav class="studio-context" aria-label="Contexte de création" data-i18n-aria-label="shell.context">
         <div class="context-segment context-project">
           <span data-i18n="shell.project">Projet</span>
@@ -86,6 +87,18 @@
         </label>
       </div>
     </header>
+    <aside id="studio-view-dock" class="studio-view-dock" aria-label="Changer de vue" data-i18n-aria-label="shell.viewDock">
+      <span class="view-dock-handle" aria-hidden="true">›</span>
+      <header><small data-i18n="shell.views">VUES</small><strong data-i18n="shell.navigate">Naviguer</strong></header>
+      <nav>
+        <button type="button" data-workspace-target="graph" class="selected"><span aria-hidden="true">⌘</span><strong data-i18n="shell.graph">Graphe</strong></button>
+        <button type="button" data-workspace-target="plan"><span aria-hidden="true">◇</span><strong data-i18n="shell.planLegacy">Plan</strong></button>
+        <button type="button" data-workspace-target="outputs"><span aria-hidden="true">▣</span><strong data-i18n="shell.outputsLegacy">Sorties</strong></button>
+        <button type="button" data-workspace-target="bible"><span aria-hidden="true">♟</span><strong data-i18n="bible.nav">Bible</strong></button>
+        <button type="button" data-workspace-target="settings"><span aria-hidden="true">⚙</span><strong data-i18n="shell.settings">Réglages</strong></button>
+      </nav>
+      <footer data-i18n="shell.viewDockHint">Approche le bord gauche pour changer d’espace.</footer>
+    </aside>
     <aside id="notification-panel" class="notification-panel hidden" aria-label="Journal du projet">
       <header><div><small>PROJET ACTIF</small><strong>Journal d’activité</strong></div><button id="notification-read-all" type="button">Tout marquer comme lu</button></header>
       <ol id="notification-list"><li class="empty">Aucune notification.</li></ol>
@@ -274,7 +287,10 @@
               <h3 id="runtime-manager-title">Préparer mon Studio</h3>
               <p id="runtime-manager-summary">Détection d’Ollama et ComfyUI…</p>
             </div>
-            <button id="runtime-refresh" class="button ghost" type="button">Actualiser le diagnostic</button>
+            <div class="runtime-manager-actions">
+              <button id="runtime-prepare" class="button primary" type="button">Préparer / Réparer tout</button>
+              <button id="runtime-refresh" class="button ghost" type="button">Actualiser le diagnostic</button>
+            </div>
           </header>
           <div id="runtime-service-list" class="runtime-service-list" aria-live="polite"></div>
           <aside id="runtime-log-viewer" class="runtime-log-viewer hidden" aria-labelledby="runtime-log-title">

@@ -14,7 +14,7 @@
       },
       shell: {
         studioLocal: "Studio local", currentVersion: "Version actuelle", mainNavigation: "Navigation principale",
-        context: "Contexte de création", project: "Projet", series: "Série", episode: "Épisode", shot: "Plan",
+        context: "Contexte de création", graph: "Graphe", views: "VUES", navigate: "Naviguer", viewDock: "Changer de vue", viewDockHint: "Approche le bord gauche pour changer d’espace.", project: "Projet", series: "Série", episode: "Épisode", shot: "Plan",
         activeProject: "Projet actif", activeEpisode: "Épisode actif", activeShot: "Plan actif",
         manageProjects: "Projets", newProject: "Nouveau", openProjectMenu: "Gérer les projets et leurs fichiers",
         canon: "Série & Bible", canonTitle: "Ouvrir la Bible canonique de la série",
@@ -140,7 +140,7 @@
         items: { one: "{count} item", other: "{count} items" },
       },
       shell: {
-        studioLocal: "Local studio", currentVersion: "Current version", mainNavigation: "Main navigation", context: "Creation context",
+        studioLocal: "Local studio", currentVersion: "Current version", mainNavigation: "Main navigation", context: "Creation context", graph: "Graph", views: "VIEWS", navigate: "Navigate", viewDock: "Change view", viewDockHint: "Move to the left edge to switch workspace.",
         project: "Project", series: "Series", episode: "Episode", shot: "Shot", activeProject: "Active project",
         activeEpisode: "Active episode", activeShot: "Active shot", manageProjects: "Projects", newProject: "New",
         openProjectMenu: "Manage projects and their files", canon: "Series & Bible", canonTitle: "Open the series canon Bible",

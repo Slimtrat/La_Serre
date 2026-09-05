@@ -25,6 +25,21 @@ def test_every_demo_stage_exposes_imagine_approve_and_reject_controls() -> None:
     assert "data-demo-approve" in script
     assert "data-demo-reject" in script
     assert 'new CustomEvent("studio:demo-job"' in script
+    assert 'api("/api/demo/capabilities")' in script
+    assert 'engine: engineFor(stageId)' in script
+    assert 'data-demo-graph' in script
+    assert 'data-demo-install-model' in script
+    assert '"/api/demo/recommended-model/install"' in script
+
+
+def test_demo_distinguishes_real_ai_from_local_previews() -> None:
+    script = (STATIC / "demo-production.js").read_text(encoding="utf-8")
+
+    assert "IA LOCALE RÉELLE" in script
+    assert "APERÇU LOCAL · SANS IA" in script
+    assert "Créer 3 aperçus locaux" in script
+    assert "Assembler avec FFmpeg" in script
+    assert "Laisser l’IA imaginer" not in script
 
 
 def test_demo_has_a_compact_draggable_one_page_window() -> None:

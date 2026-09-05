@@ -3,15 +3,26 @@
   const POSITION_KEY = "serre-studio-demo-position-v1";
   const COPY = {
     fr: {
-      title: "Démo express", subtitle: "5 ÉTAPES · 0 GPU · ~5 SECONDES", open: "Démo express",
+      title: "Démo express", subtitle: "5 ÉTAPES · IA LOCALE + APERÇUS", open: "Démo express",
       intro: "Décris une micro-histoire, puis génère, contrôle et valide chaque maillon.",
-      imagine: "✦ Laisser l’IA imaginer", approve: "Valider", reject: "Refuser", reset: "Recommencer",
+      approve: "Valider", reject: "Refuser", reset: "Recommencer",
       close: "Fermer", progress: "{done}/5 étapes validées", waiting: "Prêt à imaginer",
       locked: "Valide l’étape précédente", generated: "À contrôler", approved: "Validé", rejected: "Refusé · à refaire",
-      generating: "Génération légère…", failed: "Échec · réessayer", empty: "Aucune proposition pour le moment.",
+      generating: "Génération en cours…", failed: "Échec · réessayer", empty: "Aucune proposition pour le moment.",
       source: "Point de départ", sourceHint: "Ex. Deux sorcières découvrent que la plante qui les empoisonne les relie aussi.",
-      zero: "Cette démo privilégie la compréhension du pipeline. Elle n’utilise ni ComfyUI ni GPU.",
+      aiMode: "Ollama écrit réellement l’histoire et le plan. Les médias restent des aperçus économiques.",
+      previewMode: "Ollama est indisponible : histoire locale d’exemple et aperçus économiques explicites.",
+      modelMissingMode: "Tes modèles Ollama sont dédiés au code. Installe Qwen3 4B pour une vraie écriture narrative.",
       complete: "Chaîne complète : la mini-vidéo est validée.",
+      realAi: "IA LOCALE RÉELLE", localPreview: "APERÇU LOCAL · SANS IA", generatedBy: "Produit par {provider}",
+      openGraph: "Ouvrir le vrai graphe", graphHint: "Images et vidéos ComfyUI se génèrent dans le graphe de production.",
+      installModel: "Installer Qwen3 4B", installingModel: "Installation de Qwen3 4B…",
+      modelInstalled: "Qwen3 4B est installé : la vraie écriture IA est disponible.",
+      actions: {
+        storyAi: "✦ Écrire avec Ollama", storyPreview: "Créer un exemple local",
+        planAi: "✦ Découper avec Ollama", planPreview: "Créer un découpage local",
+        frames: "Créer 3 aperçus locaux", sound: "Synthétiser l’ambiance", video: "Assembler avec FFmpeg",
+      },
       stages: {
         story: ["Histoire", "Une intention courte, lisible et modifiable."],
         plan: ["Découpage", "Trois temps, trois actions, trois répliques."],
@@ -21,15 +32,26 @@
       },
     },
     en: {
-      title: "Express demo", subtitle: "5 STEPS · 0 GPU · ~5 SECONDS", open: "Express demo",
+      title: "Express demo", subtitle: "5 STEPS · LOCAL AI + PREVIEWS", open: "Express demo",
       intro: "Describe a micro-story, then generate, review, and approve every link.",
-      imagine: "✦ Let AI imagine", approve: "Approve", reject: "Reject", reset: "Start over", close: "Close",
+      approve: "Approve", reject: "Reject", reset: "Start over", close: "Close",
       progress: "{done}/5 approved steps", waiting: "Ready to imagine", locked: "Approve the previous step",
-      generated: "Needs review", approved: "Approved", rejected: "Rejected · redo", generating: "Light generation…",
+      generated: "Needs review", approved: "Approved", rejected: "Rejected · redo", generating: "Generating…",
       failed: "Failed · retry", empty: "No proposal yet.", source: "Starting point",
       sourceHint: "E.g. Two witches discover that the plant poisoning them also binds them together.",
-      zero: "This demo favors understanding the pipeline. It uses neither ComfyUI nor a GPU.",
+      aiMode: "Ollama genuinely writes the story and plan. Media remains an explicit low-cost preview.",
+      previewMode: "Ollama is unavailable: local example story and explicit low-cost previews.",
+      modelMissingMode: "Your Ollama models are code-focused. Install Qwen3 4B for real narrative writing.",
       complete: "Chain complete: the mini-video is approved.",
+      realAi: "REAL LOCAL AI", localPreview: "LOCAL PREVIEW · NO AI", generatedBy: "Produced by {provider}",
+      openGraph: "Open the real graph", graphHint: "ComfyUI image and video generation lives in the production graph.",
+      installModel: "Install Qwen3 4B", installingModel: "Installing Qwen3 4B…",
+      modelInstalled: "Qwen3 4B is installed: real AI writing is now available.",
+      actions: {
+        storyAi: "✦ Write with Ollama", storyPreview: "Create a local example",
+        planAi: "✦ Plan with Ollama", planPreview: "Create a local shot plan",
+        frames: "Create 3 local previews", sound: "Synthesize ambience", video: "Assemble with FFmpeg",
+      },
       stages: {
         story: ["Story", "A short, readable, editable intent."],
         plan: ["Shot plan", "Three beats, three actions, three lines."],
@@ -39,14 +61,15 @@
       },
     },
   };
-  window.SerreI18n?.register?.("fr", { shell: { demo: "Démo", demoTitle: "Lancer la démo express 0 GPU" } });
-  window.SerreI18n?.register?.("en", { shell: { demo: "Demo", demoTitle: "Start the zero-GPU express demo" } });
+  window.SerreI18n?.register?.("fr", { shell: { demo: "Démo", demoTitle: "Lancer la démo express guidée" } });
+  window.SerreI18n?.register?.("en", { shell: { demo: "Demo", demoTitle: "Start the guided express demo" } });
   let dialog = null;
   let state = null;
   let selected = "story";
   let busy = false;
   let drag = null;
   let draft = "";
+  let capabilities = { ollama: { ready: false, selected_model: null }, stages: {} };
 
   function locale() { return window.SerreI18n?.locale?.() === "en" ? "en" : "fr"; }
   function copy() { return COPY[locale()]; }
@@ -60,6 +83,15 @@
   function currentStage(id = selected) { return state?.stages?.find((stage) => stage.id === id); }
   function statusCopy(status) { return copy()[status] || status; }
   function approvedCount() { return state?.stages?.filter((stage) => stage.status === "approved").length || 0; }
+  function engineFor(stageId) {
+    return ["story", "plan"].includes(stageId) && capabilities.ollama?.ready ? "ai" : "preview";
+  }
+  function actionCopy(stageId) {
+    const actions = copy().actions;
+    if (stageId === "story") return engineFor(stageId) === "ai" ? actions.storyAi : actions.storyPreview;
+    if (stageId === "plan") return engineFor(stageId) === "ai" ? actions.planAi : actions.planPreview;
+    return actions[stageId];
+  }
 
   async function api(path, options = {}) {
     if (window.SerreStudio?.api) return window.SerreStudio.api(path, options);
@@ -110,6 +142,19 @@
       <p>${h(stage.content.mode)} · ${h(stage.content.resolution)} · ${h(stage.content.duration)} s</p></div>`;
   }
 
+  function provenanceContent(stage) {
+    const provenance = stage.provenance;
+    if (!provenance) return "";
+    const c = copy();
+    const provider = provenance.model
+      ? `${provenance.label || provenance.provider} · ${provenance.model}`
+      : provenance.label || provenance.provider;
+    return `<aside class="demo-provenance ${provenance.real_ai ? "is-ai" : "is-preview"}">
+      <strong>${h(provenance.real_ai ? c.realAi : c.localPreview)}</strong>
+      <span>${h(interpolate(c.generatedBy, { provider }))}</span>
+    </aside>`;
+  }
+
   function renderInspector() {
     const stage = currentStage();
     const c = copy();
@@ -119,9 +164,10 @@
     return `<section class="demo-inspector" data-demo-stage="${stage.id}">
       <header><div><small>ÉTAPE ${String(STAGES.indexOf(stage.id) + 1).padStart(2, "0")}</small><h3>${h(title)}</h3><p>${h(description)}</p></div><span class="demo-state ${h(stage.status)}">${h(statusCopy(stage.status))}</span></header>
       <div class="demo-output">${stageContent(stage)}</div>
+      ${provenanceContent(stage)}
       ${stage.feedback ? `<p class="demo-feedback">↳ ${h(stage.feedback)}</p>` : ""}
       <footer>
-        <button class="button secondary demo-imagine" type="button" data-demo-imagine="${stage.id}" ${canImagine ? "" : "disabled"}>${h(c.imagine)}</button>
+        <button class="button secondary demo-imagine" type="button" data-demo-imagine="${stage.id}" ${canImagine ? "" : "disabled"}>${h(actionCopy(stage.id))}</button>
         <div><button class="button ghost" type="button" data-demo-reject="${stage.id}" ${canDecide ? "" : "disabled"}>${h(c.reject)}</button>
         <button class="button primary" type="button" data-demo-approve="${stage.id}" ${stage.status === "generated" && !busy ? "" : "disabled"}>${h(c.approve)}</button></div>
       </footer>
@@ -139,14 +185,23 @@
     dialog.querySelector("[data-demo-progress-copy]").textContent = interpolate(c.progress, { done: String(done) });
     dialog.querySelector("[data-demo-progress-value]").style.width = `${done * 20}%`;
     dialog.querySelector("[data-demo-reset]").textContent = c.reset;
-    dialog.querySelector("[data-demo-mode]").textContent = state.complete ? c.complete : c.zero;
+    dialog.querySelector("[data-demo-graph]").textContent = c.openGraph;
+    dialog.querySelector("[data-demo-graph]").title = c.graphHint;
+    const install = dialog.querySelector("[data-demo-install-model]");
+    install.textContent = busy ? c.installingModel : c.installModel;
+    install.classList.toggle("hidden", capabilities.ollama?.reason !== "narrative_model_missing");
+    dialog.querySelector("[data-demo-mode]").textContent = state.complete
+      ? c.complete
+      : capabilities.ollama?.ready
+        ? c.aiMode
+        : capabilities.ollama?.reason === "narrative_model_missing" ? c.modelMissingMode : c.previewMode;
     const chain = dialog.querySelector("[data-demo-chain]");
     chain.innerHTML = state.stages.map((stage, index) => {
       const [title, description] = c.stages[stage.id];
       const available = !busy && stage.status !== "locked" && stage.status !== "generating";
       return `<article class="demo-chain-step ${stage.status} ${selected === stage.id ? "selected" : ""}" data-demo-select="${stage.id}">
         <button class="demo-step-select" type="button" data-demo-select="${stage.id}"><span>${String(index + 1).padStart(2, "0")}</span><div><strong>${h(title)}</strong><small>${h(description)}</small><em>${h(statusCopy(stage.status))}</em></div></button>
-        <button class="demo-step-imagine" type="button" data-demo-imagine="${stage.id}" ${available ? "" : "disabled"} title="${h(c.imagine)}"><span aria-hidden="true">✦</span><strong>${h(c.imagine.replace(/^✦\s*/, ""))}</strong></button>
+        <button class="demo-step-imagine" type="button" data-demo-imagine="${stage.id}" ${available ? "" : "disabled"} title="${h(actionCopy(stage.id))}"><span aria-hidden="true">${["story", "plan"].includes(stage.id) && engineFor(stage.id) === "ai" ? "✦" : "›"}</span><strong>${h(actionCopy(stage.id).replace(/^✦\s*/, ""))}</strong></button>
       </article>`;
     }).join("");
     dialog.querySelector("[data-demo-inspector]").innerHTML = renderInspector();
@@ -167,7 +222,7 @@
       </header>
       <div class="demo-progress"><div><strong data-demo-intro></strong><span data-demo-progress-copy></span></div><i><b data-demo-progress-value></b></i></div>
       <div class="demo-workspace"><nav data-demo-chain aria-label="Étapes de la démo"></nav><main data-demo-inspector></main></div>
-      <footer class="demo-footer"><small data-demo-mode></small><button class="button ghost" type="button" data-demo-reset></button></footer>
+      <footer class="demo-footer"><small data-demo-mode></small><div><button class="button primary hidden" type="button" data-demo-install-model></button><button class="button secondary" type="button" data-demo-graph></button><button class="button ghost" type="button" data-demo-reset></button></div></footer>
     </section>`;
     document.body.append(dialog);
     dialog.addEventListener("click", handleClick);
@@ -180,7 +235,10 @@
   }
 
   async function load() {
-    state = await api(`/api/demo?locale=${locale()}`);
+    [state, capabilities] = await Promise.all([
+      api(`/api/demo?locale=${locale()}`),
+      api("/api/demo/capabilities").catch(() => capabilities),
+    ]);
     if (!currentStage(selected)) selected = "story";
     const story = currentStage("story");
     if (story?.content) draft = story.content;
@@ -198,7 +256,10 @@
     render();
     dispatchActivity(stageId, "GENERATING", copy().generating);
     try {
-      state = await api(`/api/demo/${stageId}/imagine`, body("POST", { instruction: stageId === "story" ? draft : "" }));
+      state = await api(`/api/demo/${stageId}/imagine`, body("POST", {
+        instruction: stageId === "story" ? draft : "",
+        engine: engineFor(stageId),
+      }));
       const updated = currentStage(stageId);
       if (stageId === "story" && updated?.content) draft = updated.content;
       dispatchActivity(stageId, "AWAITING_REVIEW", copy().generated);
@@ -241,8 +302,38 @@
     finally { busy = false; render(); }
   }
 
+  async function installNarrativeModel() {
+    if (busy) return;
+    busy = true;
+    render();
+    window.dispatchEvent(new CustomEvent("studio:runtime-preparation", {
+      detail: { status: "GENERATING", message: copy().installingModel },
+    }));
+    try {
+      capabilities = await api("/api/demo/recommended-model/install", { method: "POST" });
+      window.dispatchEvent(new CustomEvent("studio:runtime-preparation", {
+        detail: { status: "COMPLETED", message: copy().modelInstalled },
+      }));
+      notify(copy().modelInstalled);
+    } catch (error) {
+      window.dispatchEvent(new CustomEvent("studio:runtime-preparation", {
+        detail: { status: "FAILED", message: error.message },
+      }));
+      notify(error.message, true);
+    } finally {
+      busy = false;
+      render();
+    }
+  }
+
   function handleClick(event) {
     if (event.target.closest("[data-demo-close]")) return close();
+    if (event.target.closest("[data-demo-install-model]")) return void installNarrativeModel();
+    if (event.target.closest("[data-demo-graph]")) {
+      close();
+      window.SerreWorkspace?.show("graph");
+      return;
+    }
     if (event.target.closest("[data-demo-reset]")) return void reset();
     const imagineButton = event.target.closest("[data-demo-imagine]");
     if (imagineButton) return void imagine(imagineButton.dataset.demoImagine);

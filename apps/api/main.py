@@ -141,7 +141,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(create_narrative_router(current_settings, assets, catalog))
     app.include_router(create_editorial_router(current_settings))
     app.include_router(
-        create_demo_router(lambda: current_settings().output_dir, notifications)
+        create_demo_router(
+            lambda: current_settings().output_dir,
+            notifications,
+            current_settings,
+        )
     )
     app.include_router(create_production_queue_router(production_queue))
     app.include_router(

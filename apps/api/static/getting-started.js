@@ -1,5 +1,5 @@
 (() => {
-  const STORAGE_KEY = "serre-studio-getting-started-v0.2.10";
+  const STORAGE_KEY = "serre-studio-getting-started-v0.2.11";
   const POSITION_KEY = "serre-studio-getting-started-position-v1";
   const LANGUAGE_KEY = "serre-studio-getting-started-language-v1";
   const STEP_COUNT = 9;
@@ -21,7 +21,7 @@
 
   const UI_COPY = {
     fr: {
-      brand: "Bien démarrer", subtitle: "PARCOURS SUR LE GRAPHE · STUDIO 0.2.10",
+      brand: "Bien démarrer", subtitle: "PARCOURS SUR LE GRAPHE · STUDIO 0.2.11",
       drag: "Déplacer le guide. Flèches : déplacer, Maj + flèches : déplacement rapide, Origine : recentrer, Fin : ancrer à droite.",
       close: "Fermer le guide", reset: "Recentrer la fenêtre", skip: "Fermer",
       previous: "Précédent", next: "Suivant", languageGroup: "Langue du guide",
@@ -44,7 +44,7 @@
       removeDone: "Découverte a déjà été retiré.",
     },
     en: {
-      brand: "Getting started", subtitle: "LIVE GRAPH TOUR · STUDIO 0.2.10",
+      brand: "Getting started", subtitle: "LIVE GRAPH TOUR · STUDIO 0.2.11",
       drag: "Move the guide. Arrow keys: move, Shift + arrows: move faster, Home: center, End: dock right.",
       close: "Close the guide", reset: "Center the window", skip: "Close",
       previous: "Previous", next: "Next", languageGroup: "Guide language",

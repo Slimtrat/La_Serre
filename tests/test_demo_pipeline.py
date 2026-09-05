@@ -31,11 +31,28 @@ def test_demo_pipeline_requires_human_approval_between_every_stage(
 
     state = demo.imagine("story", instruction="Une fleur vole une ombre")
     assert state["stages"][0]["status"] == "generated"
+    assert state["stages"][0]["provenance"]["real_ai"] is False
     assert state["stages"][1]["status"] == "locked"
 
     state = demo.approve("story")
     assert state["stages"][0]["status"] == "approved"
     assert state["stages"][1]["status"] == "ready"
+
+
+def test_demo_pipeline_preserves_external_ai_content_and_provenance(tmp_path: Path) -> None:
+    demo = pipeline(tmp_path)
+    content = "Belladone entend la graine lui murmurer le nom d’Aconit."
+    provenance = {"provider": "ollama", "model": "tiny", "real_ai": True}
+
+    state = demo.imagine(
+        "story",
+        generated_content=content,
+        provenance=provenance,
+    )
+
+    stage = state["stages"][0]
+    assert stage["content"] == content
+    assert stage["provenance"] == provenance
 
 
 def test_demo_pipeline_builds_three_frames_sound_subtitles_and_video(
