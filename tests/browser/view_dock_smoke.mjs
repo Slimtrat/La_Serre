@@ -106,7 +106,16 @@ try {
   }
   const provenance = await evaluate("document.querySelector('.demo-provenance strong')?.textContent || ''");
   if (!provenance.includes("SANS IA")) throw new Error(`Missing preview provenance: ${provenance}`);
-  console.log(JSON.stringify({ closed, opened, demoInitial, provenance }));
+  await evaluate("window.SerreDemo.close(); window.SerreNarrativeWorkflow.open('episode')");
+  await sleep(300);
+  const fieldAssistant = await evaluate(`(() => ({
+    buttons: document.querySelectorAll('.narrative-workflow-dialog .ai-field-trigger').length,
+    title: document.querySelector('.narrative-workflow-dialog .ai-field-trigger')?.title || '',
+  }))()`);
+  if (fieldAssistant.buttons < 15 || !fieldAssistant.title.includes("contexte actuel")) {
+    throw new Error(`Contextual field assistant is missing: ${JSON.stringify(fieldAssistant)}`);
+  }
+  console.log(JSON.stringify({ closed, opened, demoInitial, provenance, fieldAssistant }));
 } finally {
   socket?.close();
   browser.kill();
