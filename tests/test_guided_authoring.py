@@ -126,6 +126,48 @@ def test_proposal_acceptance_refuses_a_stale_revision(tmp_path: Path) -> None:
         )
 
 
+def test_proposal_acceptance_cannot_override_a_locked_field(tmp_path: Path) -> None:
+    registry = GuidedAuthoringRegistry(tmp_path)
+    initial = registry.save(
+        registry.load().model_copy(
+            update={
+                "brief": GuidedProjectBrief(
+                    working_title="Canon",
+                    tone="fun et sombre",
+                    locked_fields=["tone"],
+                )
+            }
+        ),
+        expected_revision=0,
+    )
+    proposal = registry.create_proposal(
+        target="brief",
+        mode="improve",
+        base_revision=initial.revision,
+        before=initial.brief.model_dump(mode="json"),
+        after=initial.brief.model_copy(update={"idea": "Une nouvelle idée"}).model_dump(
+            mode="json"
+        ),
+        model="qwen3:4b",
+    )
+    edited = dict(proposal.after)
+    edited["tone"] = "écrasé"
+
+    accepted, _ = registry.accept_proposal(
+        proposal.id,
+        expected_revision=initial.revision,
+        edited_after=edited,
+    )
+
+    assert accepted.brief.tone == "fun et sombre"
+
+
+def test_proposal_identifier_cannot_escape_its_storage_directory(tmp_path: Path) -> None:
+    registry = GuidedAuthoringRegistry(tmp_path)
+    with pytest.raises(KeyError):
+        registry.get_proposal("..\\outside")
+
+
 def test_ai_modes_use_context_and_respect_filled_and_locked_fields(tmp_path: Path) -> None:
     registry = GuidedAuthoringRegistry(tmp_path)
     state = registry.load().model_copy(

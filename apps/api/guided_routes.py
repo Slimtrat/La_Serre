@@ -48,7 +48,10 @@ class GuidedEpisodeLinkRequest(StrictGuidedRequest):
 
 class GuidedProposalRequest(StrictGuidedRequest):
     expected_revision: int = Field(ge=0)
-    target: str = Field(pattern=r"^(brief|character:[a-z0-9][a-z0-9_-]*)$")
+    target: str = Field(
+        max_length=80,
+        pattern=r"^(brief|character:[a-z0-9][a-z0-9_-]*)$",
+    )
     mode: Literal["improve", "fill_missing", "prepare_next"]
     locale: Literal["fr", "en"] = "fr"
     model: str | None = Field(default=None, max_length=200)

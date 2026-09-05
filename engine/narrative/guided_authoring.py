@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import threading
 from datetime import UTC, datetime
 from pathlib import Path
@@ -29,7 +30,7 @@ class GuidedProjectBrief(GuidedModel):
 
 
 class GuidedCharacterDraft(GuidedModel):
-    id: str = Field(pattern=r"^[a-z0-9][a-z0-9_-]*$")
+    id: str = Field(max_length=64, pattern=r"^[a-z0-9][a-z0-9_-]*$")
     name: str = Field(default="", max_length=180)
     role: str = Field(default="", max_length=300)
     visual_description: str = Field(default="", max_length=5_000)
@@ -187,6 +188,8 @@ class GuidedAuthoringRegistry:
             return proposal
 
     def get_proposal(self, proposal_id: str) -> GuidedProposal:
+        if not re.fullmatch(r"proposal-[0-9a-f]{32}", proposal_id):
+            raise KeyError(proposal_id)
         path = self.proposal_dir / f"{proposal_id}.json"
         if not path.is_file():
             raise KeyError(proposal_id)
@@ -219,7 +222,13 @@ class GuidedAuthoringRegistry:
                 raise ValueError(
                     "Cette proposition est périmée car le brouillon a changé. Relance l’IA."
                 )
-            candidate = edited_after or proposal.after
+            candidate = dict(edited_after or proposal.after)
+            raw_locked = proposal.before.get("locked_fields", [])
+            if isinstance(raw_locked, list):
+                for field in raw_locked:
+                    name = str(field)
+                    if name in proposal.before:
+                        candidate[name] = proposal.before[name]
             if proposal.target == "brief":
                 next_state = current.model_copy(
                     update={"brief": GuidedProjectBrief.model_validate(candidate)}
