@@ -616,6 +616,14 @@ const studioGraph = (() => {
   }
 
   function openWorkspaceTarget(value) {
+    if (value === "authoring-series") {
+      window.SerreNarrativeWorkflow?.open("series");
+      return;
+    }
+    if (value === "authoring-episode") {
+      window.SerreNarrativeWorkflow?.open("episode");
+      return;
+    }
     if (value === "casting") {
       window.SerreWorkspace?.show("bible");
       window.SerreBible?.selectCategory?.("characters");

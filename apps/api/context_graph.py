@@ -22,6 +22,8 @@ from apps.api.graph_contract import (
 )
 from apps.api.project_explorer import ExplorerState, aggregate_state, inspect_shot_state
 from engine.narrative.episode_models import EpisodePackage, EpisodeStatus
+from engine.narrative.narrative_workflow import NarrativeWorkflowRegistry
+from engine.narrative.workflow_models import StageStatus
 from engine.world.bible import BibleRegistry
 from engine.world.catalog import EpisodeCatalog
 
@@ -107,6 +109,7 @@ class ContextGraphBuilder:
     def series(self) -> GraphDTO:
         summaries = self.catalog.list_episodes()
         bible = BibleRegistry(self.catalog.root).load()
+        narrative = NarrativeWorkflowRegistry(self.catalog.root).load()
         states: list[GraphRuntimeState] = []
         nodes: list[GraphNode] = [
             GraphNode(
@@ -116,18 +119,10 @@ class ContextGraphBuilder:
                 type_label="BIBLE · SÉRIE",
                 index="C",
                 structure=GraphStructure.OPTIONAL,
-                state=(
-                    GraphRuntimeState.DONE
-                    if bible.characters
-                    else GraphRuntimeState.BLOCKED
-                ),
-                status=(
-                    "Canon disponible" if bible.characters else "Casting à construire"
-                ),
+                state=(GraphRuntimeState.DONE if bible.characters else GraphRuntimeState.BLOCKED),
+                status=("Canon disponible" if bible.characters else "Casting à construire"),
                 position=GraphPosition(x=120, y=60),
-                description=(
-                    "Casting canonique partagé par tous les épisodes et tous les plans."
-                ),
+                description=("Casting canonique partagé par tous les épisodes et tous les plans."),
                 provider="Bible de série",
                 actions=[
                     self._workspace_action(
@@ -142,15 +137,87 @@ class ContextGraphBuilder:
                     ),
                 ],
                 metadata={"resource_scope": "series"},
-            )
+            ),
+            GraphNode(
+                id="series:director",
+                label="Director",
+                subtitle="Genre, ton, contraintes et objectifs",
+                type_label="NARRATIF · SÉRIE",
+                index="01",
+                state=self._series_stage_state(narrative.director.status),
+                status=narrative.director.status.value,
+                position=GraphPosition(x=120, y=250),
+                description="La direction créative qui contraint toute la série.",
+                provider="Atelier narratif",
+                actions=[
+                    self._workspace_action(
+                        "open-series-director", "Ouvrir le Director", "authoring-series"
+                    )
+                ],
+            ),
+            GraphNode(
+                id="series:screenwriter",
+                label="Scénariste",
+                subtitle="Arcs, progression et épisodes",
+                type_label="NARRATIF · SÉRIE",
+                index="02",
+                state=self._series_stage_state(
+                    narrative.screenwriter.status,
+                    blocked=narrative.director.status is not StageStatus.APPROVED,
+                ),
+                status=narrative.screenwriter.status.value,
+                position=GraphPosition(x=450, y=250),
+                description="Propose les arcs et épisodes sans les publier automatiquement.",
+                provider="Atelier narratif",
+                actions=[
+                    self._workspace_action(
+                        "open-series-screenwriter", "Ouvrir le Scénariste", "authoring-series"
+                    )
+                ],
+            ),
+            GraphNode(
+                id="series:validator",
+                label="Validateur général",
+                subtitle="Cohérence, chronologie et Bible",
+                type_label="GATE · HUMAINE",
+                index="03",
+                state=self._series_stage_state(
+                    narrative.validator.status,
+                    blocked=narrative.screenwriter.status is not StageStatus.APPROVED,
+                ),
+                status=narrative.validator.status.value,
+                position=GraphPosition(x=780, y=250),
+                description="Analyse et explique; aucun texte n’est modifié sans approbation.",
+                provider="Atelier narratif",
+                actions=[
+                    self._workspace_action(
+                        "open-series-validator", "Ouvrir la validation", "authoring-series"
+                    )
+                ],
+            ),
         ]
-        edges: list[GraphEdge] = []
+        edges: list[GraphEdge] = [
+            self._edge(
+                "series:cast",
+                "series:director",
+                "La Bible fournit les identités et règles canoniques au Director.",
+                optional=True,
+            ),
+            self._edge(
+                "series:director",
+                "series:screenwriter",
+                "Le brief approuvé cadre les arcs et propositions d’épisodes.",
+            ),
+            self._edge(
+                "series:screenwriter",
+                "series:validator",
+                "Le plan de série approuvé est audité avant toute publication.",
+            ),
+        ]
         previous_id: str | None = None
         for index, summary in enumerate(summaries):
             package = self.catalog.load(summary.id)
-            shot_states = [
-                self._shot_explorer_state(package, shot.id) for shot in package.shots
-            ]
+            shot_states = [self._shot_explorer_state(package, shot.id) for shot in package.shots]
             explorer_state = aggregate_state(
                 shot_states,
                 base=self._episode_base_state(package.episode.status),
@@ -173,7 +240,7 @@ class ContextGraphBuilder:
                     structure=GraphStructure.CONTAINER,
                     state=state,
                     status=self._state_label(state),
-                    position=GraphPosition(x=x, y=270),
+                    position=GraphPosition(x=x, y=500),
                     description=summary.logline,
                     provider="Catalogue narratif",
                     progress=progress,
@@ -201,11 +268,15 @@ class ContextGraphBuilder:
                 self._edge(
                     "series:cast",
                     node_id,
-                    (
-                        "Le casting de série contraint les voix et comportements "
-                        "de l’épisode."
-                    ),
+                    ("Le casting de série contraint les voix et comportements de l’épisode."),
                     optional=True,
+                )
+            )
+            edges.append(
+                self._edge(
+                    "series:validator",
+                    node_id,
+                    "La gate générale approuvée autorise la création de cet épisode.",
                 )
             )
             previous_id = node_id
@@ -221,12 +292,18 @@ class ContextGraphBuilder:
                     structure=GraphStructure.CONTAINER,
                     state=GraphRuntimeState.BLOCKED,
                     status="Aucun épisode",
-                    position=GraphPosition(x=490, y=270),
+                    position=GraphPosition(x=120, y=500),
                     description=(
-                        "Ajoute un épisode au contenu privé du projet pour commencer "
-                        "la production."
+                        "Ajoute un épisode au contenu privé du projet pour commencer la production."
                     ),
                     provider="Catalogue narratif",
+                    actions=[
+                        self._workspace_action(
+                            "create-first-episode",
+                            "Écrire la série ou créer un épisode",
+                            "authoring-series",
+                        )
+                    ],
                 )
             )
 
@@ -251,9 +328,7 @@ class ContextGraphBuilder:
 
     def episode(self, episode_id: str) -> GraphDTO:
         package = self.catalog.load(episode_id)
-        explorer_states = [
-            self._shot_explorer_state(package, shot.id) for shot in package.shots
-        ]
+        explorer_states = [self._shot_explorer_state(package, shot.id) for shot in package.shots]
         shot_states = [EXPLORER_RUNTIME[state] for state in explorer_states]
         episode_state = EXPLORER_RUNTIME[
             aggregate_state(
@@ -276,6 +351,11 @@ class ContextGraphBuilder:
                 provider="Contrat Episode",
                 progress=self._progress(shot_states, "Progression des plans"),
                 actions=[
+                    self._workspace_action(
+                        "author-episode",
+                        "Écrire ou découper l’épisode",
+                        "authoring-episode",
+                    ),
                     self._workspace_action("open-episode", "Voir l’épisode", "plan"),
                     self._validate_action(
                         "validate-episode-story",
@@ -371,9 +451,7 @@ class ContextGraphBuilder:
                 description="Assemblage final des plans, de la bande-son et des sous-titres.",
                 provider="FFmpeg",
                 actions=[
-                    self._workspace_action(
-                        "show-master", "Voir les sorties", "outputs"
-                    ),
+                    self._workspace_action("show-master", "Voir les sorties", "outputs"),
                     self._validate_action(
                         "validate-master",
                         "Contrôle final de cohérence",
@@ -435,10 +513,9 @@ class ContextGraphBuilder:
             generated_keyframes = max(1, generated_keyframes)
         has_keyframe = generated_keyframes > 0
         has_video = (output / "clip.mp4").is_file() or isinstance(assets.get("video"), dict)
-        has_voice = (
-            any((output / name).is_file() for name in ("voice.wav", "voice.mp3"))
-            or isinstance(assets.get("audio"), dict)
-        )
+        has_voice = any(
+            (output / name).is_file() for name in ("voice.wav", "voice.mp3")
+        ) or isinstance(assets.get("audio"), dict)
         has_music = self._has_music(package)
         has_master = (self.output_root / episode_id / "episode.mp4").is_file()
         stale_or_error = {
@@ -576,9 +653,7 @@ class ContextGraphBuilder:
                 "Le matériau narratif du plan.",
                 "Ollama ou fichier texte",
                 [
-                    self._workspace_action(
-                        "edit-story", "Éditer l’histoire", "plan#story-editor"
-                    ),
+                    self._workspace_action("edit-story", "Éditer l’histoire", "plan#story-editor"),
                     self._validate_action(
                         "validate-shot-story",
                         "Comparer à l’histoire",
@@ -657,15 +732,9 @@ class ContextGraphBuilder:
                 "Images maîtresses de début, milieu et fin pour guider l’animation.",
                 "SDXL ou images importées",
                 [
-                    self._generate_action(
-                        "generate-keyframes", "Générer les poses", "keyframe"
-                    ),
-                    self._workflow_action(
-                        "keyframe-workflow", "Voir le sous-workflow", "keyframe"
-                    ),
-                    self._import_action(
-                        "import-keyframe", "Importer une image", "keyframe"
-                    ),
+                    self._generate_action("generate-keyframes", "Générer les poses", "keyframe"),
+                    self._workflow_action("keyframe-workflow", "Voir le sous-workflow", "keyframe"),
+                    self._import_action("import-keyframe", "Importer une image", "keyframe"),
                 ],
                 slot="keyframe",
                 progress=GraphProgress(
@@ -685,15 +754,11 @@ class ContextGraphBuilder:
                 "Contrôle humain de la silhouette, du visage et de la composition.",
                 "Validation créative",
                 [
-                    self._workspace_action(
-                        "show-previews", "Voir les sorties", "outputs"
-                    ),
+                    self._workspace_action("show-previews", "Voir les sorties", "outputs"),
                     self._workflow_action(
                         "continuity-workflow", "Voir la continuité", "keyframe-guide"
                     ),
-                    self._generate_action(
-                        "reroll-keyframes", "Régénérer", "keyframe"
-                    ),
+                    self._generate_action("reroll-keyframes", "Régénérer", "keyframe"),
                 ],
             ),
             self._node_spec(
@@ -707,9 +772,7 @@ class ContextGraphBuilder:
                 "LTX Video ou vidéo importée",
                 [
                     self._generate_action("animate-shot", "Animer les poses", "video"),
-                    self._workflow_action(
-                        "video-workflow", "Voir le sous-workflow", "video"
-                    ),
+                    self._workflow_action("video-workflow", "Voir le sous-workflow", "video"),
                     self._import_action("import-video", "Importer une vidéo", "video"),
                 ],
                 slot="video",
@@ -750,9 +813,7 @@ class ContextGraphBuilder:
                 "Ordonne les clips et synchronise leur bande-son.",
                 "FFmpeg",
                 [
-                    self._workspace_action(
-                        "show-montage", "Voir les sorties", "outputs"
-                    ),
+                    self._workspace_action("show-montage", "Voir les sorties", "outputs"),
                     self._validate_action(
                         "validate-shot-master",
                         "Contrôle narratif final",
@@ -769,11 +830,7 @@ class ContextGraphBuilder:
                 "container",
                 "Épisode final avec image, son, sous-titres et manifeste.",
                 "Export vertical",
-                [
-                    self._workspace_action(
-                        "show-artifacts", "Voir la traçabilité", "outputs"
-                    )
-                ],
+                [self._workspace_action("show-artifacts", "Voir la traçabilité", "outputs")],
             ),
         ]
         nodes: list[GraphNode] = []
@@ -846,10 +903,7 @@ class ContextGraphBuilder:
     def _has_music(self, package: EpisodePackage) -> bool:
         episode_id = package.episode.id
         private_episode = (
-            self.catalog.root
-            / "episodes"
-            / f"season-{package.episode.season:02d}"
-            / episode_id
+            self.catalog.root / "episodes" / f"season-{package.episode.season:02d}" / episode_id
         )
         return (private_episode / "music.wav").is_file() or (
             self.output_root / episode_id / "music.wav"
@@ -876,10 +930,29 @@ class ContextGraphBuilder:
         return payload if isinstance(payload, dict) else {}
 
     @staticmethod
+    def _series_stage_state(
+        status: StageStatus,
+        *,
+        blocked: bool = False,
+    ) -> GraphRuntimeState:
+        if blocked:
+            return GraphRuntimeState.BLOCKED
+        if status is StageStatus.APPROVED:
+            return GraphRuntimeState.DONE
+        if status is StageStatus.DRAFT:
+            return GraphRuntimeState.READY
+        return GraphRuntimeState.IDLE
+
+    @staticmethod
     def _episode_base_state(status: EpisodeStatus) -> ExplorerState:
         mapping: dict[EpisodeStatus, ExplorerState] = {
+            EpisodeStatus.IDEA: "idea",
+            EpisodeStatus.WRITING: "draft",
+            EpisodeStatus.REVIEW: "review",
             EpisodeStatus.DRAFT: "draft",
             EpisodeStatus.APPROVED: "approved",
+            EpisodeStatus.BREAKDOWN: "approved",
+            EpisodeStatus.PRODUCTION: "production",
             EpisodeStatus.FINAL: "complete",
         }
         return mapping[status]
@@ -892,9 +965,7 @@ class ContextGraphBuilder:
         items = list(states)
         completed = sum(state is GraphRuntimeState.DONE for state in items)
         percent = (
-            round(sum(RUNTIME_PROGRESS[state] for state in items) / len(items))
-            if items
-            else 0
+            round(sum(RUNTIME_PROGRESS[state] for state in items) / len(items)) if items else 0
         )
         return GraphProgress(
             completed=completed,

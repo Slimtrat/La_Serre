@@ -127,13 +127,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     app.include_router(
-        create_episode_router(catalog, lambda: current_settings().output_dir)
+        create_episode_router(catalog, lambda: current_settings().output_dir, current_settings)
     )
-    app.include_router(
-        create_context_graph_router(catalog, lambda: current_settings().output_dir)
-    )
+    app.include_router(create_context_graph_router(catalog, lambda: current_settings().output_dir))
     app.include_router(create_coherence_router(current_settings, catalog))
-    app.include_router(create_narrative_router(current_settings, assets))
+    app.include_router(create_narrative_router(current_settings, assets, catalog))
     app.include_router(create_editorial_router(current_settings))
     app.include_router(
         create_demo_router(lambda: current_settings().output_dir, notifications)
@@ -329,9 +327,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         }
         models = [{**model, **download_status.get(str(model["filename"]), {})} for model in models]
         models_ready = all(
-            bool(model["installed"])
-            if comfyui
-            else model.get("state") == "installed"
+            bool(model["installed"]) if comfyui else model.get("state") == "installed"
             for model in models
         )
         nodes_ready = not missing_nodes
@@ -557,9 +553,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if filename not in RUN_FILES:
             raise HTTPException(status_code=404, detail="History media not found")
         try:
-            path = RunHistory(current_settings().output_dir).media_path(
-                shot_id, run_id, filename
-            )
+            path = RunHistory(current_settings().output_dir).media_path(shot_id, run_id, filename)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail="History media not found") from exc
         if not path.is_file():

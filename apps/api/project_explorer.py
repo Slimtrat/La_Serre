@@ -175,9 +175,7 @@ def progress_for(states: list[ExplorerState]) -> ExplorerProgress:
         "completed": counts["complete"],
         "total": len(states),
         "percent": (
-            round(sum(STATE_PROGRESS[state] for state in states) / len(states))
-            if states
-            else 0
+            round(sum(STATE_PROGRESS[state] for state in states) / len(states)) if states else 0
         ),
         "states": dict(sorted(counts.items())),
     }
@@ -185,8 +183,13 @@ def progress_for(states: list[ExplorerState]) -> ExplorerProgress:
 
 def _episode_base_state(status: EpisodeStatus) -> ExplorerState:
     mapping: dict[EpisodeStatus, ExplorerState] = {
+        EpisodeStatus.IDEA: "idea",
+        EpisodeStatus.WRITING: "draft",
+        EpisodeStatus.REVIEW: "review",
         EpisodeStatus.DRAFT: "draft",
         EpisodeStatus.APPROVED: "approved",
+        EpisodeStatus.BREAKDOWN: "approved",
+        EpisodeStatus.PRODUCTION: "production",
         EpisodeStatus.FINAL: "complete",
     }
     return mapping[status]

@@ -119,7 +119,7 @@ async function loadEpisode(episodeId) {
   selectEpisodeShot(episode.shot_order[0]);
 }
 
-async function initEpisodeCatalog() {
+async function initEpisodeCatalog(preferredEpisodeId = null) {
   const listing = await episodeRequest("/api/episodes");
   const select = document.querySelector("#episode-select");
   select.replaceChildren();
@@ -136,6 +136,10 @@ async function initEpisodeCatalog() {
   }
   for (const episode of listing.episodes) {
     select.append(new Option(episode.id + " — " + episode.title, episode.id));
+  }
+  select.disabled = false;
+  if (preferredEpisodeId && listing.episodes.some((episode) => episode.id === preferredEpisodeId)) {
+    select.value = preferredEpisodeId;
   }
   if (!catalogBound) {
     select.addEventListener("change", () => loadEpisode(select.value));
@@ -173,4 +177,10 @@ window.addEventListener("studio:episode-reload", () => {
   loadEpisode(loadedEpisode.episode.id).catch((error) => {
     episodeStudio.notify(error.message, true);
   });
+});
+window.SerreEpisode = Object.freeze({
+  openCasting,
+  closeCasting,
+  refresh: initEpisodeCatalog,
+  current: () => loadedEpisode,
 });
