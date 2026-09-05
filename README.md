@@ -1,1165 +1,159 @@
-# La Serre des Venins / The Venom Greenhouse
+# La Serre des Venins
 
-> **Studio local et hybride de production narrative générative.**  
-> **Local-first hybrid studio for generative narrative production.**
+> Un studio local-first pour écrire, mettre en scène et produire des séries génératives sans abandonner la direction créative à l’IA.
 
-[Français](#français) · [English](#english)
+[![Version](https://img.shields.io/badge/version-0.2.13-8fcf9d)](apps/version.py)
+[![Python](https://img.shields.io/badge/Python-3.12%2B-3776ab)](pyproject.toml)
+[![Licence](https://img.shields.io/badge/licence-AGPL--3.0--or--later-a387c4)](LICENSE)
+[![Plateforme](https://img.shields.io/badge/desktop-Windows-4f8fcc)](docs/desktop-lifecycle.md)
 
----
+**Statut : alpha active.** Le cœur local, l’application Windows, la Bible canonique, l’écriture assistée, les graphes et la chaîne de production multi-plans fonctionnent déjà. Les modèles lourds restent externes et le verrouillage d’identité sur plusieurs épisodes est le prochain grand jalon.
 
-# Français
+[English overview](README.en.md) · [Démarrage](#démarrage-rapide) · [Fonctions actuelles](#ce-qui-fonctionne-aujourdhui) · [Documentation](#documentation) · [Roadmap](docs/roadmap.md) · [Contribuer](CONTRIBUTING.md) · [Sécurité](SECURITY.md) · [Licence](LICENSE)
 
-## Vision
+## Pourquoi La Serre ?
 
-**La Serre des Venins** est un studio local de production narrative assistée par IA.
+Générer une belle image est devenu accessible. Produire une série cohérente reste difficile : il faut maintenir les personnages, les lieux, les relations, les intentions de jeu, les dialogues, les raccords visuels, les modèles utilisés et les décisions humaines sur des dizaines d’artefacts.
 
-L'objectif n'est pas de construire un simple générateur vidéo, mais un **IDE de production narrative générative** où une série peut être conçue, découpée, produite et validée de manière organique.
+La Serre traite cette difficulté comme un problème de **production**, pas comme une succession de prompts.
 
-La structure cible est hiérarchique :
-
-```text
-Projet
-└── Série
-    ├── Episode
-    │   ├── Plan
-    │   ├── Plan
-    │   └── Plan
-    └── Episode
+```mermaid
+flowchart LR
+    I[Idée] --> B[Bible canonique]
+    B --> E[Écriture de l'épisode]
+    E --> D[Découpage en plans]
+    D --> K[3 poses cohérentes]
+    K --> V[Mouvement vidéo]
+    V --> S[Voix, musique, SFX]
+    S --> X[Montage et export]
+    B -. impact .-> D
+    D -. validation humaine .-> K
 ```
 
-Chaque niveau possède son propre graphe :
+Le contrat produit est simple :
 
-```text
-Série
-Prompt / Texte
-      ↓
-Director / Showrunner
-      ↓
-Scénariste
-      ↓
-Validateur général
-      ↓
-Episodes
-```
+> **L’IA propose. L’humain édite, valide et reste propriétaire de la décision.**
 
-```text
-Episode
-Source
-  ↓
-Scénariste épisode
-  ↓
-Validation
-  ↓
-Découpage
-  ↓
-Plans
-```
+Chaque étape peut utiliser un modèle local, un fichier glissé-déposé ou une saisie manuelle. Aucun artefact approuvé ne doit être remplacé silencieusement.
 
-```text
-Plan
-Histoire / Prompt
-      ↓
-Director Shot
-      ↓
-Shot JSON
-      ↓
-Keyframes
-      ↓
-Validation humaine
-      ↓
-Mouvement
-      ↓
-Voix / Musique / SFX
-      ↓
-Montage / Export
-```
+## Ce qui fonctionne aujourd’hui
 
-Le principe fondamental est simple :
+| Domaine | Capacité disponible en `0.2.13` |
+|---|---|
+| Parcours créatif | Chemin guidé en six étapes, graphe navigable, caméra automatique et retour vers les objets métier |
+| Écriture | Director, scénariste et validateur via Ollama, suggestions contextuelles, dialogues et intentions de jeu |
+| Bible | Personnages, lieux, relations, direction artistique, règles, arcs et secrets versionnés |
+| Échange IA | Export/import JSON strict et kit permettant à ChatGPT de transformer une conversation en Bible |
+| Continuité visuelle | Templates générés par le code pour FLUX, SDXL, poses adjacentes et animation LTX à trois guides |
+| Production hybride | Texte, image, son et vidéo peuvent venir d’un modèle, d’un import ou d’un asset existant |
+| Contrôle humain | Gates explicites, provenance, historique, variantes, restauration et signalement des impacts |
+| Montage | Production multi-plans avec voix, musique, ambiance, sous-titres et assemblage FFmpeg |
+| Exploitation locale | Projets isolés, stockage configurable, queue de production et gestion d’Ollama/ComfyUI |
+| Desktop | Application Windows, fonctionnement en arrière-plan, notifications et build portable |
 
-> **L'IA propose. L'utilisateur reste propriétaire du contenu et de la décision.**
+La démo express fonctionne sans GPU et permet de comprendre le parcours. La qualité image/vidéo finale demande ComfyUI et les modèles choisis par l’utilisateur.
 
-À chaque étape, il doit toujours être possible de :
+## Démarrage rapide
 
-- générer localement ;
-- écrire ou modifier manuellement ;
-- utiliser son propre prompt ;
-- importer un texte, une image, un son ou une vidéo ;
-- changer de modèle ;
-- restaurer une version précédente ;
-- valider explicitement avant propagation.
+### 1. Installer le Studio
 
----
-
-## Pourquoi ce projet ?
-
-Les outils génératifs actuels excellent souvent sur une étape isolée :
-
-- génération de texte ;
-- image ;
-- vidéo ;
-- voix ;
-- montage.
-
-Le problème apparaît lorsqu'il faut conserver :
-
-- la cohérence narrative ;
-- les identités visuelles ;
-- les relations entre personnages ;
-- la continuité entre épisodes ;
-- la traçabilité des prompts et modèles ;
-- les variantes ;
-- les validations humaines ;
-- les dépendances entre artefacts.
-
-La Serre des Venins cherche à fournir cette **couche d'orchestration créative locale**.
-
----
-
-## Philosophie du Studio
-
-### Local-first
-
-Le Studio s'appuie principalement sur :
-
-- **Ollama** pour les modèles narratifs locaux ;
-- **ComfyUI** pour les workflows image / vidéo ;
-- **LTX Video** pour l'animation ;
-- **FFmpeg** pour la post-production ;
-- **FastAPI** pour l'API locale ;
-- **WebView2 / pywebview** pour l'application desktop Windows.
-
-Aucun modèle lourd n'est embarqué directement dans le dépôt.
-
-### Hybride
-
-Aucune étape ne doit dépendre exclusivement d'un moteur IA.
-
-```text
-IA locale
-   OU
-Import externe
-   OU
-Edition manuelle
-   OU
-Asset déjà existant
-```
-
-### Human-in-the-loop
-
-Les validations humaines sont des éléments structurants du pipeline, pas des exceptions.
-
----
-
-## Navigation cible
-
-Le Studio évolue vers une navigation par **objets narratifs** plutôt que par écrans techniques.
-
-```text
-Projet principal
-/
-Série
-/
-Saison 1
-/
-E01
-/
-S03
-```
-
-La barre principale doit progressivement devenir :
-
-```text
-[Projet ▾]   Série / Saison 1 / E01 / S03      Assets  Journal  ?  ⚙
-```
-
-Les anciens menus globaux du type :
-
-```text
-Production | Plan | Sorties | Réglages
-```
-
-sont amenés à disparaître au profit d'une navigation contextuelle.
-
----
-
-## Graphe organique
-
-Le graphe est destiné à devenir le langage principal du Studio.
-
-### Flux principal
-
-Les dépendances obligatoires utilisent une sémantique **bleue** :
-
-```text
-Node actif
-   ↓
-Propagation bleue
-   ↓
-Prochaine étape requise
-```
-
-### Flux optionnel
-
-Les branches non bloquantes utilisent une sémantique **orange** :
-
-```text
-Voix
-Musique
-Variantes
-QA secondaire
-Références supplémentaires
-```
-
-### États
-
-Les nodes pourront exprimer notamment :
-
-```text
-idle
-ready
-active
-done
-blocked
-stale
-error
-```
-
-Le but est de comprendre en quelques secondes :
-
-- où se trouve le travail actif ;
-- ce qui est obligatoire ;
-- ce qui est optionnel ;
-- le sens de propagation ;
-- les objets essentiels du projet.
-
----
-
-## Bible narrative
-
-Une Bible canonique doit devenir la source de vérité du projet :
-
-```text
-Bible
-├── Personnages
-├── Relations
-├── Lieux
-├── Direction artistique
-├── Ton
-├── Règles du monde
-├── Secrets
-└── Arcs narratifs
-```
-
-Les Episodes et les Plans référencent ces objets au lieu de recréer leur propre version.
-
-Exemple :
-
-```text
-Belladone
-   ↓
-Episode E01
-   ↓
-Plan S03
-```
-
-Une modification de Belladone peut alors être propagée comme un **impact potentiel** sur les artefacts dépendants.
-
----
-
-## Dépendances et artefacts obsolètes
-
-Le projet est pensé comme une chaîne de dépendances :
-
-```text
-Character
-   ↓
-Episode
-   ↓
-Shot
-   ↓
-Keyframe
-   ↓
-Video
-```
-
-Si un objet amont change, le Studio doit pouvoir signaler :
-
-```text
-7 artefacts potentiellement obsolètes.
-```
-
-Sans régénération automatique.
-
-L'utilisateur choisit ensuite quoi mettre à jour.
-
----
-
-## Etat actuel
-
-Le Studio possède déjà :
-
-- un pipeline texte → Shot JSON ;
-- un Director basé sur Ollama ;
-- un pipeline ComfyUI pour les images ;
-- un pipeline vidéo LTX ;
-- des artefacts traçables ;
-- un catalogue local d'épisodes ;
-- une application desktop Windows ;
-- une API FastAPI ;
-- une logique de génération asynchrone ;
-- une base de graphe de production.
-
-Le chantier actuel consiste à faire évoluer cette base vers une architecture :
-
-```text
-Série → Episode → Plan
-```
-
-avec graphes imbriqués, Bible canonique, versioning, dépendances et production multi-plans.
-
----
-
-## Installation développeur
-
-### Prérequis
-
-- Python 3.12+
-- Git
-- ComfyUI
-- Ollama
-- un modèle Ollama installé
-
-### Installation
+Prérequis : **Windows**, **Git** et **Python 3.12 ou supérieur**.
 
 ```powershell
-git clone https://github.com/Slimtrat/skibidy-plant.git
-cd skibidy-plant
+git clone https://github.com/Slimtrat/La_Serre.git
+cd La_Serre
 
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-
 python -m pip install -e ".[dev]"
 Copy-Item .env.example .env
-
-pytest
 ```
 
-### Lancer le Studio
+### 2. Lancer l’interface locale
 
 ```powershell
 python -m tools.run_studio
 ```
 
-### Démo express sans GPU
+Le navigateur ouvre le Studio sur `http://127.0.0.1:8000`. Utilisez **Outils → Démo express** pour tester le parcours sans ComfyUI.
 
-Le menu **Outils → Démo** ouvre une mini-production isolée du pipeline ComfyUI.
-Décrivez une histoire, puis utilisez **Laisser l’IA imaginer** sur chacun des cinq
-maillons : histoire, découpage, trois images, son et mini-vidéo. Chaque proposition
-doit être validée ou refusée avant que la suivante soit accessible. Un refus
-invalide les sorties qui en dépendent, tandis que la barre d’activité expose la
-progression et le journal complet.
+### 3. Activer la génération locale complète
 
-La démo produit localement un MP4 d’environ cinq secondes en 480 × 270 avec
-FFmpeg. Son rendu 0 GPU sert à expliquer la chaîne et les contrôles humains ; il
-ne remplace pas les workflows ComfyUI destinés à la qualité finale.
+1. installez et démarrez [Ollama](https://ollama.com/) ;
+2. ouvrez **Réglages → Modèles narratifs** pour installer le modèle recommandé ;
+3. installez et démarrez [ComfyUI](https://github.com/comfyanonymous/ComfyUI) ;
+4. ouvrez **Réglages → ComfyUI & workflows** puis créez les workflows ;
+5. téléchargez uniquement les modèles listés dans **Modèles image & vidéo**.
 
-### Application desktop
+Les poids de modèles ne sont jamais inclus dans le dépôt ni téléchargés silencieusement.
+
+### Application Windows
 
 ```powershell
 python -m pip install -e ".[desktop]"
 python -m apps.desktop
 ```
 
----
+La construction de l’exécutable et de l’installeur est documentée par le [workflow Windows](.github/workflows/windows-desktop.yml).
 
-## Pipeline actuel
-
-```text
-source texte
-    ↓
-Ollama Director
-    ↓
-Shot JSON validé
-    ↓
-3 poses ComfyUI
-    ↓
-validation humaine
-    ↓
-LTX multi-guides
-    ↓
-clip.mp4
-    ↓
-voix + musique + cadres + sous-titres
-    ↓
-episode.mp4
-```
-
-Chaque étape reste remplaçable par un artefact externe.
-
-### Documentation de production
-
-- [`docs/episode-production-contract.md`](docs/episode-production-contract.md) : contrat entre scénario, jeu, poses, cadre fantasy, son et sous-titres.
-- [`docs/narrative-coherence.md`](docs/narrative-coherence.md) : règles de cohérence, comité IA local depuis les nœuds métier et gate humaine.
-
----
-
-## Structure locale
-
-Le contenu créatif privé est séparé du code :
+## Architecture en une minute
 
 ```text
-.private/
-├── world/
-│   ├── characters/
-│   └── locations/
-└── episodes/
+apps/       API FastAPI, interface web locale et shell desktop
+engine/     contrats narratifs, Bible, génération et production
+workflows/  recettes ComfyUI générées et templates versionnés
+tools/      commandes de lancement, génération et packaging
+tests/      contrats unitaires, API, intégration et smoke tests navigateur
+docs/       décisions d’architecture et guides spécialisés
 ```
 
-`.private/` est ignoré par Git.
+Le domaine ne dépend pas des numéros de nœuds ComfyUI. Les profils traduisent des champs sémantiques comme `prompt`, `seed` ou `reference_image` vers un graphe généré par le code. Les artefacts externes et générés suivent les mêmes contrats.
 
-L'objectif à terme est de faire évoluer cette organisation vers une structure plus complète :
+## Documentation
 
-```text
-project/
-├── series/
-├── bible/
-├── seasons/
-│   └── S01/
-│       ├── E001/
-│       └── E002/
-└── output/
-```
+| Je veux… | Lire |
+|---|---|
+| comprendre les frontières du code | [Architecture](docs/architecture.md) |
+| voir la vision court, moyen et long terme | [Roadmap produit](docs/roadmap.md) |
+| comprendre le pipeline remplaçable | [Pipeline hybride](docs/hybrid-pipeline.md) |
+| écrire une série et ses épisodes | [Atelier narratif](docs/narrative-authoring.md) |
+| comprendre les contrôles de cohérence | [Cohérence narrative](docs/narrative-coherence.md) |
+| échanger une Bible avec ChatGPT | [Format d’échange de Bible](docs/bible-exchange.md) |
+| installer et relier ComfyUI | [Guide ComfyUI](docs/comfyui.md) |
+| choisir un template de continuité | [Templates de workflows](docs/workflow-templates.md) |
+| connaître le contrat d’un épisode final | [Contrat de production](docs/episode-production-contract.md) |
+| comprendre versions et variantes | [Historique éditorial](docs/editorial-history.md) |
+| configurer les dossiers de projets | [Stockage des projets](docs/project-storage.md) |
+| utiliser le mode desktop | [Cycle de vie Windows](docs/desktop-lifecycle.md) |
 
----
+## Développer et vérifier
 
-## Collaboration
-
-Le projet est jeune et l'architecture évolue rapidement.
-
-Les contributions sont particulièrement utiles sur les sujets suivants :
-
-### Front / UX
-
-- graphe interactif ;
-- nodes et edges animés ;
-- navigation hiérarchique ;
-- breadcrumb ;
-- Project Explorer ;
-- Asset Drawer ;
-- inspector contextuel ;
-- visualisation de dépendances.
-
-### Backend
-
-- modèles Series / Episode / Shot ;
-- API narrative ;
-- dependency graph ;
-- versioning ;
-- queue de production ;
-- gestion des artefacts ;
-- validation de continuité.
-
-### IA narrative
-
-- prompts Director / Showrunner ;
-- scénariste de série ;
-- scénariste d'épisode ;
-- validateur de cohérence ;
-- résumé d'état narratif ;
-- gestion des relations et arcs.
-
-### Génération média
-
-- ComfyUI ;
-- workflows SDXL ;
-- LTX Video ;
-- continuité visuelle ;
-- références personnages ;
-- TTS ;
-- musique ;
-- sound design ;
-- FFmpeg.
-
-### Tests / architecture
-
-- contrats de graphe ;
-- tests API ;
-- validation Pydantic ;
-- migration des modèles ;
-- tests d'intégration ;
-- documentation.
-
----
-
-## Comment contribuer
-
-### 1. Regarder les issues
-
-Les grands chantiers sont déjà découpés dans les issues GitHub.
-
-Quelques points d'entrée :
-
-- **#1** Navigation Série → Episode → Plan
-- **#2** Bible canonique
-- **#3** Director → Scénariste → Validateur
-- **#4** Création complète d'épisodes
-- **#5** Graphe dynamique multi-scope
-- **#6** Nouvelle navigation UX
-- **#7** Onboarding interactif
-- **#8** Versioning et variantes
-- **#9** Dépendances / stale
-- **#10** Asset Drawer
-- **#11** Queue de production
-- **#12** Project Explorer
-- **#13** Flux organiques bleu / orange
-
-Issues :
-https://github.com/Slimtrat/skibidy-plant/issues
-
-### 2. Créer une branche
-
-```bash
-git checkout -b feature/nom-de-la-feature
-```
-
-### 3. Garder les PR ciblées
-
-Une PR devrait idéalement :
-
-- traiter une seule responsabilité ;
-- éviter les refactors non liés ;
-- inclure des tests lorsque pertinent ;
-- expliquer les décisions d'architecture ;
-- préserver les workflows existants.
-
-### 4. Vérifier avant PR
-
-```bash
+```powershell
+python -m pip install -e ".[dev,desktop,build]"
+ruff check apps engine tools tests
+mypy apps engine tools
 pytest
 ```
 
----
+Les pull requests doivent préserver quatre invariants : édition manuelle possible, validation humaine explicite, provenance des artefacts et absence de dépendance cachée à un modèle particulier. Le guide complet se trouve dans [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Principes de contribution
+## Données privées et modèles tiers
 
-Lorsqu'une fonctionnalité est ajoutée :
+- `.private/`, `projects/`, `output/`, `logs/` et `workflows/local/` sont ignorés par Git ;
+- ne publiez jamais une Bible, un modèle, un prompt privé ou un média sans disposer des droits nécessaires ;
+- Ollama, ComfyUI, FFmpeg et les modèles téléchargés conservent leurs propres licences ;
+- l’API écoute sur localhost par défaut et n’est pas conçue pour être exposée directement à Internet.
 
-1. **préserver la possibilité d'édition manuelle** ;
-2. **ne jamais forcer un moteur IA particulier** ;
-3. **ne jamais régénérer automatiquement un artefact sans décision utilisateur** ;
-4. **conserver la provenance des artefacts** ;
-5. **éviter les dépendances implicites** ;
-6. **préférer les petits modules aux fichiers monolithiques** ;
-7. **maintenir la compatibilité du pipeline existant lorsque possible**.
+Consultez [SECURITY.md](SECURITY.md) avant de signaler une vulnérabilité ou de déployer le Studio sur un réseau.
 
----
+## Roadmap et ambition
 
-## Roadmap
+Le prochain test produit n’est pas « une génération de plus », mais **trois épisodes cohérents produits sans bricoler de JSON**. La suite vise un véritable système d’exploitation créatif : continuité canonique, moteurs interchangeables, production distribuée optionnelle, formats sociaux, collaboration et écosystème de recettes.
 
-### Phase 1 — Navigation narrative
-
-```text
-Série
-  ↓
-Episode
-  ↓
-Plan
-```
-
-### Phase 2 — Bible et continuité
-
-```text
-Characters
-Relations
-Locations
-Story state
-```
-
-### Phase 3 — Graphe dynamique
-
-```text
-Graph DTO
-Scopes
-Containers
-Focus paths
-```
-
-### Phase 4 — Production robuste
-
-```text
-Versioning
-Stale dependencies
-Asset Drawer
-Production queue
-```
-
-### Phase 5 — Studio complet
-
-```text
-Narration
-Image
-Video
-Voice
-Music
-Montage
-Export
-```
-
----
+La vision détaillée, ses critères d’acceptation et ses limites sont dans la [roadmap produit](docs/roadmap.md). Les propositions se discutent dans les [issues GitHub](https://github.com/Slimtrat/La_Serre/issues).
 
 ## Licence
 
-Le dépôt ne définit pas encore de licence logicielle explicite.
+Le code est distribué sous **GNU Affero General Public License v3.0 ou ultérieure** (`AGPL-3.0-or-later`). Vous pouvez l’utiliser, l’étudier et le modifier ; si vous distribuez une version modifiée ou la rendez accessible comme service réseau, vous devez mettre le code source correspondant à disposition selon les termes de la licence.
 
-Avant une ouverture large aux contributions externes et à la réutilisation du code, une licence devra être choisie et ajoutée au dépôt.
-
----
-
-# English
-
-## Vision
-
-**The Venom Greenhouse** is a local-first AI-assisted narrative production studio.
-
-The goal is not to build another video generator. The long-term objective is a **generative narrative production IDE** where a series can be designed, structured, produced and reviewed through an organic workflow.
-
-The target hierarchy is:
-
-```text
-Project
-└── Series
-    ├── Episode
-    │   ├── Shot
-    │   ├── Shot
-    │   └── Shot
-    └── Episode
-```
-
-Each level has its own graph.
-
-### Series graph
-
-```text
-Prompt / Text
-      ↓
-Director / Showrunner
-      ↓
-Writer
-      ↓
-General Reviewer
-      ↓
-Episodes
-```
-
-### Episode graph
-
-```text
-Episode source
-      ↓
-Episode Writer
-      ↓
-Review
-      ↓
-Breakdown
-      ↓
-Shots
-```
-
-### Shot graph
-
-```text
-Story / Prompt
-      ↓
-Shot Director
-      ↓
-Shot JSON
-      ↓
-Keyframes
-      ↓
-Human Review
-      ↓
-Motion
-      ↓
-Voice / Music / SFX
-      ↓
-Edit / Export
-```
-
-The core rule is:
-
-> **AI proposes. The user owns the content and the decision.**
-
-Every stage should support:
-
-- local generation;
-- manual editing;
-- custom prompts;
-- imported text, images, audio or video;
-- model overrides;
-- previous-version restoration;
-- explicit human validation.
-
----
-
-## Why this project?
-
-Most generative tools are strong at one isolated step:
-
-- text;
-- image;
-- video;
-- voice;
-- editing.
-
-The difficult part is maintaining:
-
-- narrative continuity;
-- visual identity;
-- character relationships;
-- cross-episode consistency;
-- prompt and model provenance;
-- variants;
-- human approval;
-- dependencies between generated artifacts.
-
-The Venom Greenhouse aims to provide that **local creative orchestration layer**.
-
----
-
-## Studio philosophy
-
-### Local-first
-
-The Studio currently relies mainly on:
-
-- **Ollama** for local narrative models;
-- **ComfyUI** for image/video workflows;
-- **LTX Video** for animation;
-- **FFmpeg** for post-production;
-- **FastAPI** for the local API;
-- **WebView2 / pywebview** for the Windows desktop shell.
-
-Large AI models are not bundled in this repository.
-
-### Hybrid by design
-
-No production stage should depend exclusively on one AI engine.
-
-```text
-Local AI
-   OR
-External import
-   OR
-Manual editing
-   OR
-Existing project asset
-```
-
-### Human-in-the-loop
-
-Human reviews are part of the architecture, not an edge case.
-
----
-
-## Target navigation
-
-The Studio is moving from technical screens toward **narrative object navigation**.
-
-```text
-Main Project
-/
-Series
-/
-Season 1
-/
-E01
-/
-S03
-```
-
-The top bar should progressively move toward:
-
-```text
-[Project ▾]   Series / Season 1 / E01 / S03      Assets  Journal  ?  ⚙
-```
-
-Global tabs such as:
-
-```text
-Production | Shot | Outputs | Settings
-```
-
-should eventually be replaced by contextual navigation.
-
----
-
-## Organic graph language
-
-The graph is intended to become the main language of the Studio.
-
-### Core flow
-
-Required dependencies use a **blue visual language**.
-
-```text
-Active node
-    ↓
-Blue propagation
-    ↓
-Next required node
-```
-
-### Optional flow
-
-Non-blocking branches use an **orange visual language**:
-
-```text
-Voice
-Music
-Variants
-Secondary QA
-Additional references
-```
-
-### Runtime states
-
-Nodes may expose states such as:
-
-```text
-idle
-ready
-active
-done
-blocked
-stale
-error
-```
-
-The graph should make it possible to understand in a few seconds:
-
-- what is currently active;
-- what is required;
-- what is optional;
-- propagation direction;
-- the essential objects of the current scope.
-
----
-
-## Narrative Bible
-
-A canonical Bible will become the project's source of truth:
-
-```text
-Bible
-├── Characters
-├── Relationships
-├── Locations
-├── Art direction
-├── Tone
-├── World rules
-├── Secrets
-└── Narrative arcs
-```
-
-Episodes and Shots should reference these objects instead of recreating their own inconsistent copies.
-
----
-
-## Dependencies and stale artifacts
-
-The project is treated as a dependency chain:
-
-```text
-Character
-   ↓
-Episode
-   ↓
-Shot
-   ↓
-Keyframe
-   ↓
-Video
-```
-
-When an upstream object changes, downstream artifacts may become stale.
-
-The Studio should report the impact without automatically regenerating anything.
-
----
-
-## Current state
-
-The Studio already contains:
-
-- a text → Shot JSON pipeline;
-- an Ollama-based Director;
-- ComfyUI image workflows;
-- LTX video generation;
-- traceable artifacts;
-- a local episode catalog;
-- a Windows desktop application;
-- a FastAPI backend;
-- asynchronous generation jobs;
-- an interactive production graph foundation.
-
-The current architecture work is focused on evolving this base toward:
-
-```text
-Series → Episode → Shot
-```
-
-with nested graphs, a canonical Bible, versioning, dependency tracking and multi-shot production.
-
----
-
-## Developer setup
-
-### Requirements
-
-- Python 3.12+
-- Git
-- ComfyUI
-- Ollama
-- at least one installed Ollama model
-
-### Setup
-
-```powershell
-git clone https://github.com/Slimtrat/skibidy-plant.git
-cd skibidy-plant
-
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-
-python -m pip install -e ".[dev]"
-Copy-Item .env.example .env
-
-pytest
-```
-
-### Run the Studio
-
-```powershell
-python -m tools.run_studio
-```
-
-### Desktop application
-
-```powershell
-python -m pip install -e ".[desktop]"
-python -m apps.desktop
-```
-
----
-
-## Current production pipeline
-
-```text
-source text
-    ↓
-Ollama Director
-    ↓
-validated Shot JSON
-    ↓
-3 ComfyUI poses
-    ↓
-human review
-    ↓
-LTX multi-guide animation
-    ↓
-clip.mp4
-    ↓
-voice + music + frames + subtitles
-    ↓
-episode.mp4
-```
-
-Every stage can be replaced with an external artifact.
-
-### Production documentation
-
-- [`docs/episode-production-contract.md`](docs/episode-production-contract.md): contract between story, performance, poses, fantasy frame, sound and subtitles.
-- [`docs/narrative-coherence.md`](docs/narrative-coherence.md): consistency rules, local AI committee from business nodes and human gate.
-
----
-
-## Collaboration
-
-The project is still young and its architecture is evolving quickly.
-
-Contributions are particularly welcome in the following areas.
-
-### Frontend / UX
-
-- interactive graph;
-- animated nodes and edges;
-- hierarchical navigation;
-- breadcrumb navigation;
-- Project Explorer;
-- Asset Drawer;
-- contextual inspector;
-- dependency visualization.
-
-### Backend
-
-- Series / Episode / Shot models;
-- narrative APIs;
-- dependency graph;
-- versioning;
-- production queue;
-- artifact management;
-- continuity validation.
-
-### Narrative AI
-
-- Director / Showrunner prompts;
-- series writer;
-- episode writer;
-- consistency reviewer;
-- narrative-state summaries;
-- character relationships and arcs.
-
-### Media generation
-
-- ComfyUI;
-- SDXL workflows;
-- LTX Video;
-- visual continuity;
-- character references;
-- TTS;
-- music;
-- sound design;
-- FFmpeg.
-
-### Tests / architecture
-
-- graph contracts;
-- API tests;
-- Pydantic validation;
-- model migrations;
-- integration tests;
-- documentation.
-
----
-
-## How to contribute
-
-### 1. Start with the issues
-
-The main architectural work is already split into GitHub issues.
-
-Good entry points include:
-
-- **#1** Series → Episode → Shot navigation
-- **#2** Canonical Bible
-- **#3** Director → Writer → General Reviewer
-- **#4** Complete Episode creation workflow
-- **#5** Dynamic multi-scope graph
-- **#6** Object-oriented navigation UX
-- **#7** Interactive onboarding
-- **#8** Versioning and variants
-- **#9** Dependency / stale tracking
-- **#10** Asset Drawer
-- **#11** Production queue
-- **#12** Project Explorer
-- **#13** Organic blue/orange graph propagation
-
-Issues:
-https://github.com/Slimtrat/skibidy-plant/issues
-
-### 2. Create a branch
-
-```bash
-git checkout -b feature/feature-name
-```
-
-### 3. Keep pull requests focused
-
-A pull request should ideally:
-
-- solve one responsibility;
-- avoid unrelated refactors;
-- include tests when relevant;
-- explain architectural decisions;
-- preserve existing workflows.
-
-### 4. Run tests
-
-```bash
-pytest
-```
-
----
-
-## Contribution principles
-
-When adding a feature:
-
-1. **preserve manual editing paths**;
-2. **never force a specific AI engine**;
-3. **never automatically regenerate artifacts without user intent**;
-4. **keep artifact provenance**;
-5. **avoid implicit dependencies**;
-6. **prefer small modules over monolithic files**;
-7. **preserve existing pipeline compatibility whenever possible**.
-
----
-
-## Roadmap
-
-### Phase 1 — Narrative navigation
-
-```text
-Series
-  ↓
-Episode
-  ↓
-Shot
-```
-
-### Phase 2 — Bible and continuity
-
-```text
-Characters
-Relationships
-Locations
-Story state
-```
-
-### Phase 3 — Dynamic graph engine
-
-```text
-Graph DTO
-Scopes
-Containers
-Focus paths
-```
-
-### Phase 4 — Reliable production
-
-```text
-Versioning
-Stale dependencies
-Asset Drawer
-Production queue
-```
-
-### Phase 5 — Full studio
-
-```text
-Narrative
-Image
-Video
-Voice
-Music
-Editing
-Export
-```
-
----
-
-## License
-
-This repository does not currently define an explicit software license.
-
-Before broad external contribution and code reuse, a license should be selected and added to the repository.
+Voir le texte complet dans [LICENSE](LICENSE). Les contributions sont acceptées sous la même licence.

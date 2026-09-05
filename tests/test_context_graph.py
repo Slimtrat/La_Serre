@@ -7,7 +7,7 @@ from apps.api.context_graph import ContextGraphBuilder, create_context_graph_rou
 from apps.api.graph_contract import GraphRuntimeState, GraphScope, GraphStructure
 from engine.world.catalog import EpisodeCatalog
 
-PRIVATE = Path(".private")
+PRIVATE = Path("starter_catalog")
 
 
 def test_one_graph_contract_builds_series_episode_and_shot_scopes(tmp_path: Path) -> None:
