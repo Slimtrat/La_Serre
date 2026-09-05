@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="/static/i18n.css" />
     <link rel="stylesheet" href="/static/topbar-tools.css" />
     <link rel="stylesheet" href="/static/demo-production.css" />
+    <link rel="stylesheet" href="/static/editorial-history.css" />
   </head>
   <body data-workspace-view="graph">
     <div class="ambient ambient-one"></div>
@@ -371,7 +372,7 @@
       <section id="preview-panel" class="panel preview-panel">
         <div class="panel-heading compact-heading output-heading">
           <div><p class="eyebrow">SORTIES</p><h2>Contrôle humain</h2></div>
-          <div class="output-history-controls"><label>Version<select id="run-history-select" aria-label="Version générée" data-i18n-aria-label="outputs.generatedVersion"><option>Aucun rendu</option></select></label><button id="restore-run" class="button ghost" type="button" disabled>Restaurer</button><span id="job-badge" class="badge">Aucun rendu</span></div>
+          <div class="output-history-controls"><button id="editorial-history-open" class="button ghost" type="button">Versions du texte</button><label>Rendu<select id="run-history-select" aria-label="Version générée" data-i18n-aria-label="outputs.generatedVersion"><option>Aucun rendu</option></select></label><button id="restore-run" class="button ghost" type="button" disabled>Restaurer le rendu</button><span id="job-badge" class="badge">Aucun rendu</span></div>
         </div>
         <div class="output-layout">
           <div class="previews">
@@ -396,6 +397,59 @@
         <footer><button class="button primary" type="submit">Créer et ouvrir</button></footer>
       </form>
     </dialog>
+    <dialog id="editorial-history-dialog" class="editorial-history-dialog" aria-labelledby="editorial-history-title">
+      <section class="editorial-history-shell">
+        <header>
+          <div><p class="eyebrow">HISTOIRE VIVANTE</p><h2 id="editorial-history-title">Versions & variantes</h2><p>Compare les textes, garde les rendus compatibles et choisis ton canon.</p></div>
+          <button id="editorial-history-close" class="button ghost" type="button">Fermer</button>
+        </header>
+        <nav class="editorial-scope" aria-label="Objet à versionner">
+          <button type="button" data-editorial-scope="episode">Scénario</button>
+          <button type="button" data-editorial-scope="shot" class="selected">Plan en cours</button>
+        </nav>
+        <div class="editorial-workspace">
+          <form id="editorial-form" class="editorial-form">
+            <div class="editorial-form-heading"><div><p class="eyebrow">VERSION DE TRAVAIL</p><strong id="editorial-current-name">Canon actuel</strong></div><span id="editorial-status" class="badge">Prêt</span></div>
+            <label>Nom de cette version<input id="editorial-name" maxlength="80" required placeholder="Ex. Plus sombre, v3 dialogues" /></label>
+            <fieldset data-editorial-fields="episode">
+              <label>Titre<input data-editorial-field="title" /></label>
+              <label>Promesse<textarea data-editorial-field="logline"></textarea></label>
+              <label>Scénario<textarea data-editorial-field="narrative_source"></textarea></label>
+              <div class="editorial-story-grid">
+                <label>Accroche<textarea data-editorial-field="hook"></textarea></label>
+                <label>Mise en place<textarea data-editorial-field="setup"></textarea></label>
+                <label>Conflit<textarea data-editorial-field="conflict"></textarea></label>
+                <label>Révélation<textarea data-editorial-field="reveal"></textarea></label>
+                <label>Cliffhanger<textarea data-editorial-field="cliffhanger"></textarea></label>
+              </div>
+            </fieldset>
+            <fieldset data-editorial-fields="shot">
+              <label>Texte du plan<textarea data-editorial-field="shot_source"></textarea></label>
+              <label>Action<textarea data-editorial-field="action"></textarea></label>
+              <div class="editorial-story-grid">
+                <label>Personnage<select data-editorial-field="speaker"></select></label>
+                <label>Dialogue<textarea data-editorial-field="dialogue"></textarea></label>
+                <label>Intention<input data-editorial-field="intention" /></label>
+                <label>Émotion<input data-editorial-field="emotion" /></label>
+              </div>
+            </fieldset>
+            <footer><button type="submit" class="button primary" data-editorial-save="version">Enregistrer comme canon</button><button type="button" class="button secondary" data-editorial-save="variant">Créer une variante</button></footer>
+          </form>
+          <section class="editorial-browser">
+            <div class="editorial-compare-controls">
+              <label>Version gauche<select id="editorial-left"></select></label>
+              <span aria-hidden="true">↔</span>
+              <label>Version droite<select id="editorial-right"></select></label>
+              <button id="editorial-compare" class="button secondary" type="button">Comparer</button>
+            </div>
+            <div id="editorial-version-list" class="editorial-version-list"></div>
+            <div class="editorial-diff-heading"><div><p class="eyebrow">AVANT / APRÈS</p><strong id="editorial-diff-title">Choisis deux versions</strong></div><button id="editorial-explain" class="button ghost" type="button" disabled>✦ Expliquer les différences</button></div>
+            <div id="editorial-diff" class="editorial-diff"><p class="empty">La comparaison restera lisible : aucun JSON à déchiffrer.</p></div>
+            <aside id="editorial-explanation" class="editorial-explanation hidden" aria-live="polite"></aside>
+          </section>
+        </div>
+      </section>
+    </dialog>
     <script src="/static/i18n.js" defer></script>
     <script src="/static/notifications.js" defer></script>
     <script src="/static/projects.js" defer></script>
@@ -403,6 +457,7 @@
     <script src="/static/narrative.js" defer></script>
     <script src="/static/episode.js" defer></script>
     <script src="/static/output-console.js" defer></script>
+    <script src="/static/editorial-history.js" defer></script>
     <dialog id="workflow-graph-dialog" class="workflow-graph-dialog" aria-labelledby="workflow-graph-title">
       <section class="workflow-graph-shell">
         <header class="workflow-graph-toolbar">

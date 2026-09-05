@@ -168,3 +168,9 @@ window.addEventListener("studio:project-changed", () => {
   closeCasting({ restoreFocus: false });
   initEpisodeCatalog().catch((error) => episodeStudio.notify(error.message, true));
 });
+window.addEventListener("studio:episode-reload", () => {
+  if (!loadedEpisode) return;
+  loadEpisode(loadedEpisode.episode.id).catch((error) => {
+    episodeStudio.notify(error.message, true);
+  });
+});

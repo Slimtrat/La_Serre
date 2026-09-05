@@ -15,6 +15,7 @@ from apps.api.bible_routes import create_bible_router
 from apps.api.coherence_routes import create_coherence_router
 from apps.api.context_graph import create_context_graph_router
 from apps.api.demo_routes import create_demo_router
+from apps.api.editorial_routes import create_editorial_router
 from apps.api.episode_job_manager import EpisodeJobManager
 from apps.api.episode_routes import create_episode_router
 from apps.api.job_manager import JobManager
@@ -129,6 +130,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.include_router(create_coherence_router(current_settings, catalog))
     app.include_router(create_narrative_router(current_settings, assets))
+    app.include_router(create_editorial_router(current_settings))
     app.include_router(
         create_demo_router(lambda: current_settings().output_dir, notifications)
     )

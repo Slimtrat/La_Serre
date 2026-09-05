@@ -87,5 +87,33 @@ class ShotDraftRequest(StrictRequest):
     model: str | None = Field(default=None, min_length=1)
 
 
+class EditorialProvenanceRequest(StrictRequest):
+    provider: str = Field(default="manual", min_length=1, max_length=80)
+    model: str | None = Field(default=None, min_length=1, max_length=160)
+    prompt: str | None = Field(default=None, max_length=10_000)
+    seed: int | None = None
+
+
+class EditorialVersionRequest(StrictRequest):
+    scope: Literal["episode", "shot"]
+    kind: Literal["version", "variant"]
+    name: str = Field(min_length=1, max_length=80)
+    shot_id: str | None = Field(default=None, pattern=r"^S\d{2}E\d{3}-S\d{2}$")
+    episode: dict[str, Any] | None = None
+    shots: list[dict[str, Any]] | None = None
+    shot: dict[str, Any] | None = None
+    shot_source: str | None = Field(default=None, max_length=50_000)
+    provenance: EditorialProvenanceRequest = Field(
+        default_factory=EditorialProvenanceRequest
+    )
+
+
+class EditorialExplanationRequest(StrictRequest):
+    scope: Literal["episode", "shot"]
+    left: str = Field(min_length=1, max_length=128)
+    right: str = Field(min_length=1, max_length=128)
+    shot_id: str | None = Field(default=None, pattern=r"^S\d{2}E\d{3}-S\d{2}$")
+
+
 class JobIdentifier(BaseModel):
     id: str = Field(min_length=1)
