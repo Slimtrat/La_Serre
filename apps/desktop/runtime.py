@@ -15,10 +15,11 @@ from types import TracebackType
 
 import uvicorn
 
+from apps.desktop.starter import install_starter_catalog
 from apps.version import __version__
 from engine.generation.comfy.workflow_factory import WorkflowFactory
 
-APP_NAME = "La Serre des Venins"
+APP_NAME = "La Serre"
 APP_VERSION = __version__
 DEFAULT_STARTUP_TIMEOUT_SECONDS = 20.0
 
@@ -152,20 +153,30 @@ class EmbeddedStudioServer:
         self.stop()
 
 
+def default_runtime_directory() -> Path:
+    """Return the Studio runtime root without creating or changing anything."""
+    if getattr(sys, "frozen", False):
+        local_app_data = os.environ.get("LOCALAPPDATA")
+        base = (
+            Path(local_app_data)
+            if local_app_data
+            else Path.home() / "AppData" / "Local"
+        )
+        return (base / "SerreStudio").resolve()
+    return Path.cwd().resolve()
+
+
 def prepare_runtime_directory(requested: Path | None = None) -> Path:
     """Create and select the writable root used by relative backend paths."""
     if requested is not None:
         root = requested.expanduser().resolve()
-    elif getattr(sys, "frozen", False):
-        local_app_data = os.environ.get("LOCALAPPDATA")
-        base = Path(local_app_data) if local_app_data else Path.home() / "AppData" / "Local"
-        root = base / "SerreStudio"
     else:
-        root = Path.cwd()
+        root = default_runtime_directory()
 
     for relative in ("output", ".private", "projects", "workflows/local", "logs"):
         (root / relative).mkdir(parents=True, exist_ok=True)
     _copy_bundled_examples(root)
+    install_starter_catalog(root)
     _install_default_workflows(root)
     os.chdir(root)
     return root

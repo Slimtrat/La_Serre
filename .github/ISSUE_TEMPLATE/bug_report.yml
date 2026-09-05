@@ -1,0 +1,60 @@
+name: Signaler un bug
+description: Un comportement reproductible empêche ou dégrade une production.
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Merci de retirer les contenus privés, tokens et chemins personnels avant envoi.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: "0.2.13 ou commit"
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Zone concernée
+      options:
+        - Parcours guidé / graphe
+        - Bible / narration
+        - ComfyUI / modèles
+        - Production / export
+        - Application Windows
+        - Installation / documentation
+        - Autre
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Étapes de reproduction
+      description: Une liste courte et reproductible, sans donnée privée.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Résultat attendu
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Résultat obtenu
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environnement utile
+      description: Windows, GPU/VRAM, Python, Ollama, ComfyUI et modèle si pertinent.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Confidentialité
+      options:
+        - label: J’ai retiré les secrets, médias privés, prompts privés et chemins personnels.
+          required: true

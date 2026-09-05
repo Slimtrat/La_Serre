@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "revision": 0,
+  "updated_at": "2026-09-04T12:51:40.632119Z",
+  "title": "Bible du projet",
+  "characters": [
+    {
+      "id": "aconit",
+      "name": "Aconit",
+      "role": "Gardienne prudente et intérêt romantique",
+      "visual_description": "Predominantly botanical monkshood flower-woman with a lightly humanized cool-blue face nested inside a tall cobalt aconite hood, narrow expressive indigo eyes, petal planes instead of human hair, sharp leaf-and-vine limbs and no visible human skin texture",
+      "wardrobe": "Her severe silhouette is formed entirely by overlapping indigo petals, a pointed blue monkshood hood and a dark silver-green leaf collar, with no ordinary fabric clothing, shoes or human accessories",
+      "signature_details": [
+        "tall pointed cobalt monkshood hood",
+        "sharp layered leaf collar",
+        "single silver crescent marking beneath the left eye",
+        "two small blue aconite blossoms growing from the right shoulder vine"
+      ],
+      "palette": [
+        "midnight indigo #18225D",
+        "cobalt blue #304BC0",
+        "electric periwinkle #7184FF",
+        "silver leaf #66756B",
+        "blue black #070A18"
+      ],
+      "personality": {
+        "prudence": 0.97,
+        "dry_humor": 0.82,
+        "self_control": 0.93,
+        "jealousy": 0.58,
+        "hidden_tenderness": 0.86
+      },
+      "wants": [
+        "keep the greenhouse and Belladone alive",
+        "identify the sender of the forbidden inheritance",
+        "remain emotionally unreadable"
+      ],
+      "fears": [
+        "losing control of her poison",
+        "being understood too clearly by Belladone"
+      ],
+      "voice_description": "Low precise French mezzo voice, restrained breath, dry timing and warmth carefully hidden under authority",
+      "generation_negative_prompt": "photorealistic human woman, human skin pores, human ears, human hair, ordinary blue gown, separate helmet, purple dominant palette, round soft silhouette, smiling broadly without narrative cause",
+      "visual_references": [],
+      "voice_references": [],
+      "canonical_prompt_id": null
+    },
+    {
+      "id": "belladone",
+      "name": "Belladone",
+      "role": "Héroïne imprudente et charmeuse",
+      "visual_description": "Predominantly botanical flower-woman with a lightly humanized lavender face emerging from a broad deep-plum belladonna corolla, large expressive violet eyes, petal curls instead of human hair, leaf-and-vine limbs and no visible human skin texture",
+      "wardrobe": "Her silhouette is formed entirely by layered plum petals, dark olive sepals and flexible climbing vines, with no ordinary fabric clothing, shoes or human accessories",
+      "signature_details": [
+        "broad asymmetrical purple bell-flower corolla",
+        "tiny black heart marking under the right eye",
+        "cluster of exactly three glossy black belladonna berries at the left hip",
+        "purple heart-shaped nectar gem at the throat"
+      ],
+      "palette": [
+        "deep plum #4B185F",
+        "orchid purple #A95ACC",
+        "lavender #C989E8",
+        "olive leaf #48562D",
+        "poison black #0B0710"
+      ],
+      "personality": {
+        "curiosity": 0.98,
+        "playfulness": 0.94,
+        "prudence": 0.12,
+        "romantic_bravado": 0.91,
+        "hidden_tenderness": 0.72
+      },
+      "wants": [
+        "transform every danger into a game",
+        "make Aconit admit that she cares",
+        "discover why the forbidden inheritance chose them"
+      ],
+      "fears": [
+        "being treated like a fragile ornamental flower",
+        "revealing sincere attachment before Aconit does"
+      ],
+      "voice_description": "Warm playful French contralto, smiling diction, intimate delivery and a dangerous little laugh",
+      "generation_negative_prompt": "photorealistic human woman, human skin pores, human ears, human hair, ordinary dress, realistic hands, separate hat, red palette, more or fewer than three signature berries",
+      "visual_references": [],
+      "voice_references": [],
+      "canonical_prompt_id": null
+    },
+    {
+      "id": "graine-noire",
+      "name": "La Graine Noire",
+      "role": "Héritage interdit et antagoniste miniature",
+      "visual_description": "A glossy black botanical seed shaped like a small anatomical heart, split by one thin violet seam, with tiny rootlets like veins and no human face, limbs or readable species",
+      "wardrobe": "Its only covering is a wet obsidian shell with a subtle violet inner glow and delicate vein-like roots that move with deliberate intelligence",
+      "signature_details": [
+        "heart-shaped obsidian shell",
+        "single glowing violet seam",
+        "vein-like black rootlets",
+        "slow visible heartbeat pulse"
+      ],
+      "palette": [
+        "obsidian #050408",
+        "black violet #160D20",
+        "venom purple #8E35C7",
+        "bruise blue #323C79"
+      ],
+      "personality": {
+        "patience": 0.98,
+        "cruel_playfulness": 0.88,
+        "possessiveness": 0.95,
+        "verbosity": 0.08
+      },
+      "wants": [
+        "force Belladone and Aconit to reveal what binds them",
+        "take root in the greenhouse"
+      ],
+      "fears": [
+        "a sincere truth freely spoken",
+        "being burned before germination"
+      ],
+      "voice_description": "Tiny sexless French whisper doubled by a low subterranean resonance, intimate and unnervingly amused",
+      "generation_negative_prompt": "cute baby face, eyes, mouth, humanoid body, ordinary bean, bright cheerful green, gore, blood, oversized monster",
+      "visual_references": [],
+      "voice_references": [],
+      "canonical_prompt_id": null
+    }
+  ],
+  "locations": [
+    {
+      "id": "serre-des-venins",
+      "name": "La Serre",
+      "visual_description": "A vast nocturnal Victorian poison greenhouse with black wrought-iron ribs, fogged glass panes, a huge moon beyond the roof, tangled sentient vines, toxic bell flowers, blue aconites and a round veined marble pedestal at its center",
+      "signature_details": [
+        "black wrought-iron arches shaped like thorns",
+        "round veined marble pedestal at the center",
+        "huge moon visible through fogged roof glass",
+        "poison flowers that subtly turn toward whoever is speaking"
+      ],
+      "palette": [
+        "black violet #090612",
+        "moon lavender #B8A4D8",
+        "deep plum #3A144B",
+        "midnight blue #121B4A",
+        "olive leaf #3D4728",
+        "worn bronze #685044"
+      ],
+      "generation_negative_prompt": "daylight, modern furniture, clean laboratory, sunny garden, ordinary greenhouse, photorealistic people, readable signs, text, logos, gore",
+      "visual_references": [],
+      "canonical_prompt_id": null
+    }
+  ],
+  "relationships": [],
+  "art_direction": {
+    "summary": "",
+    "visual_style": [],
+    "palette": [],
+    "rendering_rules": [],
+    "banned_elements": []
+  },
+  "tone": {
+    "summary": "",
+    "keywords": [],
+    "dialogue_rules": [],
+    "content_boundaries": []
+  },
+  "world_rules": [],
+  "narrative_arcs": [],
+  "secrets": [],
+  "references": [],
+  "prompts": [],
+  "changes": []
+}

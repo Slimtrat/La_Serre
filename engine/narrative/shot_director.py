@@ -81,8 +81,10 @@ class OllamaShotDirector:
             "vidéo. Ne mets dans dialogue que les mots réellement prononcés. Assure la "
             "cohérence entre action, personnages visibles et durée. Préserve fidèlement "
             "le lieu, les objets et les événements de la source : ne les remplace jamais "
-            "par des synonymes qui en changent le sens. Sans réplique entre guillemets "
-            "dans la source, dialogue doit être null."
+            "par des synonymes qui en changent le sens. Utilise mode=on_screen pour une parole "
+            "à l’image, mode=off_screen pour un personnage hors cadre et mode=voice_over pour "
+            "une narration. Une voix off peut accompagner un plan sans personnage visible. "
+            "Sans parole explicite dans la source, dialogue doit être null."
         )
 
     @staticmethod
@@ -90,5 +92,7 @@ class OllamaShotDirector:
         return (
             f"SHOT ID: {shot_id}\nDURATION: {duration}\n\nSOURCE:\n{source_text}\n\n"
             "Propose les éléments créatifs du plan. Ne recopie jamais un schéma. "
-            "Utilise exactement le nom d'un personnage visible dans speaker_name."
+            "Pour on_screen, utilise exactement le nom d’un personnage visible dans "
+            "speaker_name. Pour off_screen ou voice_over, nomme explicitement le locuteur sans "
+            "l’ajouter artificiellement aux personnages visibles."
         )

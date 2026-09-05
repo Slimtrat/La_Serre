@@ -15,17 +15,22 @@ async function refreshNarrativeStatus() {
     const status = await narrativeRequest("/api/narrative/status");
     window.dispatchEvent(new CustomEvent("studio:narrative-status", { detail: status }));
     select.replaceChildren();
-    if (!status.ready || !status.models.length) {
-      select.append(new Option("Ollama hors ligne", ""));
+    if (!status.ready || !status.selected_model) {
+      const missing = status.ollama_ready
+        ? "Modèle narratif requis · installe Qwen3 4B"
+        : "Ollama hors ligne";
+      select.append(new Option(missing, ""));
       button.disabled = true;
-      label.textContent = "Lance Ollama pour activer le Director";
+      label.textContent = status.ollama_ready
+        ? "Les modèles de code ne sont pas utilisés pour écrire l’histoire"
+        : "Lance Ollama pour activer le Director";
       return;
     }
     for (const model of status.models) {
       const details = [model.parameter_size, model.quantization].filter(Boolean).join(" · ");
       select.append(new Option(details ? model.name + " — " + details : model.name, model.name));
     }
-    select.value = status.selected_model || status.models[0].name;
+    select.value = status.selected_model;
     button.disabled = false;
     label.textContent = status.models.length + " modèle(s) local(aux) disponible(s)";
   } catch (error) {
@@ -66,6 +71,9 @@ async function draftShot() {
     const editor = document.querySelector("#shot-editor");
     editor.value = JSON.stringify(result.shot, null, 2);
     editor.dispatchEvent(new Event("input"));
+    window.dispatchEvent(new CustomEvent("studio:narrative-draft", {
+      detail: { provider: "ollama", model: result.model, prompt: source },
+    }));
     const card = document.querySelector('[data-job-stage="input"]');
     card.classList.add("completed");
     card.querySelector(".stage-status").textContent =

@@ -10,6 +10,7 @@ from typing import Literal
 
 AssetSlot = Literal["story", "shot", "keyframe", "audio", "video"]
 SHOT_ID = re.compile(r"^S\d{2}E\d{3}-S\d{2}$")
+ASSET_ID = re.compile(r"^asset-[a-f0-9]{64}$")
 SLOT_RULES: dict[AssetSlot, tuple[set[str], int]] = {
     "story": ({".txt", ".md"}, 2 * 1024 * 1024),
     "shot": ({".json"}, 2 * 1024 * 1024),
@@ -30,6 +31,8 @@ class AssetRecord:
     updated_at: str
     provider: str | None = None
     model: str | None = None
+    asset_id: str | None = None
+    origin_asset_id: str | None = None
 
 
 class AssetStore:
@@ -97,16 +100,18 @@ class AssetStore:
         temporary.write_bytes(content)
         temporary.replace(destination)
 
+        digest = hashlib.sha256(content).hexdigest()
         record = AssetRecord(
             slot=slot,
             source=source,
             filename=destination.name,
             media_type=media_type or "application/octet-stream",
             bytes=len(content),
-            sha256=hashlib.sha256(content).hexdigest(),
+            sha256=digest,
             updated_at=datetime.now(UTC).isoformat(),
             provider=provider,
             model=model,
+            asset_id=f"asset-{digest}",
         )
         manifest = self._manifest(shot_id)
         manifest[slot] = asdict(record)

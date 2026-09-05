@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>La Serre des Venins — Studio</title>
-    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+    <title>La Serre — Studio</title>
+    <link rel="icon" href="/static/favicon.png" type="image/png" />
     <link rel="stylesheet" href="/static/styles.css" />
     <link rel="stylesheet" href="/static/graph.css" />
     <link rel="stylesheet" href="/static/workflow-graph.css" />
@@ -17,42 +17,102 @@
     <link rel="stylesheet" href="/static/desktop-workspace.css" />
     <link rel="stylesheet" href="/static/activity-bar.css" />
     <link rel="stylesheet" href="/static/getting-started.css" />
+    <link rel="stylesheet" href="/static/project-explorer.css" />
+    <link rel="stylesheet" href="/static/production-queue.css" />
+    <link rel="stylesheet" href="/static/bible-view.css" />
+    <link rel="stylesheet" href="/static/bible-relations.css" />
+    <link rel="stylesheet" href="/static/coherence.css" />
+    <link rel="stylesheet" href="/static/i18n.css" />
+    <link rel="stylesheet" href="/static/topbar-tools.css" />
+    <link rel="stylesheet" href="/static/demo-production.css" />
+    <link rel="stylesheet" href="/static/editorial-history.css" />
+    <link rel="stylesheet" href="/static/runtime-manager.css" />
+    <link rel="stylesheet" href="/static/settings-drawers.css" />
+    <link rel="stylesheet" href="/static/narrative-workflow.css" />
+    <link rel="stylesheet" href="/static/field-assistant.css" />
+    <link rel="stylesheet" href="/static/asset-drawer.css" />
+    <link rel="stylesheet" href="/static/desktop-lifecycle.css" />
+    <link rel="stylesheet" href="/static/view-dock.css" />
+    <link rel="stylesheet" href="/static/guided-workspace.css" />
+    <link rel="stylesheet" href="/static/workflow-template-catalogue.css" />
   </head>
-  <body data-workspace-view="graph">
+  <body data-workspace-view="guided">
     <div class="ambient ambient-one"></div>
     <div class="ambient ambient-two"></div>
-    <header class="topbar">
+    <header class="topbar" aria-label="Navigation principale" data-i18n-aria-label="shell.mainNavigation">
       <a class="brand" href="/">
         <span class="brand-mark">SV</span>
-        <span><strong>La Serre des Venins</strong><small>Studio local</small></span>
+        <span><strong>SerreStudio</strong><small data-i18n="shell.studioLocal">Studio local</small></span>
       </a>
-      <span id="app-version" class="app-version" title="Version actuelle">v0.2.3</span>
-      <nav class="app-nav" aria-label="Espaces du studio" role="tablist">
+      <span id="app-version" class="app-version" title="Version actuelle" data-i18n-title="shell.currentVersion">v0.2.13</span>
+      <nav class="studio-context" aria-label="Contexte de création" data-i18n-aria-label="shell.context">
+        <div class="context-segment context-project">
+          <span data-i18n="shell.project">Projet</span>
+          <select id="project-select" aria-label="Projet actif" data-i18n-aria-label="shell.activeProject"><option>Chargement…</option></select>
+          <div class="context-project-actions">
+            <button id="project-create-open" class="context-action" type="button" title="Créer un projet" aria-label="Créer un projet"><span aria-hidden="true">＋</span><span data-i18n="shell.newProject">Nouveau</span></button>
+          </div>
+        </div>
+        <span class="context-chevron" aria-hidden="true">›</span>
+        <div class="context-segment context-series">
+          <span data-i18n="shell.series">Série</span>
+          <div class="context-series-actions">
+            <button class="context-link" type="button" data-context-action="bible" title="Ouvrir la Bible canonique de la série" data-i18n-title="shell.canonTitle">La Serre</button>
+            <button id="series-cast-open" class="series-resource" type="button" title="Ouvrir le casting canonique de la série" aria-label="Personnages, ressource de série" data-i18n-title="shell.charactersTitle" data-i18n-aria-label="shell.charactersAria"><span aria-hidden="true">♟</span><span data-i18n="shell.charactersResource">Personnages</span></button>
+          </div>
+        </div>
+        <span class="context-chevron" aria-hidden="true">›</span>
+        <label class="context-segment context-episode">
+          <span data-i18n="shell.episode">Épisode</span>
+          <select id="episode-select" aria-label="Épisode actif" data-i18n-aria-label="shell.activeEpisode"><option>Chargement…</option></select>
+        </label>
+        <span class="context-chevron" aria-hidden="true">›</span>
+        <button id="context-shot" class="context-segment context-link context-shot" type="button" data-context-action="shot" title="Ouvrir le plan actif" data-i18n-title="shell.openActiveShot">
+          <span data-i18n="shell.shot">Plan</span><strong id="context-shot-label">—</strong>
+        </button>
+      </nav>
+      <nav class="app-nav legacy-workspace-nav" aria-label="Espaces du studio" data-i18n-aria-label="shell.legacySpaces" role="tablist" hidden aria-hidden="true">
         <button type="button" role="tab" data-workspace-target="graph" class="selected">Production</button>
         <button type="button" role="tab" data-workspace-target="plan">Plan</button>
         <button type="button" role="tab" data-workspace-target="outputs">Sorties</button>
         <button type="button" role="tab" data-workspace-target="settings">Réglages</button>
       </nav>
-      <label class="project-switcher" title="Changer de projet">
-        <span>Projet</span>
-        <select id="project-select" aria-label="Projet actif"><option>Chargement…</option></select>
-      </label>
-      <button id="project-create-open" class="topbar-icon" type="button" title="Créer un projet" aria-label="Créer un projet">＋</button>
-      <div class="connection"><span id="connection-dot" class="dot"></span><span id="connection-label">Connexion…</span></div>
-      <button id="getting-started-open" class="guide-toggle" type="button" title="Ouvrir le guide de démarrage">
-        <span aria-hidden="true">?</span><strong>Guide</strong>
-      </button>
-      <button id="notification-toggle" class="notification-toggle" type="button" aria-expanded="false" aria-controls="notification-panel">
-        <span>Journal</span><strong id="notification-badge" class="hidden">0</strong>
-      </button>
-      <button id="settings-toggle" class="button ghost">Réglages ComfyUI</button>
+      <div class="studio-tools" role="toolbar" aria-label="Outils du studio" data-i18n-aria-label="shell.tools">
+        <button class="studio-tool" type="button" data-tool-action="assets" title="Ouvrir la bibliothèque d’assets du projet" data-i18n-title="shell.assetsTitle"><span aria-hidden="true">◫</span><strong data-i18n="shell.assets">Assets</strong></button>
+        <button id="notification-toggle" class="studio-tool notification-toggle" type="button" aria-expanded="false" aria-controls="notification-panel" aria-label="Journal" title="Journal" data-i18n-aria-label="shell.journal" data-i18n-title="shell.journal"><span aria-hidden="true">☷</span><strong data-i18n="shell.journal">Journal</strong><i id="notification-badge" class="hidden">0</i></button>
+        <button id="getting-started-open" class="studio-tool guide-toggle" type="button" title="Ouvrir le guide de démarrage" data-i18n-title="shell.guideTitle"><span aria-hidden="true">?</span><strong data-i18n="shell.guide">Guide</strong></button>
+        <button id="demo-production-open" class="studio-tool" type="button" title="Lancer la démo express 0 GPU" data-i18n-title="shell.demoTitle"><span aria-hidden="true">✦</span><strong data-i18n="shell.demo">Démo</strong></button>
+        <button id="narrative-workflow-open" class="studio-tool" type="button" title="Écrire la série et ses épisodes" data-i18n-title="narrative.openTitle"><span aria-hidden="true">✎</span><strong data-i18n="narrative.open">Écriture</strong></button>
+        <button id="settings-toggle" class="studio-tool" type="button" title="Configurer les moteurs et le stockage" data-i18n-title="shell.settingsTitle"><span aria-hidden="true">⚙</span><strong data-i18n="shell.settings">Réglages</strong></button>
+        <button class="service-status" type="button" title="État de ComfyUI et Ollama" aria-label="État de ComfyUI et Ollama" data-i18n-title="shell.serviceStatus" data-i18n-aria-label="shell.serviceStatus"><span id="connection-dot" class="dot"></span><span id="connection-label">Connexion…</span></button>
+        <label class="language-switcher" title="Langue de l’interface" data-i18n-title="shell.language">
+          <span class="sr-only" data-i18n="shell.language">Langue de l’interface</span>
+          <select id="language-select" aria-label="Langue de l’interface" data-i18n-aria-label="shell.language"><option value="fr">FR</option><option value="en">EN</option></select>
+        </label>
+      </div>
     </header>
+    <aside id="studio-view-dock" class="studio-view-dock" aria-label="Changer de vue" data-i18n-aria-label="shell.viewDock">
+      <span class="view-dock-handle" aria-hidden="true"><small>VUES</small><b>›</b></span>
+      <header><small data-i18n="shell.views">VUES</small><strong data-i18n="shell.navigate">Naviguer</strong></header>
+      <nav>
+        <button type="button" data-workspace-target="guided" class="selected"><span aria-hidden="true">✦</span><strong>Créer</strong></button>
+        <button type="button" data-workspace-target="graph"><span aria-hidden="true">⌘</span><strong data-i18n="shell.graph">Graphe</strong></button>
+        <button type="button" data-workspace-target="plan"><span aria-hidden="true">◇</span><strong data-i18n="shell.planLegacy">Plan</strong></button>
+        <button type="button" data-workspace-target="outputs"><span aria-hidden="true">▣</span><strong data-i18n="shell.outputsLegacy">Sorties</strong></button>
+        <button type="button" data-workspace-target="bible"><span aria-hidden="true">♟</span><strong data-i18n="bible.nav">Bible</strong></button>
+        <button type="button" data-workspace-target="settings"><span aria-hidden="true">⚙</span><strong data-i18n="shell.settings">Réglages</strong></button>
+      </nav>
+      <footer data-i18n="shell.viewDockHint">Approche le bord gauche pour changer d’espace.</footer>
+    </aside>
     <aside id="notification-panel" class="notification-panel hidden" aria-label="Journal du projet">
       <header><div><small>PROJET ACTIF</small><strong>Journal d’activité</strong></div><button id="notification-read-all" type="button">Tout marquer comme lu</button></header>
       <ol id="notification-list"><li class="empty">Aucune notification.</li></ol>
     </aside>
 
     <main class="shell">
+      <section id="guided-workspace" class="guided-workspace" aria-labelledby="guided-title">
+        <div class="guided-loading">Ouverture de ton atelier…</div>
+      </section>
       <section class="hero">
         <div>
           <p class="eyebrow">ONE REPRODUCIBLE SHOT</p>
@@ -71,10 +131,7 @@
             <p class="eyebrow">ÉPISODE EN PRODUCTION</p>
             <h2 id="episode-title">Chargement de l’épisode…</h2>
           </div>
-          <label class="episode-picker">
-            Épisode
-            <select id="episode-select" aria-label="Épisode"></select>
-          </label>
+          <span class="episode-picker-hint" data-i18n="episode.selectionHint">Sélection depuis le contexte ci-dessus</span>
         </div>
         <p id="episode-logline" class="episode-logline"></p>
         <div class="episode-meta">
@@ -83,7 +140,7 @@
         </div>
         <details class="episode-details">
           <summary>Voir le casting et les plans</summary>
-          <div class="episode-details-grid">
+          <div class="episode-details-grid" tabindex="-1" aria-label="Casting et plans de l’épisode">
             <div>
               <p class="eyebrow">PERSONNAGES CANONIQUES</p>
               <div id="episode-cast" class="character-cast"></div>
@@ -118,7 +175,7 @@
             <span>PLAN ACTIF</span>
             <strong id="graph-active-shot">Chargement…</strong>
           </div>
-          <div id="graph-shot-track" class="graph-shot-track" role="tablist" aria-label="Plans de l’épisode"></div>
+          <div id="graph-shot-track" class="graph-shot-track" role="tablist" aria-label="Plans de l’épisode" data-i18n-aria-label="episode.episodeShots"></div>
           <div class="graph-episode-progress">
             <span>PROGRESSION DE L’ÉPISODE</span>
             <strong id="graph-episode-progress-label">0 / 0 clips finalisés</strong>
@@ -151,7 +208,7 @@
               </button>
               <button class="graph-node state-ready" type="button" data-node-id="shot" data-x="680" data-y="340">
                 <span class="graph-node-index">03</span><span class="graph-node-type">CONTRAT</span>
-                <strong>Shot JSON</strong><small>Plan validé</small>
+                <strong>Validation du découpage</strong><small>Contrat technique · shot.json</small>
                 <span class="graph-node-status">Prêt</span>
               </button>
               <button class="graph-node state-ready graph-node-branch" type="button" data-node-id="cast" data-x="390" data-y="80">
@@ -227,33 +284,95 @@
       </section>
 
       <section id="settings-panel" class="panel setup">
-        <div class="panel-heading">
-          <div><p class="eyebrow">CONFIGURATION GUIDÉE</p><h2>ComfyUI sans JSON à bricoler</h2></div>
+        <div class="panel-heading settings-intro">
+          <div class="settings-intro-copy">
+            <p class="eyebrow">CENTRE DE CONTRÔLE</p>
+            <h2>Réglages du Studio</h2>
+            <p>Les choix essentiels restent visibles. Les moteurs, modèles et options techniques sont rangés par fonction.</p>
+          </div>
           <span id="setup-badge" class="badge warn">À configurer</span>
         </div>
-        <div class="config-row">
-          <label>Adresse ComfyUI<input id="comfy-url" value="http://127.0.0.1:8188" /></label>
-          <button id="save-config" class="button secondary">Enregistrer & tester</button>
-          <button id="build-workflows" class="button primary">Créer mes workflows</button>
+        <div class="settings-drawer-stack">
+          <details id="settings-drawer-runtimes" class="settings-drawer" open>
+            <summary><span class="settings-drawer-index">01</span><span class="settings-drawer-copy"><strong>Moteurs locaux</strong><small>Démarrer, réparer et diagnostiquer Ollama ou ComfyUI</small></span><span class="settings-drawer-state">Système</span></summary>
+            <div class="settings-drawer-body">
+              <section class="runtime-manager" aria-labelledby="runtime-manager-title">
+                <header class="runtime-manager-heading">
+                  <div><p class="eyebrow">MOTEURS LOCAUX</p><h3 id="runtime-manager-title">Préparer mon Studio</h3><p id="runtime-manager-summary">Détection d’Ollama et ComfyUI…</p></div>
+                  <div class="runtime-manager-actions">
+                    <button id="runtime-prepare" class="button primary" type="button">Préparer / Réparer tout</button>
+                    <button id="runtime-refresh" class="button ghost" type="button">Actualiser le diagnostic</button>
+                  </div>
+                </header>
+                <div id="runtime-service-list" class="runtime-service-list" aria-live="polite"></div>
+                <aside id="runtime-log-viewer" class="runtime-log-viewer hidden" aria-labelledby="runtime-log-title">
+                  <header><div><small>JOURNAL DU MOTEUR</small><strong id="runtime-log-title">Runtime</strong></div><button id="runtime-log-close" class="button ghost" type="button">Fermer</button></header>
+                  <p id="runtime-log-path"></p><pre id="runtime-log-content">Aucune ligne de journal.</pre>
+                </aside>
+              </section>
+            </div>
+          </details>
+
+          <details id="settings-drawer-narrative-models" class="settings-drawer">
+            <summary><span class="settings-drawer-index">02</span><span class="settings-drawer-copy"><strong>Modèles narratifs</strong><small>Écriture, dialogues et validation avec Ollama</small></span><span id="settings-narrative-state" class="settings-drawer-state">Vérification</span></summary>
+            <div class="settings-drawer-body">
+              <section id="narrative-model-manager" class="narrative-model-manager" aria-labelledby="narrative-model-manager-title">
+                <div class="narrative-model-overview">
+                  <div><p class="eyebrow">OLLAMA · ÉCRITURE</p><h3 id="narrative-model-manager-title">Qwen3 4B recommandé</h3><p id="narrative-model-manager-summary" class="narrative-model-status" aria-live="polite">Vérification d’Ollama et des modèles installés…</p></div>
+                  <div class="narrative-model-actions">
+                    <button id="narrative-runtime-open" class="button ghost hidden" type="button">Ouvrir les moteurs</button>
+                    <button id="narrative-model-refresh" class="button ghost" type="button">Actualiser</button>
+                    <button id="narrative-model-install" class="button primary" type="button">Installer Qwen3 4B</button>
+                  </div>
+                </div>
+                <div id="narrative-model-list" class="narrative-model-list" aria-live="polite"></div>
+              </section>
+            </div>
+          </details>
+
+          <details id="settings-drawer-visual-models" class="settings-drawer">
+            <summary><span class="settings-drawer-index">03</span><span class="settings-drawer-copy"><strong>Modèles image & vidéo</strong><small>Vérifier et installer les poids attendus par ComfyUI</small></span><span class="settings-drawer-state">ComfyUI</span></summary>
+            <div class="settings-drawer-body">
+              <div id="model-list" class="model-list"></div>
+              <div class="model-actions"><small id="downloads-location">Surveillance du dossier Downloads…</small><button id="install-downloads" class="button secondary" disabled>Installer les téléchargements terminés</button></div>
+            </div>
+          </details>
+
+          <details id="settings-drawer-workflows" class="settings-drawer">
+            <summary><span class="settings-drawer-index">04</span><span class="settings-drawer-copy"><strong>ComfyUI & workflows</strong><small>Connexion, génération par le code et imports avancés</small></span><span class="settings-drawer-state">Production</span></summary>
+            <div class="settings-drawer-body settings-workflow-actions">
+              <div class="config-row">
+                <label>Adresse ComfyUI<input id="comfy-url" value="http://127.0.0.1:8188" /></label>
+                <button id="save-config" class="button secondary">Enregistrer & tester</button>
+                <button id="build-workflows" class="button primary">Créer mes workflows</button>
+              </div>
+              <div class="workflow-explainer">
+                <div><span>01</span><strong>Le code crée</strong><small>SDXL keyframe + LTX 2B I2V</small></div>
+                <div><span>02</span><strong>Tu télécharges</strong><small>uniquement les modèles listés</small></div>
+                <div><span>03</span><strong>Tu génères</strong><small>sans ouvrir le graphe ComfyUI</small></div>
+              </div>
+              <div id="workflow-template-settings"></div>
+              <details class="advanced">
+                <summary>Mode avancé — importer un workflow personnel</summary>
+                <div class="advanced-grid">
+                  <label class="drop compact">Workflow keyframe<input id="advanced-keyframe" type="file" accept="application/json,.json" /></label>
+                  <label class="drop compact">Workflow vidéo<input id="advanced-video" type="file" accept="application/json,.json" /></label>
+                </div>
+                <p class="muted">Les imports et mappings restent privés dans <code>workflows/local/</code>, ignoré par Git.</p>
+              </details>
+            </div>
+          </details>
+
+          <details id="settings-drawer-storage" class="settings-drawer">
+            <summary><span class="settings-drawer-index">05</span><span class="settings-drawer-copy"><strong>Projets & stockage</strong><small>Choisir les racines work et output des prochains projets</small></span><span class="settings-drawer-state">Dossiers</span></summary>
+            <div id="settings-storage-host" class="settings-drawer-body"></div>
+          </details>
+
+          <details id="settings-drawer-desktop" class="settings-drawer">
+            <summary><span class="settings-drawer-index">06</span><span class="settings-drawer-copy"><strong>Application Windows</strong><small>Fermeture, arrière-plan et notifications du Studio</small></span><span class="settings-drawer-state">Bureau</span></summary>
+            <div id="settings-desktop-host" class="settings-drawer-body"></div>
+          </details>
         </div>
-        <div class="workflow-explainer">
-          <div><span>01</span><strong>Le code crée</strong><small>SDXL keyframe + LTX 2B I2V</small></div>
-          <div><span>02</span><strong>Tu télécharges</strong><small>uniquement les modèles listés</small></div>
-          <div><span>03</span><strong>Tu génères</strong><small>sans ouvrir le graphe ComfyUI</small></div>
-        </div>
-        <div id="model-list" class="model-list"></div>
-        <div class="model-actions">
-          <small id="downloads-location">Surveillance du dossier Downloads…</small>
-          <button id="install-downloads" class="button secondary" disabled>Installer les téléchargements terminés</button>
-        </div>
-        <details class="advanced">
-          <summary>Mode avancé — importer un workflow personnel</summary>
-          <div class="advanced-grid">
-            <label class="drop compact">Workflow keyframe<input id="advanced-keyframe" type="file" accept="application/json,.json" /></label>
-            <label class="drop compact">Workflow vidéo<input id="advanced-video" type="file" accept="application/json,.json" /></label>
-          </div>
-          <p class="muted">Les imports et mappings restent privés dans <code>workflows/local/</code>, ignoré par Git.</p>
-        </details>
       </section>
 
       <section class="pipeline-map panel hidden">
@@ -263,7 +382,7 @@
         </div>
         <div class="roadmap">
           <div class="road-node active"><span>01</span><strong>Histoire</strong><small>texte / Ollama</small></div>
-          <i>→</i><div class="road-node active"><span>02</span><strong>Shot</strong><small>JSON validé</small></div>
+          <i>→</i><div class="road-node active"><span>02</span><strong data-i18n="coherence.gate">Validation du découpage</strong><small>règles + IA + humain</small></div>
           <i>→</i><div class="road-node active"><span>03</span><strong>Keyframe</strong><small>SDXL / import</small></div>
           <i>→</i><div class="road-node future"><span>04</span><strong>Voix</strong><small>TTS / import</small></div>
           <i>→</i><div class="road-node active"><span>05</span><strong>Mouvement</strong><small>LTX / import</small></div>
@@ -274,7 +393,7 @@
       <section class="workspace-grid">
         <div class="panel editor-panel">
           <div class="panel-heading compact-heading">
-            <div><p class="eyebrow">CONTRAT DU PLAN</p><h2>Shot JSON</h2></div>
+            <div><p class="eyebrow" data-i18n="coherence.technicalDetail">DÉTAIL TECHNIQUE DE LA GATE</p><h2>shot.json</h2></div>
             <label class="mini-upload">Déposer JSON<input id="shot-file" type="file" accept="application/json,.json" /></label>
           </div>
           <textarea id="shot-editor" spellcheck="false" aria-label="Shot JSON"></textarea>
@@ -287,17 +406,17 @@
             <div class="stage-body">
               <strong>Histoire / texte</strong><p>Brief, scénario ou sortie préparée ailleurs</p>
               <div class="segmented" data-source="story"><button class="selected" data-value="model">Ollama Director</button><button data-value="manual">Importer</button></div>
-              <textarea id="story-editor" class="narrative-input" placeholder="Écris une situation, ou importe un scénario…"></textarea>
+              <textarea id="story-editor" class="narrative-input" placeholder="Écris une situation, ou importe un scénario…" data-i18n-placeholder="episode.storyPlaceholder"></textarea>
               <label class="dropzone hidden" data-dropzone="story">Glisse un texte ici<input type="file" accept="text/plain,text/markdown,.txt,.md" /></label>
               <div class="narrative-controls">
-                <select id="ollama-model" aria-label="Modèle Ollama"><option>Détection d’Ollama…</option></select>
+                <select id="ollama-model" aria-label="Modèle Ollama" data-i18n-aria-label="episode.ollamaModel"><option>Détection d’Ollama…</option></select>
                 <button id="draft-shot" class="button secondary" disabled>Proposer le Shot</button>
               </div>
               <small id="ollama-state" class="stage-status">Connexion au Director local…</small>
             </div>
           </article>
           <article class="stage-card" data-job-stage="input">
-            <div class="stage-number">01</div><div class="stage-body"><strong>Validation</strong><p>Schéma Pydantic strict</p><small class="stage-status">En attente</small><button class="stage-run" type="button" data-stage-action="validate">Valider ce plan</button></div>
+            <div class="stage-number">01</div><div class="stage-body"><strong data-i18n="coherence.gate">Validation du découpage</strong><p data-i18n="coherence.gateDetail">Règles strictes + comité IA local + décision humaine</p><small class="stage-status">En attente</small><button class="stage-run" type="button" data-stage-action="validate" data-i18n="coherence.run">Contrôler la cohérence</button></div>
           </article>
           <article class="stage-card" data-job-stage="prompt">
             <div class="stage-number">02</div><div class="stage-body"><strong>Prompt</strong><p>Sémantique → instructions visuelles</p><small class="stage-status">En attente</small><button class="stage-run" type="button" data-stage-action="prompt">Construire le prompt</button></div>
@@ -341,7 +460,7 @@
       <section id="preview-panel" class="panel preview-panel">
         <div class="panel-heading compact-heading output-heading">
           <div><p class="eyebrow">SORTIES</p><h2>Contrôle humain</h2></div>
-          <div class="output-history-controls"><label>Version<select id="run-history-select" aria-label="Version générée"><option>Aucun rendu</option></select></label><button id="restore-run" class="button ghost" type="button" disabled>Restaurer</button><span id="job-badge" class="badge">Aucun rendu</span></div>
+          <div class="output-history-controls"><button id="editorial-history-open" class="button ghost" type="button">Versions du texte</button><label>Rendu<select id="run-history-select" aria-label="Version générée" data-i18n-aria-label="outputs.generatedVersion"><option>Aucun rendu</option></select></label><button id="restore-run" class="button ghost" type="button" disabled>Restaurer le rendu</button><span id="job-badge" class="badge">Aucun rendu</span></div>
         </div>
         <div class="output-layout">
           <div class="previews">
@@ -357,6 +476,30 @@
         <div class="bottom-actions"><p id="job-message">Configure ComfyUI, puis lance une génération.</p><button id="continue-video" class="button secondary">Animer la keyframe</button></div>
       </section>
     </main>
+    <div id="asset-drawer-backdrop" class="asset-drawer-backdrop" hidden></div>
+    <aside id="asset-drawer" class="asset-drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="asset-drawer-title" hidden>
+      <header>
+        <div class="asset-drawer-title">
+          <p class="eyebrow">CATALOGUE PROJET</p>
+          <h2 id="asset-drawer-title" data-i18n="assetDrawer.title">Bibliothèque d’assets</h2>
+          <p data-i18n="assetDrawer.subtitle">Tous les médias du projet, prêts à être réutilisés.</p>
+        </div>
+        <button id="asset-drawer-close" class="button ghost" type="button" aria-label="Fermer la bibliothèque" data-i18n-aria-label="assetDrawer.close">×</button>
+      </header>
+      <div class="asset-toolbar">
+        <input id="asset-search" type="search" placeholder="Rechercher un asset…" data-i18n-placeholder="assetDrawer.search" />
+        <select id="asset-filter-kind" aria-label="Type"><option value="">Tous les types</option></select>
+        <select id="asset-filter-character" aria-label="Personnage"><option value="">Tous les personnages</option></select>
+        <select id="asset-filter-location" aria-label="Lieu"><option value="">Tous les lieux</option></select>
+        <select id="asset-filter-episode" aria-label="Épisode"><option value="">Tous les épisodes</option></select>
+        <select id="asset-filter-status" aria-label="Statut"><option value="">Tous les statuts</option></select>
+      </div>
+      <div class="asset-drawer-body">
+        <div id="asset-grid" class="asset-grid" aria-live="polite"></div>
+        <aside id="asset-detail" class="asset-detail" aria-live="polite"></aside>
+      </div>
+      <footer><span id="asset-count">0 asset</span><span data-i18n="assetDrawer.drag">Glisse vers un nœud ou un slot compatible</span></footer>
+    </aside>
     <div id="toast" class="toast hidden"></div>
     <dialog id="project-create-dialog" class="project-create-dialog" aria-labelledby="project-create-title">
       <form id="project-create-form">
@@ -366,12 +509,69 @@
         <footer><button class="button primary" type="submit">Créer et ouvrir</button></footer>
       </form>
     </dialog>
+    <dialog id="editorial-history-dialog" class="editorial-history-dialog" aria-labelledby="editorial-history-title">
+      <section class="editorial-history-shell">
+        <header>
+          <div><p class="eyebrow">HISTOIRE VIVANTE</p><h2 id="editorial-history-title">Versions & variantes</h2><p>Compare les textes, garde les rendus compatibles et choisis ton canon.</p></div>
+          <button id="editorial-history-close" class="button ghost" type="button">Fermer</button>
+        </header>
+        <nav class="editorial-scope" aria-label="Objet à versionner">
+          <button type="button" data-editorial-scope="episode">Scénario</button>
+          <button type="button" data-editorial-scope="shot" class="selected">Plan en cours</button>
+        </nav>
+        <div class="editorial-workspace">
+          <form id="editorial-form" class="editorial-form">
+            <div class="editorial-form-heading"><div><p class="eyebrow">VERSION DE TRAVAIL</p><strong id="editorial-current-name">Canon actuel</strong></div><span id="editorial-status" class="badge">Prêt</span></div>
+            <label>Nom de cette version<input id="editorial-name" maxlength="80" required placeholder="Ex. Plus sombre, v3 dialogues" /></label>
+            <fieldset data-editorial-fields="episode">
+              <label>Titre<input data-editorial-field="title" /></label>
+              <label>Promesse<textarea data-editorial-field="logline"></textarea></label>
+              <label>Scénario<textarea data-editorial-field="narrative_source"></textarea></label>
+              <div class="editorial-story-grid">
+                <label>Accroche<textarea data-editorial-field="hook"></textarea></label>
+                <label>Mise en place<textarea data-editorial-field="setup"></textarea></label>
+                <label>Conflit<textarea data-editorial-field="conflict"></textarea></label>
+                <label>Révélation<textarea data-editorial-field="reveal"></textarea></label>
+                <label>Cliffhanger<textarea data-editorial-field="cliffhanger"></textarea></label>
+              </div>
+            </fieldset>
+            <fieldset data-editorial-fields="shot">
+              <label>Texte du plan<textarea data-editorial-field="shot_source"></textarea></label>
+              <label>Action<textarea data-editorial-field="action"></textarea></label>
+              <div class="editorial-story-grid">
+                <label>Personnage<select data-editorial-field="speaker"></select></label>
+                <label>Dialogue<textarea data-editorial-field="dialogue"></textarea></label>
+                <label>Intention<input data-editorial-field="intention" /></label>
+                <label>Émotion<input data-editorial-field="emotion" /></label>
+              </div>
+            </fieldset>
+            <footer><button type="submit" class="button primary" data-editorial-save="version">Enregistrer comme canon</button><button type="button" class="button secondary" data-editorial-save="variant">Créer une variante</button></footer>
+          </form>
+          <section class="editorial-browser">
+            <div class="editorial-compare-controls">
+              <label>Version gauche<select id="editorial-left"></select></label>
+              <span aria-hidden="true">↔</span>
+              <label>Version droite<select id="editorial-right"></select></label>
+              <button id="editorial-compare" class="button secondary" type="button">Comparer</button>
+            </div>
+            <div id="editorial-version-list" class="editorial-version-list"></div>
+            <div class="editorial-diff-heading"><div><p class="eyebrow">AVANT / APRÈS</p><strong id="editorial-diff-title">Choisis deux versions</strong></div><button id="editorial-explain" class="button ghost" type="button" disabled>✦ Expliquer les différences</button></div>
+            <div id="editorial-diff" class="editorial-diff"><p class="empty">La comparaison restera lisible : aucun JSON à déchiffrer.</p></div>
+            <aside id="editorial-explanation" class="editorial-explanation hidden" aria-live="polite"></aside>
+          </section>
+        </div>
+      </section>
+    </dialog>
+    <script src="/static/i18n.js" defer></script>
     <script src="/static/notifications.js" defer></script>
     <script src="/static/projects.js" defer></script>
     <script src="/static/app.js" defer></script>
+    <script src="/static/runtime-manager.js" defer></script>
     <script src="/static/narrative.js" defer></script>
     <script src="/static/episode.js" defer></script>
     <script src="/static/output-console.js" defer></script>
+    <script src="/static/editorial-history.js" defer></script>
+    <script src="/static/asset-drawer.js" defer></script>
     <dialog id="workflow-graph-dialog" class="workflow-graph-dialog" aria-labelledby="workflow-graph-title">
       <section class="workflow-graph-shell">
         <header class="workflow-graph-toolbar">
@@ -407,13 +607,27 @@
       </section>
     </dialog>
 
+    <script src="/static/coherence.js" defer></script>
     <script src="/static/graph.js" defer></script>
     <script src="/static/workflow-graph.js" defer></script>
+    <script src="/static/workflow-template-catalogue.js" defer></script>
     <script src="/static/episode-canvas.js" defer></script>
     <script src="/static/episode-production.js" defer></script>
+    <script src="/static/bible-view.js" defer></script>
+    <script src="/static/bible-relations.js" defer></script>
+    <script src="/static/guided-workspace.js" defer></script>
     <script src="/static/workspace-shell.js" defer></script>
     <script src="/static/desktop-workspace.js" defer></script>
+    <script src="/static/settings-drawers.js" defer></script>
+    <script src="/static/model-manager.js" defer></script>
     <script src="/static/activity-bar.js" defer></script>
     <script src="/static/getting-started.js" defer></script>
+    <script src="/static/project-explorer.js" defer></script>
+    <script src="/static/production-queue.js" defer></script>
+    <script src="/static/demo-production.js" defer></script>
+    <script src="/static/narrative-workflow.js" defer></script>
+    <script src="/static/field-assistant.js" defer></script>
+    <script src="/static/topbar-tools.js" defer></script>
+    <script src="/static/desktop-lifecycle.js" defer></script>
   </body>
 </html>

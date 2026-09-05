@@ -1,1 +1,1 @@
-"""Core packages for La Serre des Venins."""
+"""Core packages for La Serre."""

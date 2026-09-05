@@ -1,0 +1,47 @@
+.ai-field-enabled { position: relative; }
+.ai-field-trigger {
+  position: absolute;
+  z-index: 2;
+  top: -4px;
+  right: 0;
+  display: grid;
+  width: 23px;
+  height: 21px;
+  place-items: center;
+  padding: 0;
+  color: #d8afea;
+  border: 1px solid rgba(163, 135, 196, .42);
+  border-radius: 7px;
+  background: #17101c;
+  box-shadow: 0 4px 14px #0006;
+  cursor: pointer;
+  font-size: 11px;
+}
+.ai-field-trigger:hover:not(:disabled) { color: #fff; border-color: #c6a0da; background: #291832; }
+.ai-field-trigger:disabled { opacity: .45; cursor: wait; }
+.ai-field-candidate {
+  position: fixed;
+  z-index: 260;
+  width: min(480px, calc(100vw - 24px));
+  padding: 13px;
+  color: var(--text);
+  border: 1px solid rgba(163, 135, 196, .55);
+  border-radius: 13px;
+  background: #0b120e;
+  box-shadow: 0 24px 80px #000d;
+}
+.ai-field-candidate > header,.ai-field-candidate > footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ai-field-candidate > header { padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.ai-field-candidate > header small,.ai-field-candidate > header strong { display: block; }
+.ai-field-candidate > header small { color: var(--violet); font-size: 8px; letter-spacing: .13em; }
+.ai-field-candidate > header strong { margin-top: 2px; font: 500 16px Georgia, serif; }
+.ai-field-candidate > header button { color: var(--muted); border: 0; background: none; cursor: pointer; font-size: 18px; }
+.ai-field-diff { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 11px 0; }
+.ai-field-diff article { min-width: 0; padding: 9px; border: 1px solid var(--line); border-radius: 9px; background: #080d0a; }
+.ai-field-diff article:last-child { border-color: rgba(143, 207, 157, .34); background: rgba(143, 207, 157, .05); }
+.ai-field-diff small { display: block; margin-bottom: 5px; color: var(--muted); font-size: 7px; letter-spacing: .1em; }
+.ai-field-diff p { max-height: 150px; margin: 0; overflow: auto; color: #c7d0ca; font-size: 10px; line-height: 1.45; white-space: pre-wrap; }
+.ai-field-candidate > footer small { color: #718077; font-size: 8px; }
+.ai-field-candidate > footer div { display: flex; gap: 7px; }
+.ai-field-candidate > footer .button { padding: 7px 10px; font-size: 8px; }
+@media (max-width: 560px) { .ai-field-diff { grid-template-columns: 1fr; } }

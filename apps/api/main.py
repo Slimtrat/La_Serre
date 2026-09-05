@@ -10,15 +10,27 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from apps.api.asset_catalog import ProjectAssetCatalog
 from apps.api.assets import AssetSlot, AssetStore
+from apps.api.bible_routes import create_bible_router
+from apps.api.coherence_routes import create_coherence_router
+from apps.api.context_graph import create_context_graph_router
+from apps.api.demo_routes import create_demo_router
+from apps.api.editorial_routes import create_editorial_router
 from apps.api.episode_job_manager import EpisodeJobManager
 from apps.api.episode_routes import create_episode_router
+from apps.api.guided_autopilot_routes import create_guided_autopilot_router
+from apps.api.guided_routes import create_guided_router
 from apps.api.job_manager import JobManager
 from apps.api.narrative_routes import create_narrative_router
 from apps.api.notifications import StudioNotificationLog
+from apps.api.production_queue import ProductionQueueManager
+from apps.api.production_queue_routes import create_production_queue_router
+from apps.api.project_storage_routes import create_project_storage_router
 from apps.api.projects import ProjectRegistry
 from apps.api.run_history import RUN_FILES, RunHistory
 from apps.api.schemas import (
+    AssetReuseRequest,
     EpisodeGenerationRequest,
     GenerationRequest,
     NotificationCreateRequest,
@@ -33,12 +45,20 @@ from apps.api.schemas import (
 from apps.api.stage_actions import ShotStageService, StageKind
 from apps.api.workflow_graph import WORKFLOW_GRAPH_KINDS, build_workflow_graph
 from apps.api.workflow_setup import WorkflowSetup
+from apps.api.workflow_template_routes import create_workflow_template_router
+from apps.desktop.service_launcher import (
+    control_service,
+    service_logs,
+    service_supervisor_listing,
+)
+from apps.desktop.status import build_desktop_status
 from apps.version import __version__
 from engine.config import Settings
 from engine.generation.comfy.client import ComfyClient
 from engine.generation.comfy.errors import WorkflowConfigurationError
 from engine.generation.comfy.model_installer import ModelInstaller
 from engine.generation.comfy.workflow_factory import WorkflowFactory
+from engine.world.bible import BibleRegistry
 from engine.world.catalog import EpisodeCatalog
 
 STATIC_DIR = Path(__file__).with_name("static")
@@ -89,16 +109,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def assets() -> AssetStore:
         return AssetStore(current_settings().output_dir)
 
+    def asset_catalog() -> ProjectAssetCatalog:
+        resolved = current_settings()
+        return ProjectAssetCatalog(resolved.output_dir, resolved.private_content_dir)
+
     def catalog() -> EpisodeCatalog:
         return EpisodeCatalog(current_settings().private_content_dir)
 
     def notifications() -> StudioNotificationLog:
         return StudioNotificationLog(current_settings().output_dir)
 
-    app = FastAPI(title="La Serre des Venins", version=__version__)
+    app = FastAPI(title="La Serre", version=__version__)
     manager = JobManager(current_settings, assets)
     episode_manager = EpisodeJobManager(current_settings)
     stage_service = ShotStageService(current_settings)
+    production_queue = ProductionQueueManager(current_settings, catalog, manager, stage_service)
     setup = WorkflowSetup()
     factory = WorkflowFactory()
 
@@ -111,8 +136,41 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-    app.include_router(create_episode_router(catalog))
-    app.include_router(create_narrative_router(current_settings, assets))
+    app.include_router(
+        create_episode_router(catalog, lambda: current_settings().output_dir, current_settings)
+    )
+    app.include_router(create_context_graph_router(catalog, lambda: current_settings().output_dir))
+    app.include_router(create_coherence_router(current_settings, catalog))
+    app.include_router(create_narrative_router(current_settings, assets, catalog))
+    app.include_router(create_guided_router(current_settings))
+    app.include_router(create_guided_autopilot_router(current_settings))
+    app.include_router(create_workflow_template_router(current_settings))
+    app.include_router(create_editorial_router(current_settings))
+    app.include_router(
+        create_demo_router(
+            lambda: current_settings().output_dir,
+            notifications,
+            current_settings,
+        )
+    )
+    app.include_router(create_production_queue_router(production_queue))
+    app.include_router(
+        create_project_storage_router(
+            project_registry,
+            has_active_work=lambda: (
+                manager.has_active_jobs()
+                or episode_manager.has_active_jobs()
+                or stage_service.has_active_operations()
+                or production_queue.has_active_jobs()
+            ),
+        )
+    )
+    app.include_router(
+        create_bible_router(
+            lambda: BibleRegistry(current_settings().private_content_dir),
+            lambda: current_settings().output_dir,
+        )
+    )
 
     @app.get("/api/projects")
     def list_projects() -> dict[str, object]:
@@ -124,6 +182,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             manager.has_active_jobs()
             or episode_manager.has_active_jobs()
             or stage_service.has_active_operations()
+            or production_queue.has_active_jobs()
         ):
             raise HTTPException(
                 status_code=409,
@@ -150,6 +209,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             manager.has_active_jobs()
             or episode_manager.has_active_jobs()
             or stage_service.has_active_operations()
+            or production_queue.has_active_jobs()
         ):
             raise HTTPException(
                 status_code=409,
@@ -163,6 +223,32 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "info",
             "Projet actif",
             f"Le Studio travaille maintenant dans {project.name}.",
+            source="projects",
+        )
+        return project_registry.listing()
+
+    @app.delete("/api/projects/{project_id}")
+    def delete_discovery_project(project_id: str) -> dict[str, object]:
+        if (
+            manager.has_active_jobs()
+            or episode_manager.has_active_jobs()
+            or stage_service.has_active_operations()
+            or production_queue.has_active_jobs()
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="Attends la fin des générations avant de supprimer un projet.",
+            )
+        try:
+            project = project_registry.delete_discovery(project_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="Projet introuvable") from exc
+        except (OSError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        notifications().publish(
+            "info",
+            "Projet Découverte retiré",
+            f"{project.name} a été retiré sans supprimer les autres projets.",
             source="projects",
         )
         return project_registry.listing()
@@ -192,6 +278,63 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
+    @app.get("/api/runtime/services")
+    def runtime_services() -> dict[str, object]:
+        return service_supervisor_listing()
+
+    @app.post("/api/runtime/services/{service_name}/{action}")
+    def runtime_service_action(service_name: str, action: str) -> dict[str, object]:
+        if action not in {"check", "start", "stop", "restart"}:
+            raise HTTPException(status_code=422, detail="Action runtime inconnue")
+        listing = service_supervisor_listing()
+        raw_services = listing.get("services")
+        runtime_services = raw_services if isinstance(raw_services, list) else []
+        known = {
+            str(item.get("name"))
+            for item in runtime_services
+            if isinstance(item, dict)
+        }
+        if service_name not in known:
+            raise HTTPException(status_code=404, detail="Runtime local introuvable")
+        try:
+            service = control_service(service_name, action)
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        action_label = {
+            "check": "Diagnostic actualisé",
+            "start": "Démarrage demandé",
+            "stop": "Arrêt demandé",
+            "restart": "Redémarrage demandé",
+        }[action]
+        notifications().publish(
+            "info",
+            action_label,
+            f"{service.get('display_name', service_name)} · {service.get('detail', '')}",
+            source="runtime",
+        )
+        return {"service": service, "runtime": service_supervisor_listing()}
+
+    @app.get("/api/runtime/services/{service_name}/logs")
+    def runtime_service_logs(service_name: str, limit: int = 200) -> dict[str, object]:
+        try:
+            return service_logs(service_name, limit=max(1, min(limit, 1000)))
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/api/desktop/status")
+    def desktop_status() -> dict[str, object]:
+        """Return the compact, side-effect-free state consumed by the tray."""
+        return build_desktop_status(
+            service_supervisor_listing(),
+            production_queue.listing(),
+            has_direct_activity=(
+                manager.has_active_jobs()
+                or episode_manager.has_active_jobs()
+                or stage_service.has_active_operations()
+            ),
+            notifications=notifications().listing(limit=20),
+        )
+
     @app.get("/ready")
     @app.get("/api/status")
     async def ready() -> dict[str, object]:
@@ -214,7 +357,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             for item in await asyncio.to_thread(model_installer().inspect)
         }
         models = [{**model, **download_status.get(str(model["filename"]), {})} for model in models]
-        models_ready = all(bool(model["installed"]) for model in models)
+        models_ready = all(
+            bool(model["installed"]) if comfyui else model.get("state") == "installed"
+            for model in models
+        )
         nodes_ready = not missing_nodes
         return {
             "version": __version__,
@@ -391,6 +537,62 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         record, path = found
         return FileResponse(path, media_type=record.media_type, filename=record.filename)
 
+    @app.get("/api/asset-catalog")
+    def list_asset_catalog(
+        q: str | None = None,
+        kind: str | None = None,
+        character: str | None = None,
+        location: str | None = None,
+        episode: str | None = None,
+        status: str | None = None,
+    ) -> dict[str, object]:
+        return asset_catalog().listing(
+            query=q,
+            kind=kind,
+            character=character,
+            location=location,
+            episode=episode,
+            status=status,
+        )
+
+    @app.get("/api/asset-catalog/{asset_id}")
+    def get_catalog_asset(asset_id: str) -> dict[str, object]:
+        try:
+            return asset_catalog().get(asset_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Asset introuvable") from exc
+
+    @app.get("/api/asset-catalog/{asset_id}/content")
+    def get_catalog_asset_content(asset_id: str) -> FileResponse:
+        try:
+            catalog = asset_catalog()
+            item = catalog.get(asset_id)
+            path = catalog.content_path(asset_id, refresh=False)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Asset introuvable") from exc
+        return FileResponse(path, media_type=str(item["media_type"]))
+
+    @app.post("/api/assets/{shot_id}/{slot}/reuse")
+    def reuse_catalog_asset(
+        shot_id: str,
+        slot: AssetSlot,
+        payload: AssetReuseRequest,
+    ) -> dict[str, object]:
+        try:
+            record = asset_catalog().reuse(shot_id, slot, payload.asset_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Asset introuvable") from exc
+        return {
+            **asdict(record),
+            "url": f"/api/assets/{shot_id}/{slot}/content",
+        }
+
     @app.get("/api/jobs/{job_id}")
     async def get_job(job_id: str) -> dict[str, object]:
         job = manager.get(job_id)
@@ -438,9 +640,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if filename not in RUN_FILES:
             raise HTTPException(status_code=404, detail="History media not found")
         try:
-            path = RunHistory(current_settings().output_dir).media_path(
-                shot_id, run_id, filename
-            )
+            path = RunHistory(current_settings().output_dir).media_path(shot_id, run_id, filename)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail="History media not found") from exc
         if not path.is_file():
@@ -506,6 +706,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if not job:
             raise HTTPException(status_code=404, detail="Episode job not found")
         return job.public()
+
+    @app.get("/api/episodes/{episode_id}/media-status")
+    def episode_media_status(episode_id: str) -> dict[str, object]:
+        """Describe optional master files without turning their absence into an error."""
+        if not EPISODE_ID.fullmatch(episode_id):
+            raise HTTPException(status_code=404, detail="Episode not found")
+        output_dir = current_settings().output_dir / episode_id
+        manifest_path = output_dir / "episode-generation.json"
+        manifest: dict[str, object] = {}
+        if manifest_path.is_file():
+            try:
+                payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                payload = {}
+            if isinstance(payload, dict):
+                manifest = payload
+        return {
+            "exists": manifest_path.is_file(),
+            "video": (output_dir / "episode.mp4").is_file(),
+            "manifest": manifest_path.is_file(),
+            "subtitles": bool(manifest.get("subtitles"))
+            and (output_dir / "subtitles.fr.srt").is_file(),
+        }
 
     @app.get("/api/episode-media/{episode_id}/{filename}")
     def episode_media(episode_id: str, filename: str) -> FileResponse:

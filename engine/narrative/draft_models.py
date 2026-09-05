@@ -7,7 +7,14 @@ from typing import Any, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from engine.director.models import Camera, Dialogue, RenderSpec, Shot, ShotCharacter
+from engine.director.models import (
+    Camera,
+    Dialogue,
+    DialogueMode,
+    RenderSpec,
+    Shot,
+    ShotCharacter,
+)
 
 
 class StrictDraft(BaseModel):
@@ -32,12 +39,13 @@ class DraftCamera(StrictDraft):
 class DraftDialogue(StrictDraft):
     speaker_name: str = Field(min_length=1)
     text: str = Field(min_length=1)
+    mode: DialogueMode = DialogueMode.ON_SCREEN
 
 
 class CreativeShotDraft(StrictDraft):
     location: str = Field(min_length=1)
     location_description: str = Field(min_length=1)
-    characters: list[DraftCharacter] = Field(min_length=1, max_length=3)
+    characters: list[DraftCharacter] = Field(default_factory=list, max_length=3)
     camera: DraftCamera
     action: str = Field(min_length=1)
     dialogue: DraftDialogue | None = None
@@ -66,7 +74,12 @@ class CreativeShotDraft(StrictDraft):
             )
             for identifier, draft in zip(identifiers, self.characters, strict=True)
         ]
-        dialogue = self._dialogue(identifiers) if _has_quoted_dialogue(source_text) else None
+        dialogue = None
+        if self.dialogue and (
+            _has_quoted_dialogue(source_text)
+            or self.dialogue.mode is not DialogueMode.ON_SCREEN
+        ):
+            dialogue = self._dialogue(identifiers)
         seed_bytes = hashlib.blake2b(
             f"{shot_id}\n{source_text}".encode(),
             digest_size=8,
@@ -95,9 +108,10 @@ class CreativeShotDraft(StrictDraft):
             for character, identifier in zip(self.characters, identifiers, strict=True)
         }
         speaker = names.get(_normalized(self.dialogue.speaker_name))
-        if not speaker:
+        if not speaker and self.dialogue.mode is DialogueMode.ON_SCREEN:
             raise ValueError("Le locuteur du dialogue doit être un personnage visible")
-        return Dialogue(speaker=speaker, text=self.dialogue.text)
+        speaker = speaker or _unique_character_ids([self.dialogue.speaker_name])[0]
+        return Dialogue(speaker=speaker, text=self.dialogue.text, mode=self.dialogue.mode)
 
 
 def _inline_schema(value: Any, definitions: dict[str, Any]) -> Any:

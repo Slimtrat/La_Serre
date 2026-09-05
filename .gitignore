@@ -11,3 +11,8 @@ output/
 workflows/local/
 .private/
 projects/
+build/
+dist/
+dist-installer/
+logs/
+comfyui-extra-model-paths.yaml

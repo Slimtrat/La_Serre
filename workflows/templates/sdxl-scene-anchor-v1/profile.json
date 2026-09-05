@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "id": "template-sdxl-scene-anchor-v1",
+  "workflow": "workflow.api.json",
+  "bindings": [
+    {
+      "source": "prompt",
+      "node_id": "2",
+      "input": "text",
+      "required": true
+    },
+    {
+      "source": "negative_prompt",
+      "node_id": "3",
+      "input": "text",
+      "required": true
+    },
+    {
+      "source": "reference_image",
+      "node_id": "4",
+      "input": "image",
+      "required": true
+    },
+    {
+      "source": "width",
+      "node_id": "5",
+      "input": "width",
+      "required": true
+    },
+    {
+      "source": "height",
+      "node_id": "5",
+      "input": "height",
+      "required": true
+    },
+    {
+      "source": "seed",
+      "node_id": "7",
+      "input": "seed",
+      "required": true
+    },
+    {
+      "source": "output_prefix",
+      "node_id": "9",
+      "input": "filename_prefix",
+      "required": true
+    }
+  ],
+  "output_node_ids": [
+    "9"
+  ]
+}

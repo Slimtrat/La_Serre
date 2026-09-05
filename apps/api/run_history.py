@@ -17,6 +17,7 @@ RUN_FILES = (
     "keyframe.png",
     "keyframe-guide-1.png",
     "keyframe-guide-2.png",
+    "keyframe-approval.json",
     "clip.mp4",
     "generation.json",
     "prompt.txt",
@@ -102,7 +103,13 @@ class RunHistory:
                 shutil.copy2(archived, current)
         return self._describe(shot_id, "current", destination, current=True)
 
-    def invalidate_shot_after(self, shot_id: str, stage: str) -> str | None:
+    def invalidate_shot_after(
+        self,
+        shot_id: str,
+        stage: str,
+        *,
+        archive: bool = True,
+    ) -> str | None:
         self._validate_shot_id(shot_id)
         downstream = {
             "prompt": (
@@ -115,6 +122,7 @@ class RunHistory:
             ),
             "keyframe": ("clip.mp4", "generation.json"),
             "voice": (),
+            "source": tuple(name for name in RUN_FILES if name != "studio-log.jsonl"),
         }
         if stage not in downstream:
             raise ValueError(f"Unknown dependency stage: {stage}")
@@ -122,12 +130,12 @@ class RunHistory:
         existing = [destination / filename for filename in downstream[stage]]
         archived = (
             self.archive_current(shot_id)
-            if any(path.is_file() for path in existing)
+            if archive and any(path.is_file() for path in existing)
             else None
         )
         for path in existing:
             path.unlink(missing_ok=True)
-        self.invalidate_master(shot_id.rsplit("-S", 1)[0])
+        self.invalidate_master(shot_id.rsplit("-S", 1)[0], archive=archive)
         return str(archived["id"]) if archived is not None else None
 
     def archive_master(self, episode_id: str) -> str | None:
@@ -162,13 +170,28 @@ class RunHistory:
         )
         return run_id
 
-    def invalidate_master(self, episode_id: str) -> str | None:
-        run_id = self.archive_master(episode_id)
-        if run_id is None:
-            return None
+    def invalidate_master(self, episode_id: str, *, archive: bool = True) -> str | None:
+        run_id = self.archive_master(episode_id) if archive else None
         destination = self.output_root / episode_id
         for filename in MASTER_FILES[:3]:
             (destination / filename).unlink(missing_ok=True)
+        return run_id
+
+    def restore_master(self, episode_id: str, run_id: str) -> str:
+        self._validate_episode_id(episode_id)
+        self._validate_run_id(run_id)
+        source = self.history_root / episode_id / run_id
+        if not source.is_dir():
+            raise FileNotFoundError(source)
+        self.archive_master(episode_id)
+        destination = self.output_root / episode_id
+        destination.mkdir(parents=True, exist_ok=True)
+        for filename in MASTER_FILES:
+            current = destination / filename
+            current.unlink(missing_ok=True)
+            archived = source / filename
+            if archived.is_file():
+                shutil.copy2(archived, current)
         return run_id
 
     def media_path(self, shot_id: str, run_id: str, filename: str) -> Path:

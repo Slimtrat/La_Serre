@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "id": "sdxl-adjacent-pose-v1",
+  "version": 1,
+  "label": "Pose adjacente SDXL",
+  "description": "Produit la pose suivante en réinjectant l'image précédente à faible débruitage.",
+  "stage": "pose_continuation",
+  "model_family": "SDXL img2img",
+  "workflow": "workflow.api.json",
+  "profile": "profile.json",
+  "required_nodes": [
+    "CLIPTextEncode",
+    "CheckpointLoaderSimple",
+    "ImageScale",
+    "KSampler",
+    "LoadImage",
+    "SaveImage",
+    "VAEDecode",
+    "VAEEncode"
+  ],
+  "models": [
+    {
+      "role": "Keyframes SDXL",
+      "filename": "sd_xl_base_1.0.safetensors",
+      "folder": "checkpoints",
+      "url": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors?download=true",
+      "source_note": null
+    }
+  ],
+  "defaults": {
+    "width": 576,
+    "height": 1024,
+    "steps": 34,
+    "cfg": 5.8,
+    "denoise": 0.52
+  },
+  "prompt_sections": [
+    "identity_lock",
+    "previous_pose_delta",
+    "expression_delta",
+    "camera_lock",
+    "lighting_lock"
+  ],
+  "receives": [
+    "previous_pose_image",
+    "next_pose_direction"
+  ],
+  "produces": [
+    "adjacent_pose_image"
+  ],
+  "next_templates": [
+    "sdxl-adjacent-pose-v1",
+    "ltx-triptych-animation-v1"
+  ],
+  "limitations": [
+    "Un changement de pose trop important peut déformer le personnage.",
+    "La référence doit venir du plan courant, pas d'un autre décor."
+  ],
+  "provenance": [
+    "Graphe SDXL img2img natif généré par WorkflowFactory."
+  ]
+}

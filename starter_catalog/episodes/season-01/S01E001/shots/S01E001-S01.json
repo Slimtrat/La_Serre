@@ -1,0 +1,23 @@
+{
+  "id": "S01E001-S01",
+  "duration": 4.0,
+  "location": "serre-des-venins",
+  "location_description": "A vast nocturnal Victorian poison greenhouse with black wrought-iron ribs, fogged glass panes, a huge moon beyond the roof, tangled sentient vines, toxic bell flowers, blue aconites and a round veined marble pedestal at its center",
+  "characters": [{
+    "id": "graine-noire",
+    "name": "La Graine Noire",
+    "emotion": "dormant intelligence, patient and quietly amused",
+    "position": "hidden inside the closed chest at center frame",
+    "visual_description": "A glossy black botanical seed shaped like a small anatomical heart, split by one thin violet seam, with tiny rootlets like veins and no human face, limbs or readable species",
+    "wardrobe": "Its only covering is a wet obsidian shell with a subtle violet inner glow and delicate vein-like roots that move with deliberate intelligence",
+    "signature_details": ["heart-shaped obsidian shell", "single glowing violet seam", "vein-like black rootlets", "slow visible heartbeat pulse"],
+    "reference_images": ["../../../../references/episode-01-storyboard.png"]
+  }],
+  "camera": {"shot_type": "wide vertical establishing shot", "movement": "slow descending push toward the pedestal", "lens": "28mm"},
+  "action": "At midnight an ornate black chest pulses on the central pedestal; on every pulse all nearby poison flowers recoil from it as if sharing one nervous body",
+  "dialogue": null,
+  "lighting": "cold full moon through fogged glass with a faint violet pulse leaking from the chest seams",
+  "mood": "playful gothic suspense with a first trace of organic unease",
+  "style": ["polished 2D cartoon", "gothic botanical fantasy", "painterly cel shading", "predominantly botanical character design", "vertical cinematic composition"],
+  "render": {"seed": 410001, "width": 576, "height": 1024, "fps": 24, "frames": 97, "negative_prompt": "photorealism, human skin, ordinary people, gore, blood, daylight, modern objects, text, subtitles, logo, watermark"}
+}

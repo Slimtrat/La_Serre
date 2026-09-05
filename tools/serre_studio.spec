@@ -5,13 +5,18 @@ from PyInstaller.utils.hooks import collect_all, collect_submodules
 
 project_root = Path.cwd()
 webview_data, webview_binaries, webview_hidden = collect_all("webview")
+tray_data, tray_binaries, tray_hidden = collect_all("pystray")
+pillow_data, pillow_binaries, pillow_hidden = collect_all("PIL")
 
-data_files = list(webview_data)
+data_files = list(webview_data + tray_data + pillow_data)
 for source, destination in (
     (project_root / "apps" / "api" / "static", "apps/api/static"),
+    (project_root / "assets" / "branding", "assets/branding"),
     (project_root / "examples", "examples"),
+    (project_root / "starter_catalog", "starter_catalog"),
     (project_root / "workflows" / "images", "workflows/images"),
     (project_root / "workflows" / "video", "workflows/video"),
+    (project_root / "workflows" / "templates", "workflows/templates"),
 ):
     if source.exists():
         data_files.append((str(source), destination))
@@ -19,6 +24,8 @@ for source, destination in (
 hidden_imports = sorted(
     set(
         webview_hidden
+        + tray_hidden
+        + pillow_hidden
         + collect_submodules("apps")
         + collect_submodules("engine")
         + ["webview.platforms.edgechromium", "webview.platforms.winforms"]
@@ -28,7 +35,7 @@ hidden_imports = sorted(
 analysis = Analysis(
     [str(project_root / "tools" / "run_desktop.py")],
     pathex=[str(project_root)],
-    binaries=webview_binaries,
+    binaries=webview_binaries + tray_binaries + pillow_binaries,
     datas=data_files,
     hiddenimports=hidden_imports,
     hookspath=[],
@@ -58,4 +65,5 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     version=str(project_root / "tools" / "windows-version-info.txt"),
+    icon=str(project_root / "assets" / "branding" / "la-serre.ico"),
 )

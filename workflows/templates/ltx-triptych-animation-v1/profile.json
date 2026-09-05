@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "id": "template-ltx-triptych-animation-v1",
+  "workflow": "workflow.api.json",
+  "bindings": [
+    {
+      "source": "prompt",
+      "node_id": "3",
+      "input": "text",
+      "required": true
+    },
+    {
+      "source": "negative_prompt",
+      "node_id": "4",
+      "input": "text",
+      "required": true
+    },
+    {
+      "source": "seed",
+      "node_id": "10",
+      "input": "noise_seed",
+      "required": true
+    },
+    {
+      "source": "width",
+      "node_id": "6",
+      "input": "width",
+      "required": true
+    },
+    {
+      "source": "height",
+      "node_id": "6",
+      "input": "height",
+      "required": true
+    },
+    {
+      "source": "frames",
+      "node_id": "6",
+      "input": "length",
+      "required": true
+    },
+    {
+      "source": "fps",
+      "node_id": "7",
+      "input": "frame_rate",
+      "required": true
+    },
+    {
+      "source": "fps",
+      "node_id": "12",
+      "input": "fps",
+      "required": true
+    },
+    {
+      "source": "reference_image",
+      "node_id": "5",
+      "input": "image",
+      "required": true
+    },
+    {
+      "source": "reference_image_guide_1",
+      "node_id": "14",
+      "input": "image",
+      "required": true
+    },
+    {
+      "source": "guide_frame_1",
+      "node_id": "15",
+      "input": "frame_idx",
+      "required": true
+    },
+    {
+      "source": "reference_image_guide_2",
+      "node_id": "16",
+      "input": "image",
+      "required": true
+    },
+    {
+      "source": "guide_frame_2",
+      "node_id": "17",
+      "input": "frame_idx",
+      "required": true
+    },
+    {
+      "source": "output_prefix",
+      "node_id": "13",
+      "input": "filename_prefix",
+      "required": true
+    }
+  ],
+  "output_node_ids": [
+    "13"
+  ]
+}

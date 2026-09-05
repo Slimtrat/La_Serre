@@ -1,0 +1,41 @@
+name: Proposer une évolution
+description: Décrire un résultat produit, son utilisateur et son critère de réussite.
+title: "[Idée] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problème utilisateur
+      description: Quel travail est aujourd’hui difficile, fragile ou impossible ?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Résultat attendu
+      description: Décrire le comportement observable plutôt qu’une technologie imposée.
+    validations:
+      required: true
+  - type: dropdown
+    id: horizon
+    attributes:
+      label: Horizon de roadmap
+      options:
+        - Consolidation 0.2.x
+        - Trois épisodes cohérents 0.3
+        - Atelier extensible 0.4
+        - Vision 1.0+
+        - À explorer
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Critères d’acceptation
+      description: Comment saurons-nous que la proposition est terminée et utile ?
+  - type: textarea
+    id: impact
+    attributes:
+      label: Canon, données et moteurs concernés
+      description: Bible, projets existants, modèles, workflows, stockage ou confidentialité.

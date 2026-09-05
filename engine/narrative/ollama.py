@@ -69,3 +69,15 @@ class OllamaClient:
         if not isinstance(content, str) or not content.strip():
             raise ValueError("Ollama a renvoyé une réponse vide")
         return content
+
+    async def pull_model(self, model: str) -> None:
+        """Install one explicitly requested model through the local Ollama daemon."""
+        name = model.strip()
+        if not name:
+            raise ValueError("Le nom du modèle Ollama est vide")
+        response = await self._http.post(
+            "/api/pull",
+            json={"model": name, "stream": False},
+            timeout=None,
+        )
+        response.raise_for_status()

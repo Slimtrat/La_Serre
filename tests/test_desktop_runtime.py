@@ -48,3 +48,9 @@ def test_desktop_spec_does_not_bundle_machine_local_workflows() -> None:
     spec = Path("tools/serre_studio.spec").read_text(encoding="utf-8")
 
     assert '"workflows" / "local", "workflows/local"' not in spec
+    assert '"starter_catalog", "starter_catalog"' in spec
+    assert 'collect_all("pystray")' in spec
+    assert 'collect_all("PIL")' in spec
+    assert '"assets" / "branding", "assets/branding"' in spec
+    assert 'icon=str(project_root / "assets" / "branding" / "la-serre.ico")' in spec
+    assert Path("assets/branding/la-serre.ico").is_file()

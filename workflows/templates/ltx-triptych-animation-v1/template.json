@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "id": "ltx-triptych-animation-v1",
+  "version": 1,
+  "label": "Animation trois poses LTX",
+  "description": "Anime un plan vertical en verrouillant les images de début, milieu et fin.",
+  "stage": "video_triptych",
+  "model_family": "LTX-Video 2B",
+  "workflow": "workflow.api.json",
+  "profile": "profile.json",
+  "required_nodes": [
+    "CLIPLoader",
+    "CLIPTextEncode",
+    "CheckpointLoaderSimple",
+    "CreateVideo",
+    "KSamplerSelect",
+    "LTXVAddGuide",
+    "LTXVConditioning",
+    "LTXVImgToVideo",
+    "LTXVScheduler",
+    "LTXVSpatioTemporalGuidance",
+    "LoadImage",
+    "SamplerCustom",
+    "SaveVideo",
+    "VAEDecode"
+  ],
+  "models": [
+    {
+      "role": "Animation LTX 2B",
+      "filename": "ltx-video-2b-v0.9.5.safetensors",
+      "folder": "checkpoints",
+      "url": "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.5.safetensors",
+      "source_note": null
+    },
+    {
+      "role": "Encodeur texte T5 FP8",
+      "filename": "t5xxl_fp8_e4m3fn_scaled.safetensors",
+      "folder": "text_encoders",
+      "url": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn_scaled.safetensors",
+      "source_note": null
+    }
+  ],
+  "defaults": {
+    "width": 576,
+    "height": 1024,
+    "frames": 97,
+    "fps": 24,
+    "guide_frame_1": 48,
+    "guide_frame_2": 96
+  },
+  "prompt_sections": [
+    "character_motion",
+    "camera_motion",
+    "environment_motion",
+    "continuity_constraints"
+  ],
+  "receives": [
+    "scene_anchor_image",
+    "middle_pose_image",
+    "end_pose_image",
+    "shot_direction"
+  ],
+  "produces": [
+    "animated_shot"
+  ],
+  "next_templates": [],
+  "limitations": [
+    "Les trois images doivent partager cadrage, lumière et identité.",
+    "Le mouvement doit rester plausible sur 97 images."
+  ],
+  "provenance": [
+    "Graphe LTX multi-guide natif généré par WorkflowFactory."
+  ]
+}

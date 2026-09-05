@@ -95,7 +95,7 @@ function renderModels(models) {
     link.href = model.url;
     link.target = "_blank";
     link.rel = "noreferrer";
-    link.textContent = model.installed ? "Source" : "Télécharger ↗";
+    link.textContent = installed ? "Source" : "Télécharger ↗";
     row.append(info, state, link);
     list.append(row);
   }
@@ -209,7 +209,37 @@ function bindDropzone(zone) {
   input.addEventListener("change", () => input.files[0] && uploadAsset(slot, input.files[0]).catch((e) => notify(e.message, true)));
   for (const event of ["dragenter", "dragover"]) zone.addEventListener(event, (e) => { e.preventDefault(); zone.classList.add("drag"); });
   for (const event of ["dragleave", "drop"]) zone.addEventListener(event, (e) => { e.preventDefault(); zone.classList.remove("drag"); });
-  zone.addEventListener("drop", (event) => event.dataTransfer.files[0] && uploadAsset(slot, event.dataTransfer.files[0]).catch((e) => notify(e.message, true)));
+  zone.addEventListener("drop", (event) => {
+    const asset = window.SerreAssetDrawer?.transfer(event);
+    if (asset) {
+      event.stopPropagation();
+      window.SerreAssetDrawer.reuse(asset.assetId, slot).catch((error) => notify(error.message, true));
+      return;
+    }
+    if (event.dataTransfer.files[0]) uploadAsset(slot, event.dataTransfer.files[0]).catch((error) => notify(error.message, true));
+  });
+}
+
+function bindAssetSlot(card) {
+  const slot = $(".segmented[data-source]", card)?.dataset.source;
+  if (!slot) return;
+  card.addEventListener("dragover", (event) => {
+    if (!window.SerreAssetDrawer?.canDrop(slot)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "link";
+    card.classList.add("asset-drop-target");
+  });
+  card.addEventListener("dragleave", (event) => {
+    if (!card.contains(event.relatedTarget)) card.classList.remove("asset-drop-target");
+  });
+  card.addEventListener("drop", (event) => {
+    const asset = window.SerreAssetDrawer?.transfer(event);
+    if (!asset || !asset.compatibleSlots?.includes(slot)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    card.classList.remove("asset-drop-target");
+    window.SerreAssetDrawer.reuse(asset.assetId, slot).catch((error) => notify(error.message, true));
+  });
 }
 
 async function startJob(mode) {
@@ -383,8 +413,20 @@ function resetForProject() {
 async function runStage(kind, button) {
   if (kind === "validate") {
     if (!validateEditor()) throw new Error("Le plan est invalide.");
-    notify("Plan validé par le contrat Pydantic.");
-    return;
+    button.disabled = true;
+    button.classList.add("running");
+    try {
+      const report = await window.SerreCoherence?.currentShot("all");
+      const card = button.closest(".stage-card");
+      const status = card?.querySelector(".stage-status");
+      card?.classList.toggle("completed", Boolean(report?.approved_at));
+      card?.classList.toggle("failed", report?.status === "fail");
+      if (status && report) status.textContent = report.summary;
+      return report;
+    } finally {
+      button.disabled = false;
+      button.classList.remove("running");
+    }
   }
   if (kind === "keyframe") return startJob("keyframe");
   if (kind === "video") return startJob("video");
@@ -457,6 +499,7 @@ async function init() {
   $$('[data-stage-action]').forEach((button) => button.addEventListener("click", () => runStage(button.dataset.stageAction, button).catch((error) => notify(error.message, true))));
   $$(".segmented button:not(:disabled)").forEach((button) => button.addEventListener("click", () => setSource(button.parentElement.dataset.source, button.dataset.value)));
   $$('[data-dropzone]').forEach(bindDropzone);
+  $$(".stage-card.source-card").forEach(bindAssetSlot);
   $("#shot-file").addEventListener("change", async (event) => { const file = event.target.files[0]; if (file) { $("#shot-editor").value = await file.text(); validateEditor(); await refreshAssets(); } });
   $("#advanced-keyframe").addEventListener("change", (event) => event.target.files[0] && importAdvanced("keyframe", event.target.files[0]).catch((e) => notify(e.message, true)));
   $("#advanced-video").addEventListener("change", (event) => event.target.files[0] && importAdvanced("video", event.target.files[0]).catch((e) => notify(e.message, true)));
@@ -467,6 +510,16 @@ async function init() {
 
 window.addEventListener("studio:project-changing", resetForProject);
 window.addEventListener("studio:project-changed", () => refreshStatus());
+window.addEventListener("studio:asset-drag-start", (event) => {
+  const compatible = event.detail?.compatibleSlots || [];
+  $$(".stage-card.source-card").forEach((card) => {
+    const slot = $(".segmented[data-source]", card)?.dataset.source;
+    card.classList.toggle("asset-drop-incompatible", Boolean(slot) && !compatible.includes(slot));
+  });
+});
+window.addEventListener("studio:asset-drag-end", () => {
+  $$(".stage-card").forEach((card) => card.classList.remove("asset-drop-target", "asset-drop-incompatible"));
+});
 
 window.SerreStudio = {
   api,

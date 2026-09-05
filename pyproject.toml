@@ -3,10 +3,11 @@ requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
-name = "serre-des-venins"
-version = "0.2.3"
+name = "la-serre-studio"
+version = "0.2.13"
 description = "Studio local de production narrative assistée par IA"
 readme = "README.md"
+license = "AGPL-3.0-or-later"
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115,<1",
@@ -21,6 +22,8 @@ voice = [
   "edge-tts>=7.2,<8",
 ]
 desktop = [
+  "pillow>=10.4,<13",
+  "pystray>=0.19.5,<1",
   "pywebview>=5.4,<7",
 ]
 build = [
@@ -37,6 +40,7 @@ dev = [
 [project.scripts]
 generate-episode = "tools.generate_episode:main"
 generate-shot = "tools.generate_shot:main"
+generate-workflow-templates = "tools.generate_workflow_templates:main"
 serre-studio = "tools.run_studio:main"
 serre-desktop = "apps.desktop.cli:main"
 

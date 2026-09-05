@@ -20,6 +20,7 @@ from engine.director.models import Shot
 from engine.director.prompt_builder import PromptBuilder
 from engine.narrative.episode_models import EpisodePackage
 from engine.production.artifacts import write_text_atomic
+from engine.world.bible import BibleRegistry
 from engine.world.catalog import EpisodeCatalog
 
 StageKind = Literal["prompt", "voice", "music"]
@@ -62,6 +63,8 @@ class ShotStageService:
             notifications = StudioNotificationLog(settings.output_dir)
             try:
                 shot = Shot.model_validate(shot_payload)
+                if shot.canonical_context is not None:
+                    shot = BibleRegistry(settings.private_content_dir).resolve_shot(shot)
                 if kind == "prompt":
                     result = self._prompt(shot, settings)
                 elif kind == "voice":

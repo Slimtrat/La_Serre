@@ -10,7 +10,7 @@ const outputConsole = (() => {
 
   function formatDate(value) {
     if (!value) return "date inconnue";
-    return new Intl.DateTimeFormat("fr-FR", {
+    return new Intl.DateTimeFormat(window.SerreI18n?.getLocale?.() || "fr-FR", {
       day: "2-digit",
       month: "2-digit",
       hour: "2-digit",

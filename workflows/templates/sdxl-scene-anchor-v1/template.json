@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "id": "sdxl-scene-anchor-v1",
+  "version": 1,
+  "label": "Plan initial SDXL",
+  "description": "Transpose l'image maître dans le décor du plan en conservant l'identité approuvée.",
+  "stage": "scene_anchor",
+  "model_family": "SDXL img2img",
+  "workflow": "workflow.api.json",
+  "profile": "profile.json",
+  "required_nodes": [
+    "CLIPTextEncode",
+    "CheckpointLoaderSimple",
+    "ImageScale",
+    "KSampler",
+    "LoadImage",
+    "SaveImage",
+    "VAEDecode",
+    "VAEEncode"
+  ],
+  "models": [
+    {
+      "role": "Keyframes SDXL",
+      "filename": "sd_xl_base_1.0.safetensors",
+      "folder": "checkpoints",
+      "url": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors?download=true",
+      "source_note": null
+    }
+  ],
+  "defaults": {
+    "width": 576,
+    "height": 1024,
+    "steps": 34,
+    "cfg": 5.8,
+    "denoise": 0.68
+  },
+  "prompt_sections": [
+    "identity_lock",
+    "species_geometry",
+    "wardrobe",
+    "scene_action",
+    "camera",
+    "lighting",
+    "style"
+  ],
+  "receives": [
+    "approved_character_reference",
+    "shot_direction"
+  ],
+  "produces": [
+    "scene_anchor_image"
+  ],
+  "next_templates": [
+    "sdxl-adjacent-pose-v1"
+  ],
+  "limitations": [
+    "Le passage de FLUX à SDXL peut modifier légèrement le rendu de matière.",
+    "Un changement de décor extrême peut nécessiter d'ajuster le débruitage."
+  ],
+  "provenance": [
+    "Variante d'ancrage du graphe SDXL img2img de WorkflowFactory."
+  ]
+}
