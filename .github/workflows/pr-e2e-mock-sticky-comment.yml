@@ -54,7 +54,8 @@ jobs:
 
           Pour éviter qu’une jolie feuille cache une racine cassée :
 
-          - [ ] lancer `python -m pytest -q tests/test_e2e_mock_generation.py tests/test_production_queue.py tests/test_episode_pipeline.py`
+          - [x] la CI lance automatiquement la suite complète, dont l’E2E de génération mockée
+          - [ ] en local, reproduire avec `python -m pytest -q tests/test_e2e_mock_generation.py tests/test_production_queue.py tests/test_episode_pipeline.py`
           - [ ] si la PR touche aux schémas, jobs, fichiers projet ou étapes média, adapter l’E2E dans **la même PR**
           - [ ] conserver l’orchestration réelle ; seuls **ComfyUI, le TTS et FFmpeg** sont doublés
           - [ ] vérifier les artefacts physiques : **3 keyframes, vidéo, voix, musique, sous-titres et master**
