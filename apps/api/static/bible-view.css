@@ -22,7 +22,13 @@ body[data-workspace-view="bible"] .bible-workspace { display: grid; }
   color: var(--muted);
   font-size: 10px;
 }
-.bible-header-actions { display: flex; align-items: center; gap: 7px; }
+.bible-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 7px;
+}
 .bible-layout {
   display: grid;
   min-height: 0;

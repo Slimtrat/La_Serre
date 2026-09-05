@@ -5,9 +5,18 @@ from pathlib import Path
 from typing import Literal, cast
 
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict
 
 from engine.world.bible import BibleRegistry
+from engine.world.bible_exchange import (
+    BIBLE_EXCHANGE_FORMAT,
+    BIBLE_EXCHANGE_VERSION,
+    BibleExchangeDocument,
+    bible_ai_kit,
+    bible_exchange_schema,
+    empty_bible_exchange,
+)
 from engine.world.impact import BibleImpactAnalyzer
 from engine.world.models import (
     ArtDirection,
@@ -85,6 +94,54 @@ def create_bible_router(
         except (OSError, ValueError) as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         return response(bible, previous)
+
+    @router.get("/exchange")
+    def export_bible_exchange() -> dict[str, object]:
+        document = BibleExchangeDocument.from_project_bible(registry_provider().load())
+        return document.model_dump(mode="json")
+
+    @router.get("/exchange/template")
+    def get_empty_bible_exchange() -> dict[str, object]:
+        return empty_bible_exchange().model_dump(mode="json")
+
+    @router.get("/exchange/schema")
+    def get_bible_exchange_schema() -> JSONResponse:
+        return JSONResponse(
+            content=bible_exchange_schema(),
+            media_type="application/schema+json",
+        )
+
+    @router.get("/exchange/ai-kit")
+    def get_bible_ai_kit() -> dict[str, object]:
+        return bible_ai_kit().model_dump(mode="json")
+
+    @router.post("/exchange/import")
+    def import_bible_exchange(
+        payload: BibleExchangeDocument,
+        expected_revision: int | None = Query(default=None, ge=0),
+    ) -> dict[str, object]:
+        registry = registry_provider()
+        current = registry.load()
+        if expected_revision is not None and current.revision != expected_revision:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "message": "La Bible a changé depuis l'ouverture de l'import.",
+                    "expected_revision": expected_revision,
+                    "current_revision": current.revision,
+                },
+            )
+        try:
+            bible = registry.replace(payload.bible.to_project_bible())
+        except (OSError, ValueError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        result = response(bible, current.revision)
+        result["exchange"] = {
+            "format": BIBLE_EXCHANGE_FORMAT,
+            "format_version": BIBLE_EXCHANGE_VERSION,
+            "operation": "replace",
+        }
+        return result
 
     @router.get("/impact")
     def get_impact(

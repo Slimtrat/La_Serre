@@ -77,6 +77,10 @@ const bibleStudio = (() => {
     '<h2 id="bible-title">Bible canonique</h2><p id="bible-context">Chargement du canon…</p></div>' +
     '<div class="bible-header-actions"><span id="bible-revision" class="badge">révision —</span>' +
     '<button id="bible-impact-open" class="button ghost" type="button">Impact aval</button>' +
+    '<button id="bible-export" class="button ghost" type="button">Exporter JSON</button>' +
+    '<button id="bible-ai-kit" class="button ghost" type="button">Kit ChatGPT</button>' +
+    '<button id="bible-import" class="button secondary" type="button">Importer JSON</button>' +
+    '<input id="bible-import-file" type="file" accept="application/json,.json" hidden>' +
     '<button id="bible-refresh" class="button secondary" type="button">Actualiser</button></div></header>' +
     '<div class="bible-layout"><aside class="bible-categories"><nav id="bible-categories" aria-label="Sections de la Bible"></nav>' +
     '<footer><strong>Identité unique</strong><span>Les plans référencent ces objets par leur identifiant canonique.</span></footer></aside>' +
@@ -104,6 +108,7 @@ const bibleStudio = (() => {
   const validation = panel.querySelector("#bible-validation");
   const deleteButton = panel.querySelector("#bible-delete");
   const createButton = panel.querySelector("#bible-create");
+  const importFile = panel.querySelector("#bible-import-file");
   let bible = null;
   let impact = null;
   let category = "direction";
@@ -283,10 +288,93 @@ const bibleStudio = (() => {
     if (!response.ok) {
       const detail = typeof body.detail === "string"
         ? body.detail
-        : body.detail?.message || "Erreur HTTP " + response.status;
+        : Array.isArray(body.detail)
+          ? body.detail.slice(0, 3).map((item) => {
+            const field = Array.isArray(item.loc) ? item.loc.slice(1).join(".") : "document";
+            return field + " · " + item.msg;
+          }).join(" | ")
+          : body.detail?.message || "Erreur HTTP " + response.status;
       throw new Error(detail);
     }
     return body;
+  }
+
+  function downloadJson(filename, payload) {
+    const blob = new Blob([JSON.stringify(payload, null, 2) + "\n"], {
+      type: "application/json;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function safeFileName(value) {
+    return String(value || "projet")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "projet";
+  }
+
+  async function exportExchange() {
+    const payload = await request("/api/bible/exchange");
+    downloadJson("bible-" + safeFileName(payload.bible?.title) + ".serre.json", payload);
+    validation.className = "";
+    validation.textContent = "Bible portable exportée.";
+  }
+
+  async function downloadAiKit() {
+    const payload = await request("/api/bible/exchange/ai-kit");
+    downloadJson("bible-kit-chatgpt.serre.json", payload);
+    validation.className = "";
+    validation.textContent = "Kit ChatGPT téléchargé · consigne, schéma et gabarit vide.";
+  }
+
+  async function importExchange(file) {
+    if (!file) return;
+    let payload;
+    try {
+      payload = JSON.parse(await file.text());
+    } catch (error) {
+      throw new Error("Le fichier sélectionné ne contient pas un JSON valide · " + error.message);
+    }
+    if (payload.format !== "serre.project-bible" || payload.format_version !== 1) {
+      throw new Error("Format refusé · document serre.project-bible version 1 attendu.");
+    }
+    const collections = [
+      "characters", "locations", "relationships", "world_rules", "narrative_arcs",
+      "secrets", "references", "prompts",
+    ];
+    const entityCount = collections.reduce(
+      (total, key) => total + (Array.isArray(payload.bible?.[key]) ? payload.bible[key].length : 0),
+      0,
+    );
+    const accepted = window.confirm(
+      "Remplacer la Bible canonique par « " + (payload.bible?.title || "sans titre") +
+      " » (" + entityCount + " entrées) ? Une nouvelle révision sera créée.",
+    );
+    if (!accepted) return;
+    validation.className = "";
+    validation.textContent = "Validation du contrat et calcul de l’impact…";
+    const revision = bible?.revision ?? 0;
+    const result = await request(
+      "/api/bible/exchange/import?expected_revision=" + revision,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+    dirty = false;
+    applyPayload(result);
+    validation.textContent = "Bible importée · nouvelle révision canonique enregistrée.";
+    window.dispatchEvent(new CustomEvent("studio:bible-changed", { detail: result }));
   }
 
   async function load() {
@@ -393,6 +481,17 @@ const bibleStudio = (() => {
       dirty,
     };
   }
+  panel.querySelector("#bible-export").addEventListener("click", () => {
+    exportExchange().catch(showError);
+  });
+  panel.querySelector("#bible-ai-kit").addEventListener("click", () => {
+    downloadAiKit().catch(showError);
+  });
+  panel.querySelector("#bible-import").addEventListener("click", () => {
+    importFile.value = "";
+    importFile.click();
+  });
+  importFile.addEventListener("change", () => importExchange(importFile.files?.[0]).catch(showError));
 
   editor.addEventListener("input", () => {
     dirty = true;
