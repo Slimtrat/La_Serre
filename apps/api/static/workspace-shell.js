@@ -35,12 +35,12 @@ const workspaceShell = (() => {
   window.addEventListener("studio:episode-cleared", () => {
     if (contextShotLabel) contextShotLabel.textContent = "—";
   });
-  let initial = "graph";
+  let initial = "guided";
   try {
     const requested = new URLSearchParams(window.location.search).get("view");
     initial = allowed.has(requested) ? requested : localStorage.getItem("serre-studio-workspace-view") || initial;
   } catch (_error) { /* no-op */ }
   window.SerreWorkspace = { show };
-  show(allowed.has(initial) ? initial : "graph");
+  show(allowed.has(initial) ? initial : "guided");
   return { show };
 })();

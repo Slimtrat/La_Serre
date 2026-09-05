@@ -55,11 +55,18 @@ body {
 
 .shell > section { min-height: 0; margin: 0; }
 
+body[data-workspace-view="guided"] .shell > :not(.guided-workspace),
 body[data-workspace-view="graph"] .shell > :not(.hero):not(.episode-panel):not(.graph-workbench),
 body[data-workspace-view="plan"] .shell > :not(.episode-panel):not(.workspace-grid),
 body[data-workspace-view="outputs"] .shell > :not(.episode-panel):not(.preview-panel),
 body[data-workspace-view="settings"] .shell > :not(.setup) {
   display: none !important;
+}
+
+body[data-workspace-view="guided"] .guided-workspace {
+  display: grid;
+  min-height: 0;
+  flex: 1 1 auto;
 }
 
 body[data-workspace-view="graph"] .hero {

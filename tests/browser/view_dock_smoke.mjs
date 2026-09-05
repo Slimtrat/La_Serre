@@ -67,7 +67,7 @@ try {
     const dock = document.querySelector('#studio-view-dock');
     return { left: dock.getBoundingClientRect().left, buttons: dock.querySelectorAll('[data-workspace-target]').length };
   })()`);
-  if (closed.buttons !== 5 || closed.left > -100) throw new Error(`Unexpected closed dock: ${JSON.stringify(closed)}`);
+  if (closed.buttons !== 6 || closed.left > -100) throw new Error(`Unexpected closed dock: ${JSON.stringify(closed)}`);
 
   await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: 1, y: 380 });
   await sleep(350);
@@ -81,6 +81,20 @@ try {
   })()`);
   if (opened.left < -2 || opened.planView !== "plan" || opened.finalView !== "graph") {
     throw new Error(`Dock interaction failed: ${JSON.stringify(opened)}`);
+  }
+  await evaluate("window.SerreWorkspace.show('guided')");
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    if (await evaluate("Boolean(window.SerreGuided && document.querySelectorAll('.guided-node').length === 6)")) break;
+    await sleep(100);
+  }
+  const guided = await evaluate(`(() => ({
+    view: document.body.dataset.workspaceView,
+    nodes: document.querySelectorAll('.guided-node').length,
+    aiModes: new Set(Array.from(document.querySelectorAll('[data-ai-mode]')).map((item) => item.dataset.aiMode)).size,
+    revision: document.querySelector('.guided-context')?.textContent.includes('révision'),
+  }))()`);
+  if (guided.view !== "guided" || guided.nodes !== 6 || guided.aiModes !== 3 || !guided.revision) {
+    throw new Error(`Guided product path failed: ${JSON.stringify(guided)}`);
   }
   await evaluate(`fetch('/api/demo/reset', {
     method: 'POST',
@@ -115,7 +129,7 @@ try {
   if (fieldAssistant.buttons < 15 || !fieldAssistant.title.includes("contexte actuel")) {
     throw new Error(`Contextual field assistant is missing: ${JSON.stringify(fieldAssistant)}`);
   }
-  console.log(JSON.stringify({ closed, opened, demoInitial, provenance, fieldAssistant }));
+  console.log(JSON.stringify({ closed, opened, guided, demoInitial, provenance, fieldAssistant }));
 } finally {
   socket?.close();
   browser.kill();

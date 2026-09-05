@@ -68,7 +68,7 @@ def test_getting_started_is_first_run_guided_and_reopenable() -> None:
     assert "/static/getting-started.js" in index
     assert 'id="getting-started-open"' in index
     assert 'const STEP_COUNT = 9' in guide
-    assert 'serre-studio-getting-started-v0.2.11' in guide
+    assert 'serre-studio-getting-started-v0.2.12' in guide
     assert 'localStorage.setItem(STORAGE_KEY, "seen")' in guide
     assert 'window.addEventListener("studio:status"' in guide
     assert 'window.SerreStudio.api("/api/status")' in guide

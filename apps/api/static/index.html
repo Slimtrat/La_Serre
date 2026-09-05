@@ -32,8 +32,9 @@
     <link rel="stylesheet" href="/static/asset-drawer.css" />
     <link rel="stylesheet" href="/static/desktop-lifecycle.css" />
     <link rel="stylesheet" href="/static/view-dock.css" />
+    <link rel="stylesheet" href="/static/guided-workspace.css" />
   </head>
-  <body data-workspace-view="graph">
+  <body data-workspace-view="guided">
     <div class="ambient ambient-one"></div>
     <div class="ambient ambient-two"></div>
     <header class="topbar" aria-label="Navigation principale" data-i18n-aria-label="shell.mainNavigation">
@@ -41,7 +42,7 @@
         <span class="brand-mark">SV</span>
         <span><strong>SerreStudio</strong><small data-i18n="shell.studioLocal">Studio local</small></span>
       </a>
-      <span id="app-version" class="app-version" title="Version actuelle" data-i18n-title="shell.currentVersion">v0.2.11</span>
+      <span id="app-version" class="app-version" title="Version actuelle" data-i18n-title="shell.currentVersion">v0.2.12</span>
       <nav class="studio-context" aria-label="Contexte de création" data-i18n-aria-label="shell.context">
         <div class="context-segment context-project">
           <span data-i18n="shell.project">Projet</span>
@@ -92,7 +93,8 @@
       <span class="view-dock-handle" aria-hidden="true"><small>VUES</small><b>›</b></span>
       <header><small data-i18n="shell.views">VUES</small><strong data-i18n="shell.navigate">Naviguer</strong></header>
       <nav>
-        <button type="button" data-workspace-target="graph" class="selected"><span aria-hidden="true">⌘</span><strong data-i18n="shell.graph">Graphe</strong></button>
+        <button type="button" data-workspace-target="guided" class="selected"><span aria-hidden="true">✦</span><strong>Créer</strong></button>
+        <button type="button" data-workspace-target="graph"><span aria-hidden="true">⌘</span><strong data-i18n="shell.graph">Graphe</strong></button>
         <button type="button" data-workspace-target="plan"><span aria-hidden="true">◇</span><strong data-i18n="shell.planLegacy">Plan</strong></button>
         <button type="button" data-workspace-target="outputs"><span aria-hidden="true">▣</span><strong data-i18n="shell.outputsLegacy">Sorties</strong></button>
         <button type="button" data-workspace-target="bible"><span aria-hidden="true">♟</span><strong data-i18n="bible.nav">Bible</strong></button>
@@ -106,6 +108,9 @@
     </aside>
 
     <main class="shell">
+      <section id="guided-workspace" class="guided-workspace" aria-labelledby="guided-title">
+        <div class="guided-loading">Ouverture de ton atelier…</div>
+      </section>
       <section class="hero">
         <div>
           <p class="eyebrow">ONE REPRODUCIBLE SHOT</p>
@@ -567,6 +572,7 @@
     <script src="/static/episode-production.js" defer></script>
     <script src="/static/bible-view.js" defer></script>
     <script src="/static/bible-relations.js" defer></script>
+    <script src="/static/guided-workspace.js" defer></script>
     <script src="/static/workspace-shell.js" defer></script>
     <script src="/static/desktop-workspace.js" defer></script>
     <script src="/static/activity-bar.js" defer></script>

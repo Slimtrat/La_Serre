@@ -50,7 +50,7 @@ page.setDefaultTimeout(10_000);
 page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
 page.on("console", (message) => { if (message.type() === "error") errors.push(`console: ${message.text()}`); });
 await page.addInitScript(() => {
-  localStorage.setItem("serre-studio-getting-started-v0.2.11", "seen");
+  localStorage.setItem("serre-studio-getting-started-v0.2.12", "seen");
   localStorage.setItem("serre-studio-language", "fr");
 });
 await page.route("**/api/bible", async (route) => {
