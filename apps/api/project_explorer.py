@@ -47,7 +47,13 @@ def build_project_explorer(
     all_shot_states: list[ExplorerState] = []
 
     for summary in catalog.list_episodes():
-        package = catalog.load(summary.id)
+        try:
+            package = catalog.load(summary.id)
+        except (FileNotFoundError, NotADirectoryError):
+            # An episode can be moved to the recoverable trash between the
+            # catalogue snapshot and this detail read. The next refresh will
+            # expose the stable post-delete tree; this request must not fail.
+            continue
         shots: list[dict[str, object]] = []
         shot_states: list[ExplorerState] = []
         for index, shot in enumerate(package.shots, start=1):

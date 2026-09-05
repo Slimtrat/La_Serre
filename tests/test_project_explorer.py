@@ -126,3 +126,30 @@ def test_project_tree_groups_multiple_seasons_and_aggregates_them(
         "percent": 58,
         "states": {"complete": 1, "draft": 1},
     }
+
+
+def test_project_tree_tolerates_episode_removed_during_refresh(tmp_path: Path) -> None:
+    class RacingCatalog:
+        root = tmp_path / "private"
+
+        @staticmethod
+        def list_episodes() -> list[SimpleNamespace]:
+            return [
+                SimpleNamespace(
+                    id="S01E002",
+                    title="Transient",
+                    status=EpisodeStatus.DRAFT,
+                )
+            ]
+
+        @staticmethod
+        def load(_episode_id: str) -> SimpleNamespace:
+            raise FileNotFoundError("episode moved to trash")
+
+    result = build_project_explorer(
+        cast(EpisodeCatalog, RacingCatalog()),
+        tmp_path / "output",
+    )
+
+    assert result["seasons"] == []
+    assert result["state"] == "idea"
