@@ -21,6 +21,8 @@ voice = [
   "edge-tts>=7.2,<8",
 ]
 desktop = [
+  "pillow>=10.4,<13",
+  "pystray>=0.19.5,<1",
   "pywebview>=5.4,<7",
 ]
 build = [

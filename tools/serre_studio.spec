@@ -5,8 +5,10 @@ from PyInstaller.utils.hooks import collect_all, collect_submodules
 
 project_root = Path.cwd()
 webview_data, webview_binaries, webview_hidden = collect_all("webview")
+tray_data, tray_binaries, tray_hidden = collect_all("pystray")
+pillow_data, pillow_binaries, pillow_hidden = collect_all("PIL")
 
-data_files = list(webview_data)
+data_files = list(webview_data + tray_data + pillow_data)
 for source, destination in (
     (project_root / "apps" / "api" / "static", "apps/api/static"),
     (project_root / "examples", "examples"),
@@ -20,6 +22,8 @@ for source, destination in (
 hidden_imports = sorted(
     set(
         webview_hidden
+        + tray_hidden
+        + pillow_hidden
         + collect_submodules("apps")
         + collect_submodules("engine")
         + ["webview.platforms.edgechromium", "webview.platforms.winforms"]
@@ -29,7 +33,7 @@ hidden_imports = sorted(
 analysis = Analysis(
     [str(project_root / "tools" / "run_desktop.py")],
     pathex=[str(project_root)],
-    binaries=webview_binaries,
+    binaries=webview_binaries + tray_binaries + pillow_binaries,
     datas=data_files,
     hiddenimports=hidden_imports,
     hookspath=[],

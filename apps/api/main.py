@@ -48,6 +48,7 @@ from apps.desktop.service_launcher import (
     service_logs,
     service_supervisor_listing,
 )
+from apps.desktop.status import build_desktop_status
 from apps.version import __version__
 from engine.config import Settings
 from engine.generation.comfy.client import ComfyClient
@@ -309,6 +310,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return service_logs(service_name, limit=max(1, min(limit, 1000)))
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/api/desktop/status")
+    def desktop_status() -> dict[str, object]:
+        """Return the compact, side-effect-free state consumed by the tray."""
+        return build_desktop_status(
+            service_supervisor_listing(),
+            production_queue.listing(),
+            has_direct_activity=(
+                manager.has_active_jobs()
+                or episode_manager.has_active_jobs()
+                or stage_service.has_active_operations()
+            ),
+            notifications=notifications().listing(limit=20),
+        )
 
     @app.get("/ready")
     @app.get("/api/status")

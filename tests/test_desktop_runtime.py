@@ -49,3 +49,5 @@ def test_desktop_spec_does_not_bundle_machine_local_workflows() -> None:
 
     assert '"workflows" / "local", "workflows/local"' not in spec
     assert '"starter_catalog", "starter_catalog"' in spec
+    assert 'collect_all("pystray")' in spec
+    assert 'collect_all("PIL")' in spec

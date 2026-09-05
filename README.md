@@ -52,10 +52,17 @@ ne remplace pas les workflows ComfyUI destinés à la qualité finale.
 ### Application Windows native
 
 Le shell desktop ouvre le Studio dans une fenêtre native WebView2, sans onglet de
-navigateur. Il réserve automatiquement un port local libre, démarre FastAPI en
-arrière-plan puis arrête proprement le serveur lorsque la dernière fenêtre est
-fermée. Les panneaux peuvent ensuite être détachés dans de vraies fenêtres via
-l'API locale `pywebview.api.open_panel(...)` exposée au front.
+navigateur. Il réserve automatiquement un port local libre et démarre FastAPI en
+arrière-plan. À la fermeture, l'utilisateur peut demander à chaque fois, garder
+le Studio près de l'horloge Windows ou quitter complètement; ce choix peut être
+mémorisé dans **Réglages**. En arrière-plan, la file de production et les moteurs
+gérés continuent. L'icône système expose les états inactif, prêt, actif, dégradé
+et erreur, les jobs, le Journal et les contrôles des moteurs. Quitter arrête
+uniquement les processus lancés par La Serre; une instance externe n'est jamais
+tuée. Les notifications de fin et d'erreur sont désactivables.
+
+Les panneaux peuvent être détachés dans de vraies fenêtres via l'API locale
+`pywebview.api.open_panel(...)` exposée au front.
 
 ```powershell
 python -m pip install -e ".[desktop]"
@@ -82,6 +89,12 @@ Le workflow **Windows desktop** vérifie le projet, produit
 `SerreStudio.exe`, une archive portable, un installateur utilisateur et leurs
 sommes SHA-256. Chaque exécution publie un artefact téléchargeable; un tag `v*`
 publie aussi ces fichiers dans une GitHub Release.
+
+L'extra `desktop` installe pystray et Pillow avec pywebview. Si le système tray
+natif ne peut pas être chargé, le Studio journalise clairement ce fallback et
+désactive le mode arrière-plan afin d'éviter une application invisible.
+Le contrat de cycle de vie et ses états sont détaillés dans
+[`docs/desktop-lifecycle.md`](docs/desktop-lifecycle.md).
 
 Dans **Réglages ComfyUI**, cliquez sur **Créer mes workflows**, téléchargez les
 modèles affichés puis utilisez **Installer les téléchargements terminés**. Dans

@@ -311,12 +311,16 @@ async def test_runtime_services_api_exposes_the_native_supervisor(tmp_path: Path
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get("/api/runtime/services")
+            desktop_status = await client.get("/api/desktop/status")
     finally:
         set_active_service_supervisor(None)
 
     assert response.status_code == 200
     assert response.json()["enabled"] is True
     assert response.json()["services"][0]["state"] == "missing"
+    assert desktop_status.status_code == 200
+    assert desktop_status.json()["state"] == "idle"
+    assert desktop_status.json()["runtimes"][0]["name"] == "example"
 
 
 async def test_runtime_services_api_controls_owned_process_and_exposes_logs(
