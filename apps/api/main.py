@@ -10,11 +10,13 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from apps.api.asset_catalog import ProjectAssetCatalog
 from apps.api.assets import AssetSlot, AssetStore
 from apps.api.bible_routes import create_bible_router
 from apps.api.coherence_routes import create_coherence_router
 from apps.api.context_graph import create_context_graph_router
 from apps.api.demo_routes import create_demo_router
+from apps.api.editorial_routes import create_editorial_router
 from apps.api.episode_job_manager import EpisodeJobManager
 from apps.api.episode_routes import create_episode_router
 from apps.api.job_manager import JobManager
@@ -26,6 +28,7 @@ from apps.api.project_storage_routes import create_project_storage_router
 from apps.api.projects import ProjectRegistry
 from apps.api.run_history import RUN_FILES, RunHistory
 from apps.api.schemas import (
+    AssetReuseRequest,
     EpisodeGenerationRequest,
     GenerationRequest,
     NotificationCreateRequest,
@@ -40,7 +43,12 @@ from apps.api.schemas import (
 from apps.api.stage_actions import ShotStageService, StageKind
 from apps.api.workflow_graph import WORKFLOW_GRAPH_KINDS, build_workflow_graph
 from apps.api.workflow_setup import WorkflowSetup
-from apps.desktop.service_launcher import service_supervisor_listing
+from apps.desktop.service_launcher import (
+    control_service,
+    service_logs,
+    service_supervisor_listing,
+)
+from apps.desktop.status import build_desktop_status
 from apps.version import __version__
 from engine.config import Settings
 from engine.generation.comfy.client import ComfyClient
@@ -98,6 +106,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def assets() -> AssetStore:
         return AssetStore(current_settings().output_dir)
 
+    def asset_catalog() -> ProjectAssetCatalog:
+        resolved = current_settings()
+        return ProjectAssetCatalog(resolved.output_dir, resolved.private_content_dir)
+
     def catalog() -> EpisodeCatalog:
         return EpisodeCatalog(current_settings().private_content_dir)
 
@@ -122,13 +134,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     app.include_router(
-        create_episode_router(catalog, lambda: current_settings().output_dir)
+        create_episode_router(catalog, lambda: current_settings().output_dir, current_settings)
     )
-    app.include_router(
-        create_context_graph_router(catalog, lambda: current_settings().output_dir)
-    )
+    app.include_router(create_context_graph_router(catalog, lambda: current_settings().output_dir))
     app.include_router(create_coherence_router(current_settings, catalog))
-    app.include_router(create_narrative_router(current_settings, assets))
+    app.include_router(create_narrative_router(current_settings, assets, catalog))
+    app.include_router(create_editorial_router(current_settings))
     app.include_router(
         create_demo_router(lambda: current_settings().output_dir, notifications)
     )
@@ -261,6 +272,59 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def runtime_services() -> dict[str, object]:
         return service_supervisor_listing()
 
+    @app.post("/api/runtime/services/{service_name}/{action}")
+    def runtime_service_action(service_name: str, action: str) -> dict[str, object]:
+        if action not in {"check", "start", "stop", "restart"}:
+            raise HTTPException(status_code=422, detail="Action runtime inconnue")
+        listing = service_supervisor_listing()
+        raw_services = listing.get("services")
+        runtime_services = raw_services if isinstance(raw_services, list) else []
+        known = {
+            str(item.get("name"))
+            for item in runtime_services
+            if isinstance(item, dict)
+        }
+        if service_name not in known:
+            raise HTTPException(status_code=404, detail="Runtime local introuvable")
+        try:
+            service = control_service(service_name, action)
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        action_label = {
+            "check": "Diagnostic actualisé",
+            "start": "Démarrage demandé",
+            "stop": "Arrêt demandé",
+            "restart": "Redémarrage demandé",
+        }[action]
+        notifications().publish(
+            "info",
+            action_label,
+            f"{service.get('display_name', service_name)} · {service.get('detail', '')}",
+            source="runtime",
+        )
+        return {"service": service, "runtime": service_supervisor_listing()}
+
+    @app.get("/api/runtime/services/{service_name}/logs")
+    def runtime_service_logs(service_name: str, limit: int = 200) -> dict[str, object]:
+        try:
+            return service_logs(service_name, limit=max(1, min(limit, 1000)))
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/api/desktop/status")
+    def desktop_status() -> dict[str, object]:
+        """Return the compact, side-effect-free state consumed by the tray."""
+        return build_desktop_status(
+            service_supervisor_listing(),
+            production_queue.listing(),
+            has_direct_activity=(
+                manager.has_active_jobs()
+                or episode_manager.has_active_jobs()
+                or stage_service.has_active_operations()
+            ),
+            notifications=notifications().listing(limit=20),
+        )
+
     @app.get("/ready")
     @app.get("/api/status")
     async def ready() -> dict[str, object]:
@@ -284,9 +348,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         }
         models = [{**model, **download_status.get(str(model["filename"]), {})} for model in models]
         models_ready = all(
-            bool(model["installed"])
-            if comfyui
-            else model.get("state") == "installed"
+            bool(model["installed"]) if comfyui else model.get("state") == "installed"
             for model in models
         )
         nodes_ready = not missing_nodes
@@ -465,6 +527,62 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         record, path = found
         return FileResponse(path, media_type=record.media_type, filename=record.filename)
 
+    @app.get("/api/asset-catalog")
+    def list_asset_catalog(
+        q: str | None = None,
+        kind: str | None = None,
+        character: str | None = None,
+        location: str | None = None,
+        episode: str | None = None,
+        status: str | None = None,
+    ) -> dict[str, object]:
+        return asset_catalog().listing(
+            query=q,
+            kind=kind,
+            character=character,
+            location=location,
+            episode=episode,
+            status=status,
+        )
+
+    @app.get("/api/asset-catalog/{asset_id}")
+    def get_catalog_asset(asset_id: str) -> dict[str, object]:
+        try:
+            return asset_catalog().get(asset_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Asset introuvable") from exc
+
+    @app.get("/api/asset-catalog/{asset_id}/content")
+    def get_catalog_asset_content(asset_id: str) -> FileResponse:
+        try:
+            catalog = asset_catalog()
+            item = catalog.get(asset_id)
+            path = catalog.content_path(asset_id, refresh=False)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Asset introuvable") from exc
+        return FileResponse(path, media_type=str(item["media_type"]))
+
+    @app.post("/api/assets/{shot_id}/{slot}/reuse")
+    def reuse_catalog_asset(
+        shot_id: str,
+        slot: AssetSlot,
+        payload: AssetReuseRequest,
+    ) -> dict[str, object]:
+        try:
+            record = asset_catalog().reuse(shot_id, slot, payload.asset_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Asset introuvable") from exc
+        return {
+            **asdict(record),
+            "url": f"/api/assets/{shot_id}/{slot}/content",
+        }
+
     @app.get("/api/jobs/{job_id}")
     async def get_job(job_id: str) -> dict[str, object]:
         job = manager.get(job_id)
@@ -512,9 +630,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if filename not in RUN_FILES:
             raise HTTPException(status_code=404, detail="History media not found")
         try:
-            path = RunHistory(current_settings().output_dir).media_path(
-                shot_id, run_id, filename
-            )
+            path = RunHistory(current_settings().output_dir).media_path(shot_id, run_id, filename)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail="History media not found") from exc
         if not path.is_file():

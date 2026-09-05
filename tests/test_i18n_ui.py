@@ -81,7 +81,7 @@ def test_context_navigation_actions_keep_existing_workspace_contracts() -> None:
     assert 'show("bible")' in source
     assert 'window.SerreBible?.selectCategory?.("characters")' in source
     assert 'document.querySelector(\'[data-tool-action="assets"]\')' in source
-    assert 'show("outputs")' in source
+    assert "window.SerreAssetDrawer?.open()" in source
     assert 'document.querySelector(".service-status")' in source
     assert 'show("settings")' in source
     assert 'document.querySelector(".studio-tools")' in queue

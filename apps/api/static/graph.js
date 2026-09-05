@@ -535,6 +535,31 @@ const studioGraph = (() => {
     renderInspector(id);
   }
 
+  function runtimeNameForNode(id) {
+    if (id === "director") return "ollama";
+    if (["keyframe", "motion"].includes(id)) return "comfyui";
+    return null;
+  }
+
+  function appendRuntimeAction(actions, nodeId) {
+    const runtimeName = runtimeNameForNode(nodeId);
+    if (!runtimeName) return;
+    const payload = window.SerreRuntimeManager?.current?.();
+    const service = payload?.services?.find((item) => item.name === runtimeName);
+    if (!service || service.state === "ready") return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "button primary";
+    if (service.actions?.start) {
+      button.textContent = "Démarrer " + service.display_name;
+      button.addEventListener("click", () => window.SerreRuntimeManager?.control(runtimeName, "start", button));
+    } else {
+      button.textContent = "Configurer " + service.display_name;
+      button.addEventListener("click", () => window.SerreWorkspace?.show("settings"));
+    }
+    actions.prepend(button);
+  }
+
   function renderInspector(id) {
     const definition = definitionFor(id);
     if (!definition) return;
@@ -557,6 +582,7 @@ const studioGraph = (() => {
       button.addEventListener("click", () => runAction(action).catch(reportError));
       actions.appendChild(button);
     });
+    appendRuntimeAction(actions, id);
     const drop = document.querySelector("#graph-inspector-drop");
     drop.classList.toggle("hidden", !definition.slot);
     if (definition.slot) {
@@ -590,6 +616,14 @@ const studioGraph = (() => {
   }
 
   function openWorkspaceTarget(value) {
+    if (value === "authoring-series") {
+      window.SerreNarrativeWorkflow?.open("series");
+      return;
+    }
+    if (value === "authoring-episode") {
+      window.SerreNarrativeWorkflow?.open("episode");
+      return;
+    }
     if (value === "casting") {
       window.SerreWorkspace?.show("bible");
       window.SerreBible?.selectCategory?.("characters");
@@ -657,14 +691,27 @@ const studioGraph = (() => {
     node.addEventListener("pointerup", finishNodeDrag);
     node.addEventListener("pointercancel", finishNodeDrag);
     node.addEventListener("dragover", (event) => {
-      if (!definitionFor(node.dataset.nodeId)?.slot) return;
+      const slot = definitionFor(node.dataset.nodeId)?.slot;
+      if (!slot) return;
+      const assetDrag = window.SerreAssetDrawer?.dragged?.();
+      if (assetDrag && !assetDrag.compatibleSlots?.includes(slot)) {
+        node.classList.add("asset-drop-incompatible");
+        return;
+      }
       event.preventDefault();
+      if (assetDrag) event.dataTransfer.dropEffect = "link";
       node.classList.add("drop-target");
     });
-    node.addEventListener("dragleave", () => node.classList.remove("drop-target"));
+    node.addEventListener("dragleave", () => node.classList.remove("drop-target", "asset-drop-incompatible"));
     node.addEventListener("drop", (event) => {
       event.preventDefault();
-      node.classList.remove("drop-target");
+      node.classList.remove("drop-target", "asset-drop-incompatible");
+      const slot = definitionFor(node.dataset.nodeId)?.slot;
+      const asset = window.SerreAssetDrawer?.transfer(event);
+      if (asset && asset.compatibleSlots?.includes(slot)) {
+        reuseOnNode(node.dataset.nodeId, asset.assetId);
+        return;
+      }
       uploadToNode(node.dataset.nodeId, event.dataTransfer.files[0]);
     });
   }
@@ -675,6 +722,14 @@ const studioGraph = (() => {
     nodeState(id, "active", "Import en cours…");
     window.SerreStudio?.uploadAsset(slot, file)
       .catch(() => nodeState(id, "error", "Import échoué"));
+  }
+
+  function reuseOnNode(id, assetId) {
+    const slot = definitionFor(id)?.slot;
+    if (!slot || !assetId) return;
+    nodeState(id, "active", "Réutilisation en cours…");
+    window.SerreAssetDrawer?.reuse(assetId, slot)
+      .catch(() => nodeState(id, "error", "Asset incompatible"));
   }
 
   async function requestGraph(scope, id) {
@@ -1065,6 +1120,16 @@ const studioGraph = (() => {
     if (mapping[slot]) nodeState(mapping[slot], "done", "Import terminé");
     inspectorPreview(selectedId);
   });
+  window.addEventListener("studio:asset-drag-end", () => {
+    nodes.forEach((node) => node.classList.remove("drop-target", "asset-drop-incompatible"));
+  });
+  window.addEventListener("studio:asset-drag-start", (event) => {
+    const compatible = event.detail?.compatibleSlots || [];
+    nodes.forEach((node) => {
+      const slot = definitionFor(node.dataset.nodeId)?.slot;
+      node.classList.toggle("asset-drop-incompatible", Boolean(slot) && !compatible.includes(slot));
+    });
+  });
   window.addEventListener("studio:job", (event) => {
     if (graphDefinition?.scope !== "shot") return;
     const job = event.detail?.job || event.detail;
@@ -1125,6 +1190,25 @@ const studioGraph = (() => {
         available ? "ready" : "blocked",
         available ? "Modèle prêt" : "ComfyUI hors ligne · import possible",
       );
+    });
+  });
+  window.addEventListener("studio:runtime", (event) => {
+    if (graphDefinition?.scope !== "shot") return;
+    const services = event.detail?.services || [];
+    const byName = Object.fromEntries(services.map((service) => [service.name, service]));
+    const mappings = { ollama: ["director"], comfyui: ["keyframe", "motion"] };
+    const stateMap = {
+      checking: "active", starting: "active", restarting: "active",
+      ready: "ready", failed: "error", unavailable: "blocked",
+      missing: "blocked", stopped: "blocked",
+    };
+    Object.entries(mappings).forEach(([runtimeName, nodeIds]) => {
+      const service = byName[runtimeName];
+      if (!service) return;
+      nodeIds.forEach((id) => {
+        if (["done", "active"].includes(nodeById[id]?.dataset.state) && service.state !== "failed") return;
+        nodeState(id, stateMap[service.state] || "blocked", service.detail);
+      });
     });
   });
   window.addEventListener("studio:narrative-status", (event) => {

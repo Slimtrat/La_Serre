@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "serre-des-venins"
-version = "0.2.9"
+version = "0.2.10"
 description = "Studio local de production narrative assistée par IA"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -21,6 +21,8 @@ voice = [
   "edge-tts>=7.2,<8",
 ]
 desktop = [
+  "pillow>=10.4,<13",
+  "pystray>=0.19.5,<1",
   "pywebview>=5.4,<7",
 ]
 build = [

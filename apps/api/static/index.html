@@ -25,6 +25,11 @@
     <link rel="stylesheet" href="/static/i18n.css" />
     <link rel="stylesheet" href="/static/topbar-tools.css" />
     <link rel="stylesheet" href="/static/demo-production.css" />
+    <link rel="stylesheet" href="/static/editorial-history.css" />
+    <link rel="stylesheet" href="/static/runtime-manager.css" />
+    <link rel="stylesheet" href="/static/narrative-workflow.css" />
+    <link rel="stylesheet" href="/static/asset-drawer.css" />
+    <link rel="stylesheet" href="/static/desktop-lifecycle.css" />
   </head>
   <body data-workspace-view="graph">
     <div class="ambient ambient-one"></div>
@@ -34,7 +39,7 @@
         <span class="brand-mark">SV</span>
         <span><strong>SerreStudio</strong><small data-i18n="shell.studioLocal">Studio local</small></span>
       </a>
-      <span id="app-version" class="app-version" title="Version actuelle" data-i18n-title="shell.currentVersion">v0.2.9</span>
+      <span id="app-version" class="app-version" title="Version actuelle" data-i18n-title="shell.currentVersion">v0.2.10</span>
       <nav class="studio-context" aria-label="Contexte de création" data-i18n-aria-label="shell.context">
         <div class="context-segment context-project">
           <span data-i18n="shell.project">Projet</span>
@@ -68,10 +73,11 @@
         <button type="button" role="tab" data-workspace-target="settings">Réglages</button>
       </nav>
       <div class="studio-tools" role="toolbar" aria-label="Outils du studio" data-i18n-aria-label="shell.tools">
-        <button class="studio-tool" type="button" data-tool-action="assets" title="Voir les médias et sorties du plan" data-i18n-title="shell.assetsTitle"><span aria-hidden="true">◫</span><strong data-i18n="shell.assets">Assets</strong></button>
+        <button class="studio-tool" type="button" data-tool-action="assets" title="Ouvrir la bibliothèque d’assets du projet" data-i18n-title="shell.assetsTitle"><span aria-hidden="true">◫</span><strong data-i18n="shell.assets">Assets</strong></button>
         <button id="notification-toggle" class="studio-tool notification-toggle" type="button" aria-expanded="false" aria-controls="notification-panel" aria-label="Journal" title="Journal" data-i18n-aria-label="shell.journal" data-i18n-title="shell.journal"><span aria-hidden="true">☷</span><strong data-i18n="shell.journal">Journal</strong><i id="notification-badge" class="hidden">0</i></button>
         <button id="getting-started-open" class="studio-tool guide-toggle" type="button" title="Ouvrir le guide de démarrage" data-i18n-title="shell.guideTitle"><span aria-hidden="true">?</span><strong data-i18n="shell.guide">Guide</strong></button>
         <button id="demo-production-open" class="studio-tool" type="button" title="Lancer la démo express 0 GPU" data-i18n-title="shell.demoTitle"><span aria-hidden="true">✦</span><strong data-i18n="shell.demo">Démo</strong></button>
+        <button id="narrative-workflow-open" class="studio-tool" type="button" title="Écrire la série et ses épisodes" data-i18n-title="narrative.openTitle"><span aria-hidden="true">✎</span><strong data-i18n="narrative.open">Écriture</strong></button>
         <button id="settings-toggle" class="studio-tool" type="button" title="Configurer les moteurs et le stockage" data-i18n-title="shell.settingsTitle"><span aria-hidden="true">⚙</span><strong data-i18n="shell.settings">Réglages</strong></button>
         <button class="service-status" type="button" title="État de ComfyUI et Ollama" aria-label="État de ComfyUI et Ollama" data-i18n-title="shell.serviceStatus" data-i18n-aria-label="shell.serviceStatus"><span id="connection-dot" class="dot"></span><span id="connection-label">Connexion…</span></button>
         <label class="language-switcher" title="Langue de l’interface" data-i18n-title="shell.language">
@@ -261,6 +267,25 @@
           <div><p class="eyebrow">CONFIGURATION GUIDÉE</p><h2>ComfyUI sans JSON à bricoler</h2></div>
           <span id="setup-badge" class="badge warn">À configurer</span>
         </div>
+        <section class="runtime-manager" aria-labelledby="runtime-manager-title">
+          <header class="runtime-manager-heading">
+            <div>
+              <p class="eyebrow">MOTEURS LOCAUX</p>
+              <h3 id="runtime-manager-title">Préparer mon Studio</h3>
+              <p id="runtime-manager-summary">Détection d’Ollama et ComfyUI…</p>
+            </div>
+            <button id="runtime-refresh" class="button ghost" type="button">Actualiser le diagnostic</button>
+          </header>
+          <div id="runtime-service-list" class="runtime-service-list" aria-live="polite"></div>
+          <aside id="runtime-log-viewer" class="runtime-log-viewer hidden" aria-labelledby="runtime-log-title">
+            <header>
+              <div><small>JOURNAL DU MOTEUR</small><strong id="runtime-log-title">Runtime</strong></div>
+              <button id="runtime-log-close" class="button ghost" type="button">Fermer</button>
+            </header>
+            <p id="runtime-log-path"></p>
+            <pre id="runtime-log-content">Aucune ligne de journal.</pre>
+          </aside>
+        </section>
         <div class="config-row">
           <label>Adresse ComfyUI<input id="comfy-url" value="http://127.0.0.1:8188" /></label>
           <button id="save-config" class="button secondary">Enregistrer & tester</button>
@@ -371,7 +396,7 @@
       <section id="preview-panel" class="panel preview-panel">
         <div class="panel-heading compact-heading output-heading">
           <div><p class="eyebrow">SORTIES</p><h2>Contrôle humain</h2></div>
-          <div class="output-history-controls"><label>Version<select id="run-history-select" aria-label="Version générée" data-i18n-aria-label="outputs.generatedVersion"><option>Aucun rendu</option></select></label><button id="restore-run" class="button ghost" type="button" disabled>Restaurer</button><span id="job-badge" class="badge">Aucun rendu</span></div>
+          <div class="output-history-controls"><button id="editorial-history-open" class="button ghost" type="button">Versions du texte</button><label>Rendu<select id="run-history-select" aria-label="Version générée" data-i18n-aria-label="outputs.generatedVersion"><option>Aucun rendu</option></select></label><button id="restore-run" class="button ghost" type="button" disabled>Restaurer le rendu</button><span id="job-badge" class="badge">Aucun rendu</span></div>
         </div>
         <div class="output-layout">
           <div class="previews">
@@ -387,6 +412,30 @@
         <div class="bottom-actions"><p id="job-message">Configure ComfyUI, puis lance une génération.</p><button id="continue-video" class="button secondary">Animer la keyframe</button></div>
       </section>
     </main>
+    <div id="asset-drawer-backdrop" class="asset-drawer-backdrop" hidden></div>
+    <aside id="asset-drawer" class="asset-drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="asset-drawer-title" hidden>
+      <header>
+        <div class="asset-drawer-title">
+          <p class="eyebrow">CATALOGUE PROJET</p>
+          <h2 id="asset-drawer-title" data-i18n="assetDrawer.title">Bibliothèque d’assets</h2>
+          <p data-i18n="assetDrawer.subtitle">Tous les médias du projet, prêts à être réutilisés.</p>
+        </div>
+        <button id="asset-drawer-close" class="button ghost" type="button" aria-label="Fermer la bibliothèque" data-i18n-aria-label="assetDrawer.close">×</button>
+      </header>
+      <div class="asset-toolbar">
+        <input id="asset-search" type="search" placeholder="Rechercher un asset…" data-i18n-placeholder="assetDrawer.search" />
+        <select id="asset-filter-kind" aria-label="Type"><option value="">Tous les types</option></select>
+        <select id="asset-filter-character" aria-label="Personnage"><option value="">Tous les personnages</option></select>
+        <select id="asset-filter-location" aria-label="Lieu"><option value="">Tous les lieux</option></select>
+        <select id="asset-filter-episode" aria-label="Épisode"><option value="">Tous les épisodes</option></select>
+        <select id="asset-filter-status" aria-label="Statut"><option value="">Tous les statuts</option></select>
+      </div>
+      <div class="asset-drawer-body">
+        <div id="asset-grid" class="asset-grid" aria-live="polite"></div>
+        <aside id="asset-detail" class="asset-detail" aria-live="polite"></aside>
+      </div>
+      <footer><span id="asset-count">0 asset</span><span data-i18n="assetDrawer.drag">Glisse vers un nœud ou un slot compatible</span></footer>
+    </aside>
     <div id="toast" class="toast hidden"></div>
     <dialog id="project-create-dialog" class="project-create-dialog" aria-labelledby="project-create-title">
       <form id="project-create-form">
@@ -396,13 +445,69 @@
         <footer><button class="button primary" type="submit">Créer et ouvrir</button></footer>
       </form>
     </dialog>
+    <dialog id="editorial-history-dialog" class="editorial-history-dialog" aria-labelledby="editorial-history-title">
+      <section class="editorial-history-shell">
+        <header>
+          <div><p class="eyebrow">HISTOIRE VIVANTE</p><h2 id="editorial-history-title">Versions & variantes</h2><p>Compare les textes, garde les rendus compatibles et choisis ton canon.</p></div>
+          <button id="editorial-history-close" class="button ghost" type="button">Fermer</button>
+        </header>
+        <nav class="editorial-scope" aria-label="Objet à versionner">
+          <button type="button" data-editorial-scope="episode">Scénario</button>
+          <button type="button" data-editorial-scope="shot" class="selected">Plan en cours</button>
+        </nav>
+        <div class="editorial-workspace">
+          <form id="editorial-form" class="editorial-form">
+            <div class="editorial-form-heading"><div><p class="eyebrow">VERSION DE TRAVAIL</p><strong id="editorial-current-name">Canon actuel</strong></div><span id="editorial-status" class="badge">Prêt</span></div>
+            <label>Nom de cette version<input id="editorial-name" maxlength="80" required placeholder="Ex. Plus sombre, v3 dialogues" /></label>
+            <fieldset data-editorial-fields="episode">
+              <label>Titre<input data-editorial-field="title" /></label>
+              <label>Promesse<textarea data-editorial-field="logline"></textarea></label>
+              <label>Scénario<textarea data-editorial-field="narrative_source"></textarea></label>
+              <div class="editorial-story-grid">
+                <label>Accroche<textarea data-editorial-field="hook"></textarea></label>
+                <label>Mise en place<textarea data-editorial-field="setup"></textarea></label>
+                <label>Conflit<textarea data-editorial-field="conflict"></textarea></label>
+                <label>Révélation<textarea data-editorial-field="reveal"></textarea></label>
+                <label>Cliffhanger<textarea data-editorial-field="cliffhanger"></textarea></label>
+              </div>
+            </fieldset>
+            <fieldset data-editorial-fields="shot">
+              <label>Texte du plan<textarea data-editorial-field="shot_source"></textarea></label>
+              <label>Action<textarea data-editorial-field="action"></textarea></label>
+              <div class="editorial-story-grid">
+                <label>Personnage<select data-editorial-field="speaker"></select></label>
+                <label>Dialogue<textarea data-editorial-field="dialogue"></textarea></label>
+                <label>Intention<input data-editorial-field="intention" /></label>
+                <label>Émotion<input data-editorial-field="emotion" /></label>
+              </div>
+            </fieldset>
+            <footer><button type="submit" class="button primary" data-editorial-save="version">Enregistrer comme canon</button><button type="button" class="button secondary" data-editorial-save="variant">Créer une variante</button></footer>
+          </form>
+          <section class="editorial-browser">
+            <div class="editorial-compare-controls">
+              <label>Version gauche<select id="editorial-left"></select></label>
+              <span aria-hidden="true">↔</span>
+              <label>Version droite<select id="editorial-right"></select></label>
+              <button id="editorial-compare" class="button secondary" type="button">Comparer</button>
+            </div>
+            <div id="editorial-version-list" class="editorial-version-list"></div>
+            <div class="editorial-diff-heading"><div><p class="eyebrow">AVANT / APRÈS</p><strong id="editorial-diff-title">Choisis deux versions</strong></div><button id="editorial-explain" class="button ghost" type="button" disabled>✦ Expliquer les différences</button></div>
+            <div id="editorial-diff" class="editorial-diff"><p class="empty">La comparaison restera lisible : aucun JSON à déchiffrer.</p></div>
+            <aside id="editorial-explanation" class="editorial-explanation hidden" aria-live="polite"></aside>
+          </section>
+        </div>
+      </section>
+    </dialog>
     <script src="/static/i18n.js" defer></script>
     <script src="/static/notifications.js" defer></script>
     <script src="/static/projects.js" defer></script>
     <script src="/static/app.js" defer></script>
+    <script src="/static/runtime-manager.js" defer></script>
     <script src="/static/narrative.js" defer></script>
     <script src="/static/episode.js" defer></script>
     <script src="/static/output-console.js" defer></script>
+    <script src="/static/editorial-history.js" defer></script>
+    <script src="/static/asset-drawer.js" defer></script>
     <dialog id="workflow-graph-dialog" class="workflow-graph-dialog" aria-labelledby="workflow-graph-title">
       <section class="workflow-graph-shell">
         <header class="workflow-graph-toolbar">
@@ -452,6 +557,8 @@
     <script src="/static/project-explorer.js" defer></script>
     <script src="/static/production-queue.js" defer></script>
     <script src="/static/demo-production.js" defer></script>
+    <script src="/static/narrative-workflow.js" defer></script>
     <script src="/static/topbar-tools.js" defer></script>
+    <script src="/static/desktop-lifecycle.js" defer></script>
   </body>
 </html>

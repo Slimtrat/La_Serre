@@ -119,6 +119,7 @@ class _ServiceRecord:
     restart_count: int = 0
     next_restart_at: float = 0.0
     last_checked_at: str | None = None
+    desired_running: bool = True
 
 
 Probe = Callable[[LocalServiceSpec], bool]
@@ -153,7 +154,13 @@ class LocalServiceSupervisor:
         self.poll_interval_seconds = poll_interval_seconds
         self.probe_timeout_seconds = probe_timeout_seconds
         self.max_restarts = max_restarts
-        self._records = {service.name: _ServiceRecord(service) for service in services}
+        self._records = {
+            service.name: _ServiceRecord(
+                service,
+                desired_running=service.auto_start,
+            )
+            for service in services
+        }
         self._probe = probe or self._http_probe
         self._launcher = launcher or _launch_process
         self._lock = threading.RLock()
@@ -202,6 +209,42 @@ class LocalServiceSupervisor:
         for record in self._records.values():
             self._reconcile(record)
 
+    def control(self, service_name: str, action: str) -> dict[str, object]:
+        """Apply a user-requested lifecycle action to one local service."""
+        record = self._record(service_name)
+        normalized = action.strip().lower()
+        if normalized == "check":
+            self._reconcile(record)
+        elif normalized == "start":
+            self._start_service(record)
+        elif normalized == "stop":
+            self._stop_service(record)
+        elif normalized == "restart":
+            self._restart_service(record)
+        else:
+            raise ValueError(f"Unsupported runtime action: {action}")
+        self._wake_event.set()
+        with self._lock:
+            return self._snapshot(record)
+
+    def logs(self, service_name: str, *, limit: int = 200) -> dict[str, object]:
+        """Return a bounded log tail without exposing arbitrary filesystem paths."""
+        record = self._record(service_name)
+        safe_limit = max(1, min(int(limit), 1000))
+        log_path = self.log_directory / f"{record.spec.name}.log"
+        try:
+            lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+        except FileNotFoundError:
+            lines = []
+        except OSError as exc:
+            raise ValueError(f"Could not read {record.spec.display_name} logs: {exc}") from exc
+        return {
+            "service": record.spec.name,
+            "display_name": record.spec.display_name,
+            "path": str(log_path),
+            "lines": lines[-safe_limit:],
+        }
+
     def listing(self) -> dict[str, object]:
         with self._lock:
             return {
@@ -221,12 +264,87 @@ class LocalServiceSupervisor:
             "state": record.state.value,
             "detail": record.detail,
             "auto_start": record.spec.auto_start,
+            "desired_running": record.desired_running,
             "managed": managed is not None,
+            "mode": (
+                "managed"
+                if managed is not None
+                else "external"
+                if record.state is ServiceState.READY
+                else "configured"
+                if record.spec.command is not None
+                else "missing"
+            ),
             "pid": process.pid if process and process.poll() is None else None,
             "executable": record.spec.executable,
             "restart_count": record.restart_count,
             "last_checked_at": record.last_checked_at,
+            "log_path": str(self.log_directory / f"{record.spec.name}.log"),
+            "actions": {
+                "start": (
+                    record.state is not ServiceState.READY
+                    and managed is None
+                    and record.spec.command is not None
+                    and _is_loopback_url(record.spec.url)
+                ),
+                "stop": managed is not None,
+                "restart": managed is not None,
+                "logs": True,
+            },
         }
+
+    def _record(self, service_name: str) -> _ServiceRecord:
+        try:
+            return self._records[service_name]
+        except KeyError as exc:
+            raise ValueError(f"Unknown local runtime: {service_name}") from exc
+
+    def _start_service(self, record: _ServiceRecord) -> None:
+        self._reconcile(record)
+        with self._lock:
+            if record.state is ServiceState.READY:
+                return
+            if not _is_loopback_url(record.spec.url):
+                raise ValueError("A remote runtime can be checked but not started by the Studio")
+            if record.spec.command is None:
+                raise ValueError(
+                    f"{record.spec.display_name} is not installed or its path is not configured"
+                )
+            if record.managed is not None and record.managed.process.poll() is None:
+                record.desired_running = True
+                return
+            record.desired_running = True
+            record.restart_count = 0
+            record.next_restart_at = 0.0
+            record.state = ServiceState.CHECKING
+            record.detail = "Démarrage demandé"
+        self._reconcile(record)
+
+    def _stop_service(self, record: _ServiceRecord) -> None:
+        with self._lock:
+            managed = record.managed
+            if managed is None and record.state is ServiceState.READY:
+                raise ValueError(
+                    f"{record.spec.display_name} est externe; La Serre ne peut pas l’arrêter"
+                )
+            record.desired_running = False
+            record.managed = None
+            record.started_at = None
+            record.next_restart_at = 0.0
+            record.restart_count = 0
+            record.state = ServiceState.STOPPED
+            record.detail = "Arrêté par l’utilisateur"
+        if managed is not None:
+            _stop_process(managed)
+
+    def _restart_service(self, record: _ServiceRecord) -> None:
+        with self._lock:
+            if record.managed is None and record.state is ServiceState.READY:
+                raise ValueError(
+                    f"{record.spec.display_name} est externe; La Serre ne peut pas le redémarrer"
+                )
+        self._stop_service(record)
+        self._start_service(record)
 
     def _run(self) -> None:
         while not self._stop_event.is_set():
@@ -278,9 +396,9 @@ class LocalServiceSupervisor:
                     self.max_restarts,
                 )
 
-            if not record.spec.auto_start:
-                record.state = ServiceState.UNAVAILABLE
-                record.detail = "Service inaccessible; démarrage automatique désactivé"
+            if not record.desired_running:
+                record.state = ServiceState.STOPPED
+                record.detail = "Service arrêté; démarrage manuel disponible"
                 return
             if not _is_loopback_url(record.spec.url):
                 record.state = ServiceState.UNAVAILABLE
@@ -346,6 +464,22 @@ def service_supervisor_listing() -> dict[str, object]:
     if supervisor is None:
         return {"enabled": False, "running": False, "services": []}
     return supervisor.listing()
+
+
+def control_service(service_name: str, action: str) -> dict[str, object]:
+    with _active_supervisor_lock:
+        supervisor = _active_supervisor
+    if supervisor is None:
+        raise ValueError("Le gestionnaire de runtimes est disponible dans l’application desktop")
+    return supervisor.control(service_name, action)
+
+
+def service_logs(service_name: str, *, limit: int = 200) -> dict[str, object]:
+    with _active_supervisor_lock:
+        supervisor = _active_supervisor
+    if supervisor is None:
+        raise ValueError("Le gestionnaire de runtimes est disponible dans l’application desktop")
+    return supervisor.logs(service_name, limit=limit)
 
 
 def create_local_service_supervisor(

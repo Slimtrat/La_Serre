@@ -114,11 +114,20 @@ def test_empty_series_graph_is_actionable_and_valid(tmp_path: Path) -> None:
     assert graph.id == "series"
     assert graph.progress is not None
     assert graph.progress.total == 0
-    assert [node.id for node in graph.nodes] == ["series:cast", "series:empty"]
+    assert [node.id for node in graph.nodes] == [
+        "series:cast",
+        "series:director",
+        "series:screenwriter",
+        "series:validator",
+        "series:empty",
+    ]
     assert graph.nodes[0].label == "Personnages"
     assert graph.nodes[0].state is GraphRuntimeState.BLOCKED
-    assert graph.nodes[1].label == "Projet sans épisode"
-    assert graph.nodes[1].state is GraphRuntimeState.BLOCKED
+    assert graph.nodes[1].label == "Director"
+    assert graph.nodes[2].state is GraphRuntimeState.BLOCKED
+    assert graph.nodes[3].state is GraphRuntimeState.BLOCKED
+    assert graph.nodes[4].label == "Projet sans épisode"
+    assert graph.nodes[4].state is GraphRuntimeState.BLOCKED
 
 
 async def test_context_graph_router_serves_common_dto_and_errors(tmp_path: Path) -> None:

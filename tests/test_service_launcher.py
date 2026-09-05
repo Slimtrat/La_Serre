@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import BinaryIO
 
 import httpx
+import pytest
 
 from apps.api.main import create_app
 from apps.desktop.service_launcher import (
@@ -135,6 +136,62 @@ def test_supervisor_stops_retrying_after_repeated_process_failure(tmp_path: Path
     assert len(launched) == 1
 
 
+def test_manual_lifecycle_starts_and_stops_a_configured_runtime(tmp_path: Path) -> None:
+    launched: list[LocalServiceSpec] = []
+    process = FakeProcess()
+    supervisor = LocalServiceSupervisor(
+        [_service(auto_start=False)],
+        tmp_path,
+        probe=lambda _spec: False,
+        launcher=_fake_launcher(process, launched),
+    )
+
+    supervisor.check_now()
+    initial = supervisor.listing()["services"][0]  # type: ignore[index]
+    started = supervisor.control("example", "start")
+    stopped = supervisor.control("example", "stop")
+    supervisor.check_now()
+    final = supervisor.listing()["services"][0]  # type: ignore[index]
+
+    assert initial["state"] == ServiceState.STOPPED
+    assert initial["actions"]["start"] is True  # type: ignore[index]
+    assert started["state"] == ServiceState.STARTING
+    assert started["managed"] is True
+    assert stopped["state"] == ServiceState.STOPPED
+    assert process.terminated is True
+    assert final["state"] == ServiceState.STOPPED
+    assert len(launched) == 1
+
+
+def test_supervisor_refuses_to_stop_or_restart_an_external_runtime(tmp_path: Path) -> None:
+    supervisor = LocalServiceSupervisor(
+        [_service()],
+        tmp_path,
+        probe=lambda _spec: True,
+    )
+    supervisor.check_now()
+
+    with pytest.raises(ValueError, match="externe"):
+        supervisor.control("example", "stop")
+    with pytest.raises(ValueError, match="externe"):
+        supervisor.control("example", "restart")
+
+
+def test_supervisor_returns_a_bounded_service_log_tail(tmp_path: Path) -> None:
+    supervisor = LocalServiceSupervisor(
+        [_service(command=None)],
+        tmp_path,
+        probe=lambda _spec: False,
+    )
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    (tmp_path / "example.log").write_text("one\ntwo\nthree\n", encoding="utf-8")
+
+    result = supervisor.logs("example", limit=2)
+
+    assert result["service"] == "example"
+    assert result["lines"] == ["two", "three"]
+
+
 def test_supervisor_never_launches_a_command_for_a_remote_endpoint(tmp_path: Path) -> None:
     launched: list[LocalServiceSpec] = []
     supervisor = LocalServiceSupervisor(
@@ -254,9 +311,45 @@ async def test_runtime_services_api_exposes_the_native_supervisor(tmp_path: Path
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get("/api/runtime/services")
+            desktop_status = await client.get("/api/desktop/status")
     finally:
         set_active_service_supervisor(None)
 
     assert response.status_code == 200
     assert response.json()["enabled"] is True
     assert response.json()["services"][0]["state"] == "missing"
+    assert desktop_status.status_code == 200
+    assert desktop_status.json()["state"] == "idle"
+    assert desktop_status.json()["runtimes"][0]["name"] == "example"
+
+
+async def test_runtime_services_api_controls_owned_process_and_exposes_logs(
+    tmp_path: Path,
+) -> None:
+    process = FakeProcess()
+    supervisor = LocalServiceSupervisor(
+        [_service(auto_start=False)],
+        tmp_path / "logs",
+        probe=lambda _spec: False,
+        launcher=_fake_launcher(process, []),
+    )
+    supervisor.check_now()
+    set_active_service_supervisor(supervisor)
+    try:
+        app = create_app(Settings(_env_file=None, output_dir=tmp_path / "output"))
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            started = await client.post("/api/runtime/services/example/start")
+            logs = await client.get("/api/runtime/services/example/logs")
+            stopped = await client.post("/api/runtime/services/example/stop")
+    finally:
+        supervisor.stop()
+        set_active_service_supervisor(None)
+
+    assert started.status_code == 200
+    assert started.json()["service"]["managed"] is True
+    assert logs.status_code == 200
+    assert logs.json()["service"] == "example"
+    assert stopped.status_code == 200
+    assert stopped.json()["service"]["state"] == "stopped"
+    assert process.terminated is True

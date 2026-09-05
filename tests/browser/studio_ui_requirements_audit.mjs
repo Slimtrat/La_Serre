@@ -129,7 +129,7 @@ page.on("console", (message) => {
 await page.addInitScript(() => {
   if (sessionStorage.getItem("serre-studio-ui-audit-initialized")) return;
   sessionStorage.setItem("serre-studio-ui-audit-initialized", "true");
-  localStorage.setItem("serre-studio-getting-started-v0.2.9", "seen");
+  localStorage.setItem("serre-studio-getting-started-v0.2.10", "seen");
   localStorage.setItem("serre-studio-language", "fr");
   localStorage.removeItem("serre-studio-getting-started-position-v1");
 });
@@ -212,8 +212,9 @@ await check("les surfaces dynamiques majeures suivent EN", async () => {
   expect(normalize(await page.locator("#bible-title").innerText()).includes("Canon Bible"), "Bible dynamique non traduite");
   await page.locator("#context-shot").click();
   await clickTool(page, '[data-tool-action="assets"]');
-  expect(await page.locator("body").getAttribute("data-workspace-view") === "outputs", "Assets ne navigue pas vers les sorties");
-  expect(normalize(await page.locator("#preview-panel h2").innerText()) === "Human review", "Sorties dynamiques non traduites");
+  await page.waitForSelector("#asset-drawer[aria-hidden='false']");
+  expect(normalize(await page.locator("#asset-drawer-title").innerText()) === "Asset library", "Asset Drawer dynamique non traduit");
+  await page.locator("#asset-drawer-close").click();
   await page.locator("#context-shot").click();
 });
 

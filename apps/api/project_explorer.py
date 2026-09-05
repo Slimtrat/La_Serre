@@ -47,7 +47,13 @@ def build_project_explorer(
     all_shot_states: list[ExplorerState] = []
 
     for summary in catalog.list_episodes():
-        package = catalog.load(summary.id)
+        try:
+            package = catalog.load(summary.id)
+        except (FileNotFoundError, NotADirectoryError):
+            # An episode can be moved to the recoverable trash between the
+            # catalogue snapshot and this detail read. The next refresh will
+            # expose the stable post-delete tree; this request must not fail.
+            continue
         shots: list[dict[str, object]] = []
         shot_states: list[ExplorerState] = []
         for index, shot in enumerate(package.shots, start=1):
@@ -175,9 +181,7 @@ def progress_for(states: list[ExplorerState]) -> ExplorerProgress:
         "completed": counts["complete"],
         "total": len(states),
         "percent": (
-            round(sum(STATE_PROGRESS[state] for state in states) / len(states))
-            if states
-            else 0
+            round(sum(STATE_PROGRESS[state] for state in states) / len(states)) if states else 0
         ),
         "states": dict(sorted(counts.items())),
     }
@@ -185,8 +189,13 @@ def progress_for(states: list[ExplorerState]) -> ExplorerProgress:
 
 def _episode_base_state(status: EpisodeStatus) -> ExplorerState:
     mapping: dict[EpisodeStatus, ExplorerState] = {
+        EpisodeStatus.IDEA: "idea",
+        EpisodeStatus.WRITING: "draft",
+        EpisodeStatus.REVIEW: "review",
         EpisodeStatus.DRAFT: "draft",
         EpisodeStatus.APPROVED: "approved",
+        EpisodeStatus.BREAKDOWN: "approved",
+        EpisodeStatus.PRODUCTION: "production",
         EpisodeStatus.FINAL: "complete",
     }
     return mapping[status]

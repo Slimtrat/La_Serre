@@ -1,11 +1,19 @@
 import { createRequire } from "node:module";
+import fs from "node:fs";
 
 const require = createRequire(import.meta.url);
 const playwrightModule = process.env.PLAYWRIGHT_MODULE || "playwright";
+const browserPath = process.env.PLAYWRIGHT_BROWSER_PATH
+  || (process.platform === "win32" && fs.existsSync("C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe")
+    ? "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"
+    : undefined);
 const { chromium } = require(playwrightModule);
 
 const baseURL = process.env.SERRE_BASE_URL || "http://127.0.0.1:8765";
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({
+  headless: true,
+  ...(browserPath ? { executablePath: browserPath } : {}),
+});
 const page = await browser.newPage({ viewport: { width: 1280, height: 760 } });
 const errors = [];
 page.on("pageerror", (error) => errors.push(error.message));
@@ -23,7 +31,7 @@ async function stageStatus(id, expected) {
 
 await page.goto(baseURL + "/?view=graph", { waitUntil: "networkidle" });
 await page.evaluate(() => {
-  localStorage.setItem("serre-studio-getting-started-v0.2.9", "seen");
+  localStorage.setItem("serre-studio-getting-started-v0.2.10", "seen");
 });
 await page.request.post(baseURL + "/api/demo/reset", { data: { locale: "fr", feedback: "" } });
 await page.reload({ waitUntil: "networkidle" });

@@ -66,6 +66,9 @@ async function draftShot() {
     const editor = document.querySelector("#shot-editor");
     editor.value = JSON.stringify(result.shot, null, 2);
     editor.dispatchEvent(new Event("input"));
+    window.dispatchEvent(new CustomEvent("studio:narrative-draft", {
+      detail: { provider: "ollama", model: result.model, prompt: source },
+    }));
     const card = document.querySelector('[data-job-stage="input"]');
     card.classList.add("completed");
     card.querySelector(".stage-status").textContent =

@@ -12,11 +12,6 @@ const workspaceShell = (() => {
       button.classList.toggle("selected", selected);
       button.setAttribute("aria-pressed", String(selected));
     });
-    document.querySelectorAll("[data-tool-action]").forEach((button) => {
-      const selected = button.dataset.toolAction === "assets" && view === "outputs";
-      button.classList.toggle("selected", selected);
-      button.setAttribute("aria-pressed", String(selected));
-    });
     try { localStorage.setItem("serre-studio-workspace-view", view); } catch (_error) { /* no-op */ }
     window.setTimeout(() => window.dispatchEvent(new Event("resize")), 20);
   }
@@ -28,7 +23,7 @@ const workspaceShell = (() => {
     window.SerreBible?.selectCategory?.("characters");
   });
   contextShot?.addEventListener("click", () => show("graph"));
-  document.querySelector('[data-tool-action="assets"]')?.addEventListener("click", () => show("outputs"));
+  document.querySelector('[data-tool-action="assets"]')?.addEventListener("click", () => window.SerreAssetDrawer?.open());
   document.querySelector(".service-status")?.addEventListener("click", () => show("settings"));
   window.addEventListener("studio:shot-selected", (event) => {
     const shot = event.detail?.shot;
