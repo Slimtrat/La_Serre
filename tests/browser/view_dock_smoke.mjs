@@ -82,6 +82,24 @@ try {
   if (opened.left < -2 || opened.planView !== "plan" || opened.finalView !== "graph") {
     throw new Error(`Dock interaction failed: ${JSON.stringify(opened)}`);
   }
+  const settings = await evaluate(`(() => {
+    window.dispatchEvent(new CustomEvent('studio:model-manager-open', {
+      detail: { provider: 'ollama', recommendedModel: 'qwen3:4b', attention: false },
+    }));
+    const drawers = Array.from(document.querySelectorAll('#settings-panel .settings-drawer'));
+    return {
+      view: document.body.dataset.workspaceView,
+      drawers: drawers.length,
+      open: drawers.filter((drawer) => drawer.open).map((drawer) => drawer.id),
+      manager: Boolean(window.SerreModelManager),
+      recommended: document.querySelector('#narrative-model-manager-title')?.textContent || '',
+    };
+  })()`);
+  if (settings.view !== "settings" || settings.drawers !== 6
+    || settings.open.join() !== "settings-drawer-narrative-models" || !settings.manager
+    || !settings.recommended.includes("Qwen3 4B")) {
+    throw new Error(`Settings model-manager route failed: ${JSON.stringify(settings)}`);
+  }
   await evaluate("window.SerreWorkspace.show('guided')");
   for (let attempt = 0; attempt < 40; attempt += 1) {
     if (await evaluate("Boolean(window.SerreGuided && document.querySelectorAll('.guided-node').length === 6)")) break;
@@ -129,7 +147,7 @@ try {
   if (fieldAssistant.buttons < 15 || !fieldAssistant.title.includes("contexte actuel")) {
     throw new Error(`Contextual field assistant is missing: ${JSON.stringify(fieldAssistant)}`);
   }
-  console.log(JSON.stringify({ closed, opened, guided, demoInitial, provenance, fieldAssistant }));
+  console.log(JSON.stringify({ closed, opened, settings, guided, demoInitial, provenance, fieldAssistant }));
 } finally {
   socket?.close();
   browser.kill();

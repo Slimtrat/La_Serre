@@ -30,6 +30,7 @@ from engine.world.catalog import EpisodeCatalog
 from engine.world.models import ProjectBible
 
 _NON_NARRATIVE_MODEL_MARKERS = ("coder", "embedding", "embed")
+RECOMMENDED_NARRATIVE_MODEL = "qwen3:4b"
 
 
 class NarrativeFieldSuggestionRequest(BaseModel):
@@ -69,6 +70,7 @@ def create_narrative_router(
                 "models": [],
                 "selected_model": None,
                 "reason": "ollama_offline",
+                "recommended_model": RECOMMENDED_NARRATIVE_MODEL,
             }
         selected = _select_model(models, settings.ollama_model)
         return {
@@ -77,7 +79,23 @@ def create_narrative_router(
             "models": [_model_payload(model) for model in models],
             "selected_model": selected,
             "reason": None if selected else "narrative_model_missing",
+            "recommended_model": RECOMMENDED_NARRATIVE_MODEL,
         }
+
+    @router.post("/models/recommended/install")
+    async def install_recommended_model() -> dict[str, object]:
+        settings = settings_provider()
+        try:
+            async with OllamaClient(str(settings.ollama_url), timeout_seconds=300) as client:
+                await client.pull_model(RECOMMENDED_NARRATIVE_MODEL)
+        except httpx.RequestError as exc:
+            raise HTTPException(status_code=503, detail="Ollama est inaccessible") from exc
+        except httpx.HTTPStatusError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail="Ollama n’a pas pu installer le modèle narratif",
+            ) from exc
+        return await status()
 
     @router.post("/field/suggest")
     async def suggest_field(payload: NarrativeFieldSuggestionRequest) -> dict[str, object]:
@@ -383,6 +401,9 @@ def _model_payload(model: OllamaModel) -> dict[str, object]:
         "size": model.size,
         "parameter_size": model.details.get("parameter_size"),
         "quantization": model.details.get("quantization_level"),
+        "narrative_compatible": not any(
+            marker in model.name.lower() for marker in _NON_NARRATIVE_MODEL_MARKERS
+        ),
     }
 
 

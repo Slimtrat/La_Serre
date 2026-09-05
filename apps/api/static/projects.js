@@ -75,6 +75,7 @@ const projectSwitcher = (() => {
   const deleteWarning = document.querySelector("#project-delete-warning");
 
   const settingsPanel = document.querySelector("#settings-panel");
+  const storageHost = document.querySelector("#settings-storage-host") || settingsPanel;
   const storageCard = document.createElement("section");
   storageCard.id = "project-storage-settings";
   storageCard.className = "project-storage-settings";
@@ -91,7 +92,7 @@ const projectSwitcher = (() => {
     </div>
     <small id="project-storage-preview"></small>
   `;
-  settingsPanel?.append(storageCard);
+  storageHost?.append(storageCard);
   const workRootInput = storageCard.querySelector("#project-work-root");
   const outputRootInput = storageCard.querySelector("#project-output-root");
   const rootsTogether = storageCard.querySelector("#project-roots-together");

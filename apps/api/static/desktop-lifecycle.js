@@ -41,7 +41,9 @@
       <label class="desktop-lifecycle-toggle"><input id="desktop-notifications" type="checkbox" /><span data-i18n="desktop.notifications">Notifications Windows pour les générations terminées ou en erreur</span></label>
     </div>
     <p class="desktop-lifecycle-help" data-i18n="desktop.help">En arrière-plan, les jobs et les moteurs lancés par La Serre continuent. Quitter arrête uniquement les moteurs gérés par le Studio.</p>`;
-  document.querySelector("#settings-panel .runtime-manager")?.after(settings);
+  const desktopSettingsHost = document.querySelector("#settings-desktop-host");
+  if (desktopSettingsHost) desktopSettingsHost.append(settings);
+  else document.querySelector("#settings-panel .runtime-manager")?.after(settings);
 
   const backdrop = document.createElement("div");
   backdrop.className = "desktop-close-backdrop";

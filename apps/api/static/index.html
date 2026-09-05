@@ -27,6 +27,7 @@
     <link rel="stylesheet" href="/static/demo-production.css" />
     <link rel="stylesheet" href="/static/editorial-history.css" />
     <link rel="stylesheet" href="/static/runtime-manager.css" />
+    <link rel="stylesheet" href="/static/settings-drawers.css" />
     <link rel="stylesheet" href="/static/narrative-workflow.css" />
     <link rel="stylesheet" href="/static/field-assistant.css" />
     <link rel="stylesheet" href="/static/asset-drawer.css" />
@@ -283,56 +284,95 @@
       </section>
 
       <section id="settings-panel" class="panel setup">
-        <div class="panel-heading">
-          <div><p class="eyebrow">CONFIGURATION GUIDÉE</p><h2>ComfyUI sans JSON à bricoler</h2></div>
+        <div class="panel-heading settings-intro">
+          <div class="settings-intro-copy">
+            <p class="eyebrow">CENTRE DE CONTRÔLE</p>
+            <h2>Réglages du Studio</h2>
+            <p>Les choix essentiels restent visibles. Les moteurs, modèles et options techniques sont rangés par fonction.</p>
+          </div>
           <span id="setup-badge" class="badge warn">À configurer</span>
         </div>
-        <section class="runtime-manager" aria-labelledby="runtime-manager-title">
-          <header class="runtime-manager-heading">
-            <div>
-              <p class="eyebrow">MOTEURS LOCAUX</p>
-              <h3 id="runtime-manager-title">Préparer mon Studio</h3>
-              <p id="runtime-manager-summary">Détection d’Ollama et ComfyUI…</p>
+        <div class="settings-drawer-stack">
+          <details id="settings-drawer-runtimes" class="settings-drawer" open>
+            <summary><span class="settings-drawer-index">01</span><span class="settings-drawer-copy"><strong>Moteurs locaux</strong><small>Démarrer, réparer et diagnostiquer Ollama ou ComfyUI</small></span><span class="settings-drawer-state">Système</span></summary>
+            <div class="settings-drawer-body">
+              <section class="runtime-manager" aria-labelledby="runtime-manager-title">
+                <header class="runtime-manager-heading">
+                  <div><p class="eyebrow">MOTEURS LOCAUX</p><h3 id="runtime-manager-title">Préparer mon Studio</h3><p id="runtime-manager-summary">Détection d’Ollama et ComfyUI…</p></div>
+                  <div class="runtime-manager-actions">
+                    <button id="runtime-prepare" class="button primary" type="button">Préparer / Réparer tout</button>
+                    <button id="runtime-refresh" class="button ghost" type="button">Actualiser le diagnostic</button>
+                  </div>
+                </header>
+                <div id="runtime-service-list" class="runtime-service-list" aria-live="polite"></div>
+                <aside id="runtime-log-viewer" class="runtime-log-viewer hidden" aria-labelledby="runtime-log-title">
+                  <header><div><small>JOURNAL DU MOTEUR</small><strong id="runtime-log-title">Runtime</strong></div><button id="runtime-log-close" class="button ghost" type="button">Fermer</button></header>
+                  <p id="runtime-log-path"></p><pre id="runtime-log-content">Aucune ligne de journal.</pre>
+                </aside>
+              </section>
             </div>
-            <div class="runtime-manager-actions">
-              <button id="runtime-prepare" class="button primary" type="button">Préparer / Réparer tout</button>
-              <button id="runtime-refresh" class="button ghost" type="button">Actualiser le diagnostic</button>
+          </details>
+
+          <details id="settings-drawer-narrative-models" class="settings-drawer">
+            <summary><span class="settings-drawer-index">02</span><span class="settings-drawer-copy"><strong>Modèles narratifs</strong><small>Écriture, dialogues et validation avec Ollama</small></span><span id="settings-narrative-state" class="settings-drawer-state">Vérification</span></summary>
+            <div class="settings-drawer-body">
+              <section id="narrative-model-manager" class="narrative-model-manager" aria-labelledby="narrative-model-manager-title">
+                <div class="narrative-model-overview">
+                  <div><p class="eyebrow">OLLAMA · ÉCRITURE</p><h3 id="narrative-model-manager-title">Qwen3 4B recommandé</h3><p id="narrative-model-manager-summary" class="narrative-model-status" aria-live="polite">Vérification d’Ollama et des modèles installés…</p></div>
+                  <div class="narrative-model-actions">
+                    <button id="narrative-runtime-open" class="button ghost hidden" type="button">Ouvrir les moteurs</button>
+                    <button id="narrative-model-refresh" class="button ghost" type="button">Actualiser</button>
+                    <button id="narrative-model-install" class="button primary" type="button">Installer Qwen3 4B</button>
+                  </div>
+                </div>
+                <div id="narrative-model-list" class="narrative-model-list" aria-live="polite"></div>
+              </section>
             </div>
-          </header>
-          <div id="runtime-service-list" class="runtime-service-list" aria-live="polite"></div>
-          <aside id="runtime-log-viewer" class="runtime-log-viewer hidden" aria-labelledby="runtime-log-title">
-            <header>
-              <div><small>JOURNAL DU MOTEUR</small><strong id="runtime-log-title">Runtime</strong></div>
-              <button id="runtime-log-close" class="button ghost" type="button">Fermer</button>
-            </header>
-            <p id="runtime-log-path"></p>
-            <pre id="runtime-log-content">Aucune ligne de journal.</pre>
-          </aside>
-        </section>
-        <div class="config-row">
-          <label>Adresse ComfyUI<input id="comfy-url" value="http://127.0.0.1:8188" /></label>
-          <button id="save-config" class="button secondary">Enregistrer & tester</button>
-          <button id="build-workflows" class="button primary">Créer mes workflows</button>
+          </details>
+
+          <details id="settings-drawer-visual-models" class="settings-drawer">
+            <summary><span class="settings-drawer-index">03</span><span class="settings-drawer-copy"><strong>Modèles image & vidéo</strong><small>Vérifier et installer les poids attendus par ComfyUI</small></span><span class="settings-drawer-state">ComfyUI</span></summary>
+            <div class="settings-drawer-body">
+              <div id="model-list" class="model-list"></div>
+              <div class="model-actions"><small id="downloads-location">Surveillance du dossier Downloads…</small><button id="install-downloads" class="button secondary" disabled>Installer les téléchargements terminés</button></div>
+            </div>
+          </details>
+
+          <details id="settings-drawer-workflows" class="settings-drawer">
+            <summary><span class="settings-drawer-index">04</span><span class="settings-drawer-copy"><strong>ComfyUI & workflows</strong><small>Connexion, génération par le code et imports avancés</small></span><span class="settings-drawer-state">Production</span></summary>
+            <div class="settings-drawer-body settings-workflow-actions">
+              <div class="config-row">
+                <label>Adresse ComfyUI<input id="comfy-url" value="http://127.0.0.1:8188" /></label>
+                <button id="save-config" class="button secondary">Enregistrer & tester</button>
+                <button id="build-workflows" class="button primary">Créer mes workflows</button>
+              </div>
+              <div class="workflow-explainer">
+                <div><span>01</span><strong>Le code crée</strong><small>SDXL keyframe + LTX 2B I2V</small></div>
+                <div><span>02</span><strong>Tu télécharges</strong><small>uniquement les modèles listés</small></div>
+                <div><span>03</span><strong>Tu génères</strong><small>sans ouvrir le graphe ComfyUI</small></div>
+              </div>
+              <div id="workflow-template-settings"></div>
+              <details class="advanced">
+                <summary>Mode avancé — importer un workflow personnel</summary>
+                <div class="advanced-grid">
+                  <label class="drop compact">Workflow keyframe<input id="advanced-keyframe" type="file" accept="application/json,.json" /></label>
+                  <label class="drop compact">Workflow vidéo<input id="advanced-video" type="file" accept="application/json,.json" /></label>
+                </div>
+                <p class="muted">Les imports et mappings restent privés dans <code>workflows/local/</code>, ignoré par Git.</p>
+              </details>
+            </div>
+          </details>
+
+          <details id="settings-drawer-storage" class="settings-drawer">
+            <summary><span class="settings-drawer-index">05</span><span class="settings-drawer-copy"><strong>Projets & stockage</strong><small>Choisir les racines work et output des prochains projets</small></span><span class="settings-drawer-state">Dossiers</span></summary>
+            <div id="settings-storage-host" class="settings-drawer-body"></div>
+          </details>
+
+          <details id="settings-drawer-desktop" class="settings-drawer">
+            <summary><span class="settings-drawer-index">06</span><span class="settings-drawer-copy"><strong>Application Windows</strong><small>Fermeture, arrière-plan et notifications du Studio</small></span><span class="settings-drawer-state">Bureau</span></summary>
+            <div id="settings-desktop-host" class="settings-drawer-body"></div>
+          </details>
         </div>
-        <div class="workflow-explainer">
-          <div><span>01</span><strong>Le code crée</strong><small>SDXL keyframe + LTX 2B I2V</small></div>
-          <div><span>02</span><strong>Tu télécharges</strong><small>uniquement les modèles listés</small></div>
-          <div><span>03</span><strong>Tu génères</strong><small>sans ouvrir le graphe ComfyUI</small></div>
-        </div>
-        <div id="workflow-template-settings"></div>
-        <div id="model-list" class="model-list"></div>
-        <div class="model-actions">
-          <small id="downloads-location">Surveillance du dossier Downloads…</small>
-          <button id="install-downloads" class="button secondary" disabled>Installer les téléchargements terminés</button>
-        </div>
-        <details class="advanced">
-          <summary>Mode avancé — importer un workflow personnel</summary>
-          <div class="advanced-grid">
-            <label class="drop compact">Workflow keyframe<input id="advanced-keyframe" type="file" accept="application/json,.json" /></label>
-            <label class="drop compact">Workflow vidéo<input id="advanced-video" type="file" accept="application/json,.json" /></label>
-          </div>
-          <p class="muted">Les imports et mappings restent privés dans <code>workflows/local/</code>, ignoré par Git.</p>
-        </details>
       </section>
 
       <section class="pipeline-map panel hidden">
@@ -578,6 +618,8 @@
     <script src="/static/guided-workspace.js" defer></script>
     <script src="/static/workspace-shell.js" defer></script>
     <script src="/static/desktop-workspace.js" defer></script>
+    <script src="/static/settings-drawers.js" defer></script>
+    <script src="/static/model-manager.js" defer></script>
     <script src="/static/activity-bar.js" defer></script>
     <script src="/static/getting-started.js" defer></script>
     <script src="/static/project-explorer.js" defer></script>
