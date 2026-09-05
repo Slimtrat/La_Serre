@@ -50,6 +50,10 @@ class StageGenerationRequest(StrictRequest):
     tts: TtsMode = "auto"
 
 
+class AssetReuseRequest(StrictRequest):
+    asset_id: str = Field(pattern=r"^asset-[a-f0-9]{64}$")
+
+
 class ProjectCreateRequest(StrictRequest):
     name: str = Field(min_length=1, max_length=80)
     clone_content: bool = True

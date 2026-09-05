@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from apps.api.asset_catalog import ProjectAssetCatalog
 from apps.api.assets import AssetSlot, AssetStore
 from apps.api.bible_routes import create_bible_router
 from apps.api.coherence_routes import create_coherence_router
@@ -27,6 +28,7 @@ from apps.api.project_storage_routes import create_project_storage_router
 from apps.api.projects import ProjectRegistry
 from apps.api.run_history import RUN_FILES, RunHistory
 from apps.api.schemas import (
+    AssetReuseRequest,
     EpisodeGenerationRequest,
     GenerationRequest,
     NotificationCreateRequest,
@@ -102,6 +104,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     def assets() -> AssetStore:
         return AssetStore(current_settings().output_dir)
+
+    def asset_catalog() -> ProjectAssetCatalog:
+        resolved = current_settings()
+        return ProjectAssetCatalog(resolved.output_dir, resolved.private_content_dir)
 
     def catalog() -> EpisodeCatalog:
         return EpisodeCatalog(current_settings().private_content_dir)
@@ -505,6 +511,62 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="Artefact introuvable")
         record, path = found
         return FileResponse(path, media_type=record.media_type, filename=record.filename)
+
+    @app.get("/api/asset-catalog")
+    def list_asset_catalog(
+        q: str | None = None,
+        kind: str | None = None,
+        character: str | None = None,
+        location: str | None = None,
+        episode: str | None = None,
+        status: str | None = None,
+    ) -> dict[str, object]:
+        return asset_catalog().listing(
+            query=q,
+            kind=kind,
+            character=character,
+            location=location,
+            episode=episode,
+            status=status,
+        )
+
+    @app.get("/api/asset-catalog/{asset_id}")
+    def get_catalog_asset(asset_id: str) -> dict[str, object]:
+        try:
+            return asset_catalog().get(asset_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Asset introuvable") from exc
+
+    @app.get("/api/asset-catalog/{asset_id}/content")
+    def get_catalog_asset_content(asset_id: str) -> FileResponse:
+        try:
+            catalog = asset_catalog()
+            item = catalog.get(asset_id)
+            path = catalog.content_path(asset_id, refresh=False)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Asset introuvable") from exc
+        return FileResponse(path, media_type=str(item["media_type"]))
+
+    @app.post("/api/assets/{shot_id}/{slot}/reuse")
+    def reuse_catalog_asset(
+        shot_id: str,
+        slot: AssetSlot,
+        payload: AssetReuseRequest,
+    ) -> dict[str, object]:
+        try:
+            record = asset_catalog().reuse(shot_id, slot, payload.asset_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Asset introuvable") from exc
+        return {
+            **asdict(record),
+            "url": f"/api/assets/{shot_id}/{slot}/content",
+        }
 
     @app.get("/api/jobs/{job_id}")
     async def get_job(job_id: str) -> dict[str, object]:

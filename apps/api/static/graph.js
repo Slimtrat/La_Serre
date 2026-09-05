@@ -691,14 +691,27 @@ const studioGraph = (() => {
     node.addEventListener("pointerup", finishNodeDrag);
     node.addEventListener("pointercancel", finishNodeDrag);
     node.addEventListener("dragover", (event) => {
-      if (!definitionFor(node.dataset.nodeId)?.slot) return;
+      const slot = definitionFor(node.dataset.nodeId)?.slot;
+      if (!slot) return;
+      const assetDrag = window.SerreAssetDrawer?.dragged?.();
+      if (assetDrag && !assetDrag.compatibleSlots?.includes(slot)) {
+        node.classList.add("asset-drop-incompatible");
+        return;
+      }
       event.preventDefault();
+      if (assetDrag) event.dataTransfer.dropEffect = "link";
       node.classList.add("drop-target");
     });
-    node.addEventListener("dragleave", () => node.classList.remove("drop-target"));
+    node.addEventListener("dragleave", () => node.classList.remove("drop-target", "asset-drop-incompatible"));
     node.addEventListener("drop", (event) => {
       event.preventDefault();
-      node.classList.remove("drop-target");
+      node.classList.remove("drop-target", "asset-drop-incompatible");
+      const slot = definitionFor(node.dataset.nodeId)?.slot;
+      const asset = window.SerreAssetDrawer?.transfer(event);
+      if (asset && asset.compatibleSlots?.includes(slot)) {
+        reuseOnNode(node.dataset.nodeId, asset.assetId);
+        return;
+      }
       uploadToNode(node.dataset.nodeId, event.dataTransfer.files[0]);
     });
   }
@@ -709,6 +722,14 @@ const studioGraph = (() => {
     nodeState(id, "active", "Import en cours…");
     window.SerreStudio?.uploadAsset(slot, file)
       .catch(() => nodeState(id, "error", "Import échoué"));
+  }
+
+  function reuseOnNode(id, assetId) {
+    const slot = definitionFor(id)?.slot;
+    if (!slot || !assetId) return;
+    nodeState(id, "active", "Réutilisation en cours…");
+    window.SerreAssetDrawer?.reuse(assetId, slot)
+      .catch(() => nodeState(id, "error", "Asset incompatible"));
   }
 
   async function requestGraph(scope, id) {
@@ -1098,6 +1119,16 @@ const studioGraph = (() => {
     if (slot === "video") outputs.video = event.detail?.record?.url;
     if (mapping[slot]) nodeState(mapping[slot], "done", "Import terminé");
     inspectorPreview(selectedId);
+  });
+  window.addEventListener("studio:asset-drag-end", () => {
+    nodes.forEach((node) => node.classList.remove("drop-target", "asset-drop-incompatible"));
+  });
+  window.addEventListener("studio:asset-drag-start", (event) => {
+    const compatible = event.detail?.compatibleSlots || [];
+    nodes.forEach((node) => {
+      const slot = definitionFor(node.dataset.nodeId)?.slot;
+      node.classList.toggle("asset-drop-incompatible", Boolean(slot) && !compatible.includes(slot));
+    });
   });
   window.addEventListener("studio:job", (event) => {
     if (graphDefinition?.scope !== "shot") return;

@@ -28,6 +28,7 @@
     <link rel="stylesheet" href="/static/editorial-history.css" />
     <link rel="stylesheet" href="/static/runtime-manager.css" />
     <link rel="stylesheet" href="/static/narrative-workflow.css" />
+    <link rel="stylesheet" href="/static/asset-drawer.css" />
   </head>
   <body data-workspace-view="graph">
     <div class="ambient ambient-one"></div>
@@ -71,7 +72,7 @@
         <button type="button" role="tab" data-workspace-target="settings">Réglages</button>
       </nav>
       <div class="studio-tools" role="toolbar" aria-label="Outils du studio" data-i18n-aria-label="shell.tools">
-        <button class="studio-tool" type="button" data-tool-action="assets" title="Voir les médias et sorties du plan" data-i18n-title="shell.assetsTitle"><span aria-hidden="true">◫</span><strong data-i18n="shell.assets">Assets</strong></button>
+        <button class="studio-tool" type="button" data-tool-action="assets" title="Ouvrir la bibliothèque d’assets du projet" data-i18n-title="shell.assetsTitle"><span aria-hidden="true">◫</span><strong data-i18n="shell.assets">Assets</strong></button>
         <button id="notification-toggle" class="studio-tool notification-toggle" type="button" aria-expanded="false" aria-controls="notification-panel" aria-label="Journal" title="Journal" data-i18n-aria-label="shell.journal" data-i18n-title="shell.journal"><span aria-hidden="true">☷</span><strong data-i18n="shell.journal">Journal</strong><i id="notification-badge" class="hidden">0</i></button>
         <button id="getting-started-open" class="studio-tool guide-toggle" type="button" title="Ouvrir le guide de démarrage" data-i18n-title="shell.guideTitle"><span aria-hidden="true">?</span><strong data-i18n="shell.guide">Guide</strong></button>
         <button id="demo-production-open" class="studio-tool" type="button" title="Lancer la démo express 0 GPU" data-i18n-title="shell.demoTitle"><span aria-hidden="true">✦</span><strong data-i18n="shell.demo">Démo</strong></button>
@@ -410,6 +411,30 @@
         <div class="bottom-actions"><p id="job-message">Configure ComfyUI, puis lance une génération.</p><button id="continue-video" class="button secondary">Animer la keyframe</button></div>
       </section>
     </main>
+    <div id="asset-drawer-backdrop" class="asset-drawer-backdrop" hidden></div>
+    <aside id="asset-drawer" class="asset-drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="asset-drawer-title" hidden>
+      <header>
+        <div class="asset-drawer-title">
+          <p class="eyebrow">CATALOGUE PROJET</p>
+          <h2 id="asset-drawer-title" data-i18n="assetDrawer.title">Bibliothèque d’assets</h2>
+          <p data-i18n="assetDrawer.subtitle">Tous les médias du projet, prêts à être réutilisés.</p>
+        </div>
+        <button id="asset-drawer-close" class="button ghost" type="button" aria-label="Fermer la bibliothèque" data-i18n-aria-label="assetDrawer.close">×</button>
+      </header>
+      <div class="asset-toolbar">
+        <input id="asset-search" type="search" placeholder="Rechercher un asset…" data-i18n-placeholder="assetDrawer.search" />
+        <select id="asset-filter-kind" aria-label="Type"><option value="">Tous les types</option></select>
+        <select id="asset-filter-character" aria-label="Personnage"><option value="">Tous les personnages</option></select>
+        <select id="asset-filter-location" aria-label="Lieu"><option value="">Tous les lieux</option></select>
+        <select id="asset-filter-episode" aria-label="Épisode"><option value="">Tous les épisodes</option></select>
+        <select id="asset-filter-status" aria-label="Statut"><option value="">Tous les statuts</option></select>
+      </div>
+      <div class="asset-drawer-body">
+        <div id="asset-grid" class="asset-grid" aria-live="polite"></div>
+        <aside id="asset-detail" class="asset-detail" aria-live="polite"></aside>
+      </div>
+      <footer><span id="asset-count">0 asset</span><span data-i18n="assetDrawer.drag">Glisse vers un nœud ou un slot compatible</span></footer>
+    </aside>
     <div id="toast" class="toast hidden"></div>
     <dialog id="project-create-dialog" class="project-create-dialog" aria-labelledby="project-create-title">
       <form id="project-create-form">
@@ -481,6 +506,7 @@
     <script src="/static/episode.js" defer></script>
     <script src="/static/output-console.js" defer></script>
     <script src="/static/editorial-history.js" defer></script>
+    <script src="/static/asset-drawer.js" defer></script>
     <dialog id="workflow-graph-dialog" class="workflow-graph-dialog" aria-labelledby="workflow-graph-title">
       <section class="workflow-graph-shell">
         <header class="workflow-graph-toolbar">
