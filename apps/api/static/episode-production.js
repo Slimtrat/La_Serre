@@ -183,8 +183,10 @@ const episodeProduction = (() => {
     const clips = outputs.filter((output) => output?.video).length;
     const keyframes = outputs.filter((output) => output?.keyframe).length;
     const covered = outputs.filter((output) => output?.video || (allowStills.checked && output?.keyframe)).length;
-    const finalResponse = await fetch("/api/episode-media/" + episodePackage.episode.id + "/episode-generation.json");
-    const finalExists = finalResponse.ok;
+    const finalStatus = await window.SerreStudio.api(
+      "/api/episodes/" + episodePackage.episode.id + "/media-status",
+    );
+    const finalExists = Boolean(finalStatus.exists && finalStatus.video);
     readiness = { clips, keyframes, covered, total: shots.length, ready: covered === shots.length, finalExists };
     readinessLabel.textContent = clips + " clip(s) · " + keyframes + " keyframe(s) · " + covered + " / " + shots.length + " plans exploitables";
     if (!readiness.ready) {
@@ -196,11 +198,10 @@ const episodeProduction = (() => {
     startButton.textContent = finalExists ? "Regénérer le master" : "Finaliser l’épisode";
     force.checked = finalExists;
     if (finalExists) {
-      const manifest = await finalResponse.json().catch(() => ({}));
       showFinal({
         video: "/api/episode-media/" + episodePackage.episode.id + "/episode.mp4",
         manifest: "/api/episode-media/" + episodePackage.episode.id + "/episode-generation.json",
-        subtitles: manifest.subtitles ? "/api/episode-media/" + episodePackage.episode.id + "/subtitles.fr.srt" : null,
+        subtitles: finalStatus.subtitles ? "/api/episode-media/" + episodePackage.episode.id + "/subtitles.fr.srt" : null,
       });
     }
   }

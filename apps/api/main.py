@@ -697,6 +697,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="Episode job not found")
         return job.public()
 
+    @app.get("/api/episodes/{episode_id}/media-status")
+    def episode_media_status(episode_id: str) -> dict[str, object]:
+        """Describe optional master files without turning their absence into an error."""
+        if not EPISODE_ID.fullmatch(episode_id):
+            raise HTTPException(status_code=404, detail="Episode not found")
+        output_dir = current_settings().output_dir / episode_id
+        manifest_path = output_dir / "episode-generation.json"
+        manifest: dict[str, object] = {}
+        if manifest_path.is_file():
+            try:
+                payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                payload = {}
+            if isinstance(payload, dict):
+                manifest = payload
+        return {
+            "exists": manifest_path.is_file(),
+            "video": (output_dir / "episode.mp4").is_file(),
+            "manifest": manifest_path.is_file(),
+            "subtitles": bool(manifest.get("subtitles"))
+            and (output_dir / "subtitles.fr.srt").is_file(),
+        }
+
     @app.get("/api/episode-media/{episode_id}/{filename}")
     def episode_media(episode_id: str, filename: str) -> FileResponse:
         media_type = EPISODE_MEDIA_FILES.get(filename)
