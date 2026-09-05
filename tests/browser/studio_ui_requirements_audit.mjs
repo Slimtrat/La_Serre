@@ -129,7 +129,7 @@ page.on("console", (message) => {
 await page.addInitScript(() => {
   if (sessionStorage.getItem("serre-studio-ui-audit-initialized")) return;
   sessionStorage.setItem("serre-studio-ui-audit-initialized", "true");
-  localStorage.setItem("serre-studio-getting-started-v0.2.9", "seen");
+  localStorage.setItem("serre-studio-getting-started-v0.2.10", "seen");
   localStorage.setItem("serre-studio-language", "fr");
   localStorage.removeItem("serre-studio-getting-started-position-v1");
 });
