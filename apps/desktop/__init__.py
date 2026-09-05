@@ -1,4 +1,4 @@
-"""Native desktop host for La Serre des Venins."""
+"""Native desktop host for La Serre."""
 
 from apps.desktop.runtime import APP_NAME, APP_VERSION, EmbeddedStudioServer
 

@@ -14,12 +14,12 @@ VSVersionInfo(
       StringTable(
         u'040904B0',
         [
-          StringStruct(u'CompanyName', u'La Serre des Venins'),
+          StringStruct(u'CompanyName', u'La Serre'),
           StringStruct(u'FileDescription', u'Studio desktop de production narrative'),
           StringStruct(u'FileVersion', u'0.2.11'),
           StringStruct(u'InternalName', u'SerreStudio'),
           StringStruct(u'OriginalFilename', u'SerreStudio.exe'),
-          StringStruct(u'ProductName', u'La Serre des Venins'),
+          StringStruct(u'ProductName', u'La Serre'),
           StringStruct(u'ProductVersion', u'0.2.11')
         ]
       )

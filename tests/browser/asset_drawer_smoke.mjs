@@ -45,7 +45,7 @@ const asset = {
 const facets = {
   kinds: [{ value: "image", label: "image", count: 1 }],
   characters: [{ value: "belladone", label: "Belladone", count: 1 }],
-  locations: [{ value: "serre-des-venins", label: "La Serre des Venins", count: 1 }],
+  locations: [{ value: "serre-des-venins", label: "La Serre", count: 1 }],
   episodes: [{ value: "S01E001", label: "S01E001", count: 1 }],
   statuses: [{ value: "imported", label: "imported", count: 1 }],
 };

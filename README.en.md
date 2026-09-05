@@ -1,4 +1,8 @@
-# The Venom Greenhouse
+<p align="center">
+  <img src="assets/branding/la-serre-icon-readme.png" alt="La Serre icon" width="168" />
+</p>
+
+# La Serre
 
 > A local-first studio for writing, directing and producing generative series without surrendering creative control to AI.
 

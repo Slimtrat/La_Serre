@@ -141,7 +141,7 @@ const guidedWorkspace = (() => {
     const ready = payload.completion.brief.ready;
     return stageHeading(0, "Commence par l’envie", "Quelques phrases suffisent. Le brouillon peut rester incomplet aussi longtemps que tu veux.", ready) +
       `<form class="guided-form" data-guided-form="brief">
-        <label>Titre de travail ${lock("working_title", locked.has("working_title"))}<input data-brief="working_title" value="${h(brief.working_title)}" placeholder="Ex. La Serre des Venins" /></label>
+        <label>Titre de travail ${lock("working_title", locked.has("working_title"))}<input data-brief="working_title" value="${h(brief.working_title)}" placeholder="Ex. Les mondes suspendus" /></label>
         <label>Genre ${lock("genre", locked.has("genre"))}<input data-brief="genre" value="${h(brief.genre)}" placeholder="Fantasy gothique, dark romance…" /></label>
         <label class="wide">Ton idée ${lock("idea", locked.has("idea"))}<textarea data-brief="idea" placeholder="Qui veut quoi, et quel est le prix à payer ?">${h(brief.idea)}</textarea></label>
         <label>Ton ${lock("tone", locked.has("tone"))}<input data-brief="tone" value="${h(brief.tone)}" placeholder="Fun, séduisant, légèrement glauque…" /></label>

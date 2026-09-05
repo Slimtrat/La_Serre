@@ -1,4 +1,8 @@
-# La Serre des Venins
+<p align="center">
+  <img src="assets/branding/la-serre-icon-readme.png" alt="Icône de La Serre" width="168" />
+</p>
+
+# La Serre
 
 > Un studio local-first pour écrire, mettre en scène et produire des séries génératives sans abandonner la direction créative à l’IA.
 

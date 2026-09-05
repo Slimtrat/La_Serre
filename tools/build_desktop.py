@@ -66,7 +66,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             check=True,
         )
     if args.publish_desktop:
-        destination = args.desktop_dir or Path.home() / "Desktop" / "La Serre des Venins"
+        destination = args.desktop_dir or Path.home() / "Desktop" / "La Serre"
         current = publish_desktop_release(executable, destination, _project_version(project_root))
         print(current)
     else:

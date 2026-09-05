@@ -19,7 +19,7 @@ from apps.desktop.starter import install_starter_catalog
 from apps.version import __version__
 from engine.generation.comfy.workflow_factory import WorkflowFactory
 
-APP_NAME = "La Serre des Venins"
+APP_NAME = "La Serre"
 APP_VERSION = __version__
 DEFAULT_STARTUP_TIMEOUT_SECONDS = 20.0
 

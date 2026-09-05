@@ -119,7 +119,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def notifications() -> StudioNotificationLog:
         return StudioNotificationLog(current_settings().output_dir)
 
-    app = FastAPI(title="La Serre des Venins", version=__version__)
+    app = FastAPI(title="La Serre", version=__version__)
     manager = JobManager(current_settings, assets)
     episode_manager = EpisodeJobManager(current_settings)
     stage_service = ShotStageService(current_settings)

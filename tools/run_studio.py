@@ -17,7 +17,7 @@ from engine.config import Settings
 
 
 def parser() -> argparse.ArgumentParser:
-    result = argparse.ArgumentParser(description="Launch the local Serre des Venins studio")
+    result = argparse.ArgumentParser(description="Launch the local La Serre studio")
     result.add_argument("--host", default="127.0.0.1")
     result.add_argument("--port", default=8000, type=int)
     result.add_argument("--no-browser", action="store_true")

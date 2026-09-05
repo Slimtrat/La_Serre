@@ -4,7 +4,7 @@ Les idées retenues de l'atelier d'équipe sont des principes génériques, pas 
 contenu ni ses prompts : séparer les responsabilités, rendre chaque validation
 visible et permettre à l'humain de remplacer n'importe quelle sortie.
 
-La trajectoire produit de La Serre des Venins devient :
+La trajectoire produit de La Serre devient :
 
 1. brief ou situation relationnelle ;
 2. proposition narrative ;

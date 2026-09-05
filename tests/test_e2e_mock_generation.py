@@ -51,7 +51,7 @@ def seed_canonical_episode(private_root: Path) -> None:
     }
     location = {
         "id": "serre_venins",
-        "name": "Serre des Venins",
+        "name": "La Serre",
         "visual_description": (
             "A moonlit poison greenhouse of black iron, wet glass and luminous vines"
         ),

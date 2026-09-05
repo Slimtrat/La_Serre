@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import json
 import logging
+import sys
 import threading
 import urllib.error
 import urllib.parse
@@ -12,6 +13,7 @@ import urllib.request
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 from typing import Any, Protocol, cast
 
 from apps.desktop.lifecycle import DesktopPreferenceStore, NativeWindowLifecycle
@@ -433,18 +435,33 @@ class SystemTray:
         self.lifecycle.request_shutdown()
 
     def _render_icon(self, indicator: StudioIndicator) -> Any:
-        image = self._image_module.new("RGBA", (64, 64), "#111813")
+        bundle_root = Path(str(getattr(sys, "_MEIPASS", Path(__file__).parents[2])))
+        icon_path = bundle_root / "assets" / "branding" / "la-serre-icon-tray.png"
+        try:
+            with self._image_module.open(icon_path) as source:
+                image = source.convert("RGBA").resize(
+                    (64, 64),
+                    self._image_module.Resampling.LANCZOS,
+                )
+        except (AttributeError, OSError, ValueError):
+            LOGGER.warning("Could not load the La Serre tray icon", exc_info=True)
+            image = self._image_module.new("RGBA", (64, 64), "#090d0b")
+            drawing = self._draw_module.Draw(image)
+            drawing.rounded_rectangle(
+                (4, 4, 59, 59),
+                radius=14,
+                outline="#8fcf9d",
+                width=5,
+            )
+            drawing.rounded_rectangle(
+                (17, 15, 47, 49),
+                radius=9,
+                outline="#a387c4",
+                width=4,
+            )
         drawing = self._draw_module.Draw(image)
-        drawing.rounded_rectangle(
-            (2, 2, 61, 61),
-            radius=14,
-            fill="#17221a",
-            outline="#93c79d",
-            width=3,
-        )
-        drawing.text((13, 18), "SV", fill="#e9f2eb", stroke_width=1, stroke_fill="#17221a")
         drawing.ellipse(
-            (42, 42, 59, 59),
+            (43, 43, 60, 60),
             fill=INDICATOR_COLORS[indicator],
             outline="#08100a",
             width=3,

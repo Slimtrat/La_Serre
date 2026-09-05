@@ -118,7 +118,7 @@ def build_project_explorer(
         )
 
     return {
-        "title": "La Serre des Venins",
+        "title": "La Serre",
         "state": aggregate_state(all_shot_states),
         "progress": progress_for(all_shot_states),
         "seasons": season_payload,

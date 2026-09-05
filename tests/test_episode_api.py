@@ -101,7 +101,7 @@ async def test_project_explorer_endpoint_supports_an_empty_project(
 
     assert response.status_code == 200
     assert response.json() == {
-        "title": "La Serre des Venins",
+        "title": "La Serre",
         "state": "idea",
         "progress": {"completed": 0, "total": 0, "percent": 0, "states": {}},
         "seasons": [],

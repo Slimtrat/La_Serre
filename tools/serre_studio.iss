@@ -1,5 +1,5 @@
-#define AppName "La Serre des Venins"
-#define AppPublisher "La Serre des Venins"
+#define AppName "La Serre"
+#define AppPublisher "La Serre"
 #define AppExeName "SerreStudio.exe"
 #define AppVersion GetEnv("SERRE_STUDIO_VERSION")
 #if AppVersion == ""
@@ -21,6 +21,7 @@ Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 UninstallDisplayIcon={app}\{#AppExeName}
+SetupIconFile=..\assets\branding\la-serre.ico
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 
@@ -76,7 +77,7 @@ begin
   );
 
   if MsgBox(
-    'Supprimer aussi les données locales de La Serre des Venins ?' + #13#10 + #13#10 +
+    'Supprimer aussi les données locales de La Serre ?' + #13#10 + #13#10 +
     'Dossier concerné : ' + ExpandConstant('{localappdata}\SerreStudio') + #13#10 +
     'Choisis Non pour conserver projets, réglages, journaux et rendus.',
     mbConfirmation,

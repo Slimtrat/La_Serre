@@ -11,6 +11,7 @@ pillow_data, pillow_binaries, pillow_hidden = collect_all("PIL")
 data_files = list(webview_data + tray_data + pillow_data)
 for source, destination in (
     (project_root / "apps" / "api" / "static", "apps/api/static"),
+    (project_root / "assets" / "branding", "assets/branding"),
     (project_root / "examples", "examples"),
     (project_root / "starter_catalog", "starter_catalog"),
     (project_root / "workflows" / "images", "workflows/images"),
@@ -64,4 +65,5 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     version=str(project_root / "tools" / "windows-version-info.txt"),
+    icon=str(project_root / "assets" / "branding" / "la-serre.ico"),
 )
