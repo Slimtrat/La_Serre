@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="/static/topbar-tools.css" />
     <link rel="stylesheet" href="/static/demo-production.css" />
     <link rel="stylesheet" href="/static/editorial-history.css" />
+    <link rel="stylesheet" href="/static/runtime-manager.css" />
   </head>
   <body data-workspace-view="graph">
     <div class="ambient ambient-one"></div>
@@ -262,6 +263,25 @@
           <div><p class="eyebrow">CONFIGURATION GUIDÉE</p><h2>ComfyUI sans JSON à bricoler</h2></div>
           <span id="setup-badge" class="badge warn">À configurer</span>
         </div>
+        <section class="runtime-manager" aria-labelledby="runtime-manager-title">
+          <header class="runtime-manager-heading">
+            <div>
+              <p class="eyebrow">MOTEURS LOCAUX</p>
+              <h3 id="runtime-manager-title">Préparer mon Studio</h3>
+              <p id="runtime-manager-summary">Détection d’Ollama et ComfyUI…</p>
+            </div>
+            <button id="runtime-refresh" class="button ghost" type="button">Actualiser le diagnostic</button>
+          </header>
+          <div id="runtime-service-list" class="runtime-service-list" aria-live="polite"></div>
+          <aside id="runtime-log-viewer" class="runtime-log-viewer hidden" aria-labelledby="runtime-log-title">
+            <header>
+              <div><small>JOURNAL DU MOTEUR</small><strong id="runtime-log-title">Runtime</strong></div>
+              <button id="runtime-log-close" class="button ghost" type="button">Fermer</button>
+            </header>
+            <p id="runtime-log-path"></p>
+            <pre id="runtime-log-content">Aucune ligne de journal.</pre>
+          </aside>
+        </section>
         <div class="config-row">
           <label>Adresse ComfyUI<input id="comfy-url" value="http://127.0.0.1:8188" /></label>
           <button id="save-config" class="button secondary">Enregistrer & tester</button>
@@ -454,6 +474,7 @@
     <script src="/static/notifications.js" defer></script>
     <script src="/static/projects.js" defer></script>
     <script src="/static/app.js" defer></script>
+    <script src="/static/runtime-manager.js" defer></script>
     <script src="/static/narrative.js" defer></script>
     <script src="/static/episode.js" defer></script>
     <script src="/static/output-console.js" defer></script>

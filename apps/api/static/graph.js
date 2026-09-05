@@ -535,6 +535,31 @@ const studioGraph = (() => {
     renderInspector(id);
   }
 
+  function runtimeNameForNode(id) {
+    if (id === "director") return "ollama";
+    if (["keyframe", "motion"].includes(id)) return "comfyui";
+    return null;
+  }
+
+  function appendRuntimeAction(actions, nodeId) {
+    const runtimeName = runtimeNameForNode(nodeId);
+    if (!runtimeName) return;
+    const payload = window.SerreRuntimeManager?.current?.();
+    const service = payload?.services?.find((item) => item.name === runtimeName);
+    if (!service || service.state === "ready") return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "button primary";
+    if (service.actions?.start) {
+      button.textContent = "Démarrer " + service.display_name;
+      button.addEventListener("click", () => window.SerreRuntimeManager?.control(runtimeName, "start", button));
+    } else {
+      button.textContent = "Configurer " + service.display_name;
+      button.addEventListener("click", () => window.SerreWorkspace?.show("settings"));
+    }
+    actions.prepend(button);
+  }
+
   function renderInspector(id) {
     const definition = definitionFor(id);
     if (!definition) return;
@@ -557,6 +582,7 @@ const studioGraph = (() => {
       button.addEventListener("click", () => runAction(action).catch(reportError));
       actions.appendChild(button);
     });
+    appendRuntimeAction(actions, id);
     const drop = document.querySelector("#graph-inspector-drop");
     drop.classList.toggle("hidden", !definition.slot);
     if (definition.slot) {
@@ -1125,6 +1151,25 @@ const studioGraph = (() => {
         available ? "ready" : "blocked",
         available ? "Modèle prêt" : "ComfyUI hors ligne · import possible",
       );
+    });
+  });
+  window.addEventListener("studio:runtime", (event) => {
+    if (graphDefinition?.scope !== "shot") return;
+    const services = event.detail?.services || [];
+    const byName = Object.fromEntries(services.map((service) => [service.name, service]));
+    const mappings = { ollama: ["director"], comfyui: ["keyframe", "motion"] };
+    const stateMap = {
+      checking: "active", starting: "active", restarting: "active",
+      ready: "ready", failed: "error", unavailable: "blocked",
+      missing: "blocked", stopped: "blocked",
+    };
+    Object.entries(mappings).forEach(([runtimeName, nodeIds]) => {
+      const service = byName[runtimeName];
+      if (!service) return;
+      nodeIds.forEach((id) => {
+        if (["done", "active"].includes(nodeById[id]?.dataset.state) && service.state !== "failed") return;
+        nodeState(id, stateMap[service.state] || "blocked", service.detail);
+      });
     });
   });
   window.addEventListener("studio:narrative-status", (event) => {

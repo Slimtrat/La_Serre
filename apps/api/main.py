@@ -41,7 +41,11 @@ from apps.api.schemas import (
 from apps.api.stage_actions import ShotStageService, StageKind
 from apps.api.workflow_graph import WORKFLOW_GRAPH_KINDS, build_workflow_graph
 from apps.api.workflow_setup import WorkflowSetup
-from apps.desktop.service_launcher import service_supervisor_listing
+from apps.desktop.service_launcher import (
+    control_service,
+    service_logs,
+    service_supervisor_listing,
+)
 from apps.version import __version__
 from engine.config import Settings
 from engine.generation.comfy.client import ComfyClient
@@ -262,6 +266,45 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/runtime/services")
     def runtime_services() -> dict[str, object]:
         return service_supervisor_listing()
+
+    @app.post("/api/runtime/services/{service_name}/{action}")
+    def runtime_service_action(service_name: str, action: str) -> dict[str, object]:
+        if action not in {"check", "start", "stop", "restart"}:
+            raise HTTPException(status_code=422, detail="Action runtime inconnue")
+        listing = service_supervisor_listing()
+        raw_services = listing.get("services")
+        runtime_services = raw_services if isinstance(raw_services, list) else []
+        known = {
+            str(item.get("name"))
+            for item in runtime_services
+            if isinstance(item, dict)
+        }
+        if service_name not in known:
+            raise HTTPException(status_code=404, detail="Runtime local introuvable")
+        try:
+            service = control_service(service_name, action)
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        action_label = {
+            "check": "Diagnostic actualisé",
+            "start": "Démarrage demandé",
+            "stop": "Arrêt demandé",
+            "restart": "Redémarrage demandé",
+        }[action]
+        notifications().publish(
+            "info",
+            action_label,
+            f"{service.get('display_name', service_name)} · {service.get('detail', '')}",
+            source="runtime",
+        )
+        return {"service": service, "runtime": service_supervisor_listing()}
+
+    @app.get("/api/runtime/services/{service_name}/logs")
+    def runtime_service_logs(service_name: str, limit: int = 200) -> dict[str, object]:
+        try:
+            return service_logs(service_name, limit=max(1, min(limit, 1000)))
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     @app.get("/ready")
     @app.get("/api/status")
