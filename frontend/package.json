@@ -15,7 +15,7 @@
     "test:boundaries": "node --test tests/boundaries/check-boundaries.test.mjs",
     "test:api": "vitest run tests/api",
     "generate:api": "orval --config orval.config.ts",
-    "test:unit": "vitest run tests/api tests/kernel tests/legacy tests/ui tests/integration tests/router tests/shell",
+    "test:unit": "vitest run tests/api tests/kernel tests/legacy tests/ui tests/integration tests/router tests/shell tests/features",
     "test:ui": "vitest run tests/ui",
     "test:kernel": "vitest run tests/kernel",
     "test:legacy": "vitest run tests/legacy",

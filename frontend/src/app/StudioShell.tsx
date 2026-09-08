@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
+import { GuidedJourney } from "@features/guided-journey";
+
 import {
   Button,
   EmptyState,
@@ -161,6 +163,10 @@ export function StudioShell({
           title={shellMessages.noProjectTitle}
         />
       );
+    }
+
+    if (route.name === "create") {
+      return <GuidedJourney locale={locale} onNavigate={navigate} />;
     }
 
     const workspace = WORKSPACE_BY_ROUTE[route.name];
