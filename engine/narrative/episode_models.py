@@ -35,6 +35,9 @@ class NarrativeProvenance(StrictEpisodeModel):
     model: str | None = None
     prompt: str = ""
     source_label: str = ""
+    task_id: str | None = None
+    task_version: int | None = Field(default=None, ge=1)
+    input_fingerprint: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 

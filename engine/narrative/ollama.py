@@ -50,6 +50,8 @@ class OllamaClient:
         model: str,
         messages: list[dict[str, str]],
         schema: dict[str, Any],
+        *,
+        options: dict[str, Any] | None = None,
     ) -> str:
         response = await self._http.post(
             "/api/chat",
@@ -59,7 +61,7 @@ class OllamaClient:
                 "format": schema,
                 "stream": False,
                 "think": False,
-                "options": {"temperature": 0.2},
+                "options": options or {"temperature": 0.2},
             },
         )
         response.raise_for_status()

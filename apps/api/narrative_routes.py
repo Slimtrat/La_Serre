@@ -211,7 +211,7 @@ def create_narrative_router(
             raise HTTPException(
                 status_code=422, detail="Décris l’intention de série en au moins 10 caractères"
             )
-        candidate, model = await _author_candidate(
+        candidate, model, execution = await _author_candidate(
             settings_provider,
             payload,
             lambda author, bible, selected: author.director(
@@ -221,7 +221,12 @@ def create_narrative_router(
                 custom_prompt=payload.prompt,
             ),
         )
-        return {"candidate": candidate.model_dump(mode="json"), "model": model, "canonical": False}
+        return {
+            "candidate": candidate.model_dump(mode="json"),
+            "model": model,
+            "execution": execution,
+            "canonical": False,
+        }
 
     @router.put("/series/director")
     def save_director(payload: DirectorSaveRequest) -> dict[str, object]:
@@ -241,7 +246,7 @@ def create_narrative_router(
         director_content = workflow.director.content
         if workflow.director.status.value != "approved" or director_content is None:
             raise HTTPException(status_code=409, detail="Valide d’abord la direction de série")
-        candidate, model = await _author_candidate(
+        candidate, model, execution = await _author_candidate(
             settings_provider,
             payload,
             lambda author, bible, selected: author.screenwriter(
@@ -251,7 +256,12 @@ def create_narrative_router(
                 custom_prompt=payload.prompt,
             ),
         )
-        return {"candidate": candidate.model_dump(mode="json"), "model": model, "canonical": False}
+        return {
+            "candidate": candidate.model_dump(mode="json"),
+            "model": model,
+            "execution": execution,
+            "canonical": False,
+        }
 
     @router.put("/series/screenwriter")
     def save_screenwriter(payload: ScreenwriterSaveRequest) -> dict[str, object]:
@@ -279,7 +289,7 @@ def create_narrative_router(
             or screenwriter_content is None
         ):
             raise HTTPException(status_code=409, detail="Valide d’abord le travail du scénariste")
-        candidate, model = await _author_candidate(
+        candidate, model, execution = await _author_candidate(
             settings_provider,
             payload,
             lambda author, bible, selected: author.validate_series(
@@ -290,7 +300,12 @@ def create_narrative_router(
                 custom_prompt=payload.prompt,
             ),
         )
-        return {"candidate": candidate.model_dump(mode="json"), "model": model, "canonical": False}
+        return {
+            "candidate": candidate.model_dump(mode="json"),
+            "model": model,
+            "execution": execution,
+            "canonical": False,
+        }
 
     @router.put("/series/validator")
     def save_validator(payload: ValidatorSaveRequest) -> dict[str, object]:
@@ -334,6 +349,9 @@ def _provenance(stage: str, payload: object) -> NarrativeProvenance:
         model=getattr(payload, "model", None),
         prompt=str(getattr(payload, "prompt", "")),
         source_label=str(getattr(payload, "source_label", "")),
+        task_id=getattr(payload, "task_id", None),
+        task_version=getattr(payload, "task_version", None),
+        input_fingerprint=getattr(payload, "input_fingerprint", None),
     )
 
 
@@ -359,7 +377,7 @@ async def _author_candidate[CandidateT: BaseModel](
         [OllamaNarrativeAuthor, ProjectBible, str],
         Awaitable[CandidateT],
     ],
-) -> tuple[CandidateT, str]:
+) -> tuple[CandidateT, str, dict[str, object]]:
     settings = settings_provider()
     try:
         async with OllamaClient(str(settings.ollama_url)) as client:
@@ -367,8 +385,9 @@ async def _author_candidate[CandidateT: BaseModel](
             selected = payload.model or _select_model(models, settings.ollama_model)
             if not selected or selected not in {item.name for item in models}:
                 raise ValueError("Sélectionne un modèle Ollama installé")
+            author = OllamaNarrativeAuthor(client)
             candidate = await action(
-                OllamaNarrativeAuthor(client),
+                author,
                 BibleRegistry(settings.private_content_dir).load(),
                 selected,
             )
@@ -378,7 +397,9 @@ async def _author_candidate[CandidateT: BaseModel](
         raise HTTPException(status_code=503, detail="Ollama est inaccessible") from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    return candidate, selected
+    if author.last_execution is None:
+        raise RuntimeError("Narrative author returned no TaskExecution")
+    return candidate, selected, author.last_execution.metadata()
 
 
 def _select_model(models: list[OllamaModel], configured: str) -> str | None:

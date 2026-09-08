@@ -1,0 +1,107 @@
+{
+  "name": "Belladone et Aconit — contrats v1",
+  "shared_context": {
+    "custom_prompt": "Dark romance comique, verticale et concise.",
+    "bible": {
+      "title": "La Serre Tentafruit",
+      "characters": [
+        {"id": "belladone", "name": "Belladone"},
+        {"id": "aconit", "name": "Aconit"}
+      ],
+      "locations": [{"id": "serre_noire", "name": "Serre noire"}]
+    }
+  },
+  "cases": [
+    {
+      "task_id": "narrative.director",
+      "context": {"source": "Belladone veut voler une graine qu’Aconit protège."},
+      "output": {
+        "concept": "Belladone séduit Aconit pour voler une graine qui choisit son gardien.",
+        "genre": "Dark romance comique",
+        "tone": "Tendre, vénéneux et sec",
+        "visual_direction": "Cadres verticaux, verre noir et pollen violet",
+        "constraints": ["Trois épisodes courts"],
+        "target_episode_duration": 35,
+        "themes": ["désir", "contrôle"],
+        "narrative_rules": ["Chaque silence change le rapport de force"],
+        "series_objectives": ["Faire évoluer la dette entre Belladone et Aconit"]
+      }
+    },
+    {
+      "task_id": "tentafruit.season-plan",
+      "context": {"source": "Le brief approuvé de la saison."},
+      "output": {
+        "series_arc": "Belladone approche Aconit pour la graine puis choisit de sauver leur pacte toxique.",
+        "character_progression": ["Belladone distingue désir et possession."],
+        "relationship_progression": ["La méfiance devient une dette consentie."],
+        "episodes": [{
+          "season": 1,
+          "episode": 1,
+          "title": "La graine jalouse",
+          "logline": "Belladone provoque Aconit devant une graine qui réagit au mensonge.",
+          "synopsis": "Dans la serre noire, leur duel verbal réveille une graine jalouse qui enferme leurs mains.",
+          "cliffhanger": "La graine prononce le nom de Belladone.",
+          "character_ids": ["belladone", "aconit"],
+          "location_ids": ["serre_noire"]
+        }]
+      }
+    },
+    {
+      "task_id": "tentafruit.short-episode",
+      "context": {"source": "S01E001 — La graine jalouse"},
+      "output": {
+        "title": "La graine jalouse",
+        "logline": "Belladone provoque Aconit devant une graine qui réagit au mensonge.",
+        "story": {
+          "hook": "La graine serre leurs poignets.",
+          "setup": "Aconit refuse de donner la clé.",
+          "conflict": "Belladone ment sur son désir.",
+          "reveal": "La graine préfère les aveux imparfaits.",
+          "cliffhanger": "Elle prononce le nom de Belladone."
+        },
+        "narrative_source": "Belladone sourit. Aconit ne bouge pas. Entre eux, la graine serre leurs poignets jusqu’à l’aveu.",
+        "character_ids": ["belladone", "aconit"],
+        "location_ids": ["serre_noire"]
+      }
+    },
+    {
+      "task_id": "tentafruit.breakdown",
+      "context": {"source": "S01E001 approuvé"},
+      "output": {
+        "shots": [{
+          "source_text": "La graine serre leurs poignets au premier mensonge.",
+          "duration": 6,
+          "location_id": "serre_noire",
+          "character_ids": ["belladone", "aconit"],
+          "shot_type": "gros plan vertical",
+          "camera_movement": "léger rapprochement",
+          "lens": "50mm",
+          "action": "Une liane lie leurs mains tandis que Belladone sourit.",
+          "dialogue": {"speaker_id": "belladone", "text": "Je ne veux rien.", "mode": "on_screen", "intention": "provoquer", "emotion": "fausse indifférence"},
+          "lighting": "violet sous verre noir",
+          "mood": "séduction menaçante",
+          "style": ["dark romance", "comédie sèche"]
+        }]
+      }
+    },
+    {
+      "task_id": "tentafruit.continuity-delta",
+      "context": {"before": {"trust": -20}, "episode": "S01E001"},
+      "output": {
+        "character_changes": {"belladone": ["admet vouloir la graine"]},
+        "relationship_changes": ["Belladone et Aconit partagent désormais une dette."],
+        "world_changes": ["La graine réagit aux mensonges."],
+        "unresolved_threads": ["Pourquoi la graine connaît-elle Belladone ?"]
+      }
+    },
+    {
+      "task_id": "tentafruit.audit",
+      "context": {"source": {"director": "brief", "plan": "saison"}},
+      "output": {
+        "verdict": "pass",
+        "summary": "Le plan respecte la Bible, les identifiants et la progression relationnelle.",
+        "findings": []
+      }
+    }
+  ]
+}

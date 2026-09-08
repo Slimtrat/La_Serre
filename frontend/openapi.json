@@ -253,6 +253,18 @@
           "candidate": {
             "$ref": "#/components/schemas/EpisodeBreakdownCandidate"
           },
+          "input_fingerprint": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Fingerprint"
+          },
           "mode": {
             "default": "manual",
             "enum": [
@@ -285,6 +297,31 @@
             "maxLength": 500,
             "title": "Source Label",
             "type": "string"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "task_version": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Version"
           }
         },
         "required": [
@@ -976,6 +1013,18 @@
           "content": {
             "$ref": "#/components/schemas/DirectorBrief"
           },
+          "input_fingerprint": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Fingerprint"
+          },
           "mode": {
             "default": "manual",
             "enum": [
@@ -1008,6 +1057,31 @@
             "maxLength": 500,
             "title": "Source Label",
             "type": "string"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "task_version": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Version"
           }
         },
         "required": [
@@ -1282,6 +1356,18 @@
           "candidate": {
             "$ref": "#/components/schemas/EpisodeDraftCandidate"
           },
+          "input_fingerprint": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Fingerprint"
+          },
           "mode": {
             "default": "manual",
             "enum": [
@@ -1314,6 +1400,31 @@
             "maxLength": 500,
             "title": "Source Label",
             "type": "string"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "task_version": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Version"
           }
         },
         "required": [
@@ -3569,6 +3680,18 @@
           "content": {
             "$ref": "#/components/schemas/ScreenwriterPlan"
           },
+          "input_fingerprint": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Fingerprint"
+          },
           "mode": {
             "default": "manual",
             "enum": [
@@ -3601,6 +3724,31 @@
             "maxLength": 500,
             "title": "Source Label",
             "type": "string"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "task_version": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Version"
           }
         },
         "required": [
@@ -4027,6 +4175,18 @@
           "content": {
             "$ref": "#/components/schemas/GeneralValidation"
           },
+          "input_fingerprint": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Fingerprint"
+          },
           "mode": {
             "default": "manual",
             "enum": [
@@ -4059,6 +4219,31 @@
             "maxLength": 500,
             "title": "Source Label",
             "type": "string"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "task_version": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Version"
           }
         },
         "required": [

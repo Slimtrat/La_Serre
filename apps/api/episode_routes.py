@@ -149,7 +149,7 @@ def create_episode_router(
         episode = _episode_or_404(catalog_provider(), episode_id)
         if payload.source_text.strip():
             episode = episode.model_copy(update={"narrative_source": payload.source_text.strip()})
-        candidate, model = await _episode_candidate(
+        candidate, model, execution = await _episode_candidate(
             settings_provider,
             payload,
             lambda author, bible, selected: author.episode_draft(
@@ -159,7 +159,12 @@ def create_episode_router(
                 custom_prompt=payload.prompt,
             ),
         )
-        return {"candidate": candidate.model_dump(mode="json"), "model": model, "canonical": False}
+        return {
+            "candidate": candidate.model_dump(mode="json"),
+            "model": model,
+            "execution": execution,
+            "canonical": False,
+        }
 
     @router.post("/{episode_id}/draft/apply")
     def apply_episode_draft(
@@ -230,7 +235,7 @@ def create_episode_router(
         episode = _episode_or_404(catalog_provider(), episode_id)
         if episode.status is not EpisodeStatus.APPROVED:
             raise HTTPException(status_code=409, detail="Approuve l’épisode avant son découpage")
-        candidate, model = await _episode_candidate(
+        candidate, model, execution = await _episode_candidate(
             settings_provider,
             payload,
             lambda author, bible, selected: author.breakdown(
@@ -240,7 +245,12 @@ def create_episode_router(
                 custom_prompt=payload.prompt,
             ),
         )
-        return {"candidate": candidate.model_dump(mode="json"), "model": model, "canonical": False}
+        return {
+            "candidate": candidate.model_dump(mode="json"),
+            "model": model,
+            "execution": execution,
+            "canonical": False,
+        }
 
     @router.post("/{episode_id}/breakdown/apply")
     def apply_episode_breakdown(
@@ -291,6 +301,9 @@ def _episode_provenance(stage: str, payload: object) -> NarrativeProvenance:
         model=getattr(payload, "model", None),
         prompt=str(getattr(payload, "prompt", "")),
         source_label=str(getattr(payload, "source_label", "")),
+        task_id=getattr(payload, "task_id", None),
+        task_version=getattr(payload, "task_version", None),
+        input_fingerprint=getattr(payload, "input_fingerprint", None),
     )
 
 
@@ -374,7 +387,7 @@ async def _episode_candidate[CandidateT: BaseModel](
         [OllamaNarrativeAuthor, ProjectBible, str],
         Awaitable[CandidateT],
     ],
-) -> tuple[CandidateT, str]:
+) -> tuple[CandidateT, str, dict[str, object]]:
     settings = settings_provider()
     try:
         async with OllamaClient(str(settings.ollama_url)) as client:
@@ -386,8 +399,9 @@ async def _episode_candidate[CandidateT: BaseModel](
             selected = selected or (models[0].name if models else None)
             if not selected or selected not in names:
                 raise ValueError("Sélectionne un modèle Ollama installé")
+            author = OllamaNarrativeAuthor(client)
             candidate = await action(
-                OllamaNarrativeAuthor(client),
+                author,
                 BibleRegistry(settings.private_content_dir).load(),
                 selected,
             )
@@ -399,4 +413,6 @@ async def _episode_candidate[CandidateT: BaseModel](
         raise HTTPException(status_code=503, detail="Ollama est inaccessible") from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    return candidate, selected
+    if author.last_execution is None:
+        raise RuntimeError("Narrative author returned no TaskExecution")
+    return candidate, selected, author.last_execution.metadata()
