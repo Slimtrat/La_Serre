@@ -66,6 +66,17 @@ export function findBoundaryViolations(sourceFile, sourceText) {
       });
     }
   }
+  if (!(source.layer === "shared" && sourceFile.replaceAll("\\", "/").startsWith("shared/legacy/"))) {
+    for (const match of sourceText.matchAll(/\bwindow\.Serre[A-Za-z0-9_]*/g)) {
+      const line = sourceText.slice(0, match.index).split("\n").length;
+      violations.push({
+        sourceFile,
+        line,
+        specifier: match[0],
+        reason: "les globals historiques sont réservés à shared/legacy",
+      });
+    }
+  }
   return violations;
 }
 

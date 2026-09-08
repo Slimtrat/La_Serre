@@ -38,14 +38,14 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 	var x = b.prototype = new y();
 	x.constructor = b, g(x, v.prototype), x.isPureReactComponent = !0;
 	var ee = Array.isArray;
-	function S() {}
-	var C = {
+	function te() {}
+	var S = {
 		H: null,
 		A: null,
 		T: null,
 		S: null
-	}, te = Object.prototype.hasOwnProperty;
-	function ne(e, n, r) {
+	}, ne = Object.prototype.hasOwnProperty;
+	function re(e, n, r) {
 		var i = r.ref;
 		return {
 			$$typeof: t,
@@ -55,10 +55,10 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			props: r
 		};
 	}
-	function re(e, t) {
-		return ne(e.type, t, e.props);
+	function ie(e, t) {
+		return re(e.type, t, e.props);
 	}
-	function ie(e) {
+	function C(e) {
 		return typeof e == "object" && !!e && e.$$typeof === t;
 	}
 	function ae(e) {
@@ -78,7 +78,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		switch (e.status) {
 			case "fulfilled": return e.value;
 			case "rejected": throw e.reason;
-			default: switch (typeof e.status == "string" ? e.then(S, S) : (e.status = "pending", e.then(function(t) {
+			default: switch (typeof e.status == "string" ? e.then(te, te) : (e.status = "pending", e.then(function(t) {
 				e.status === "pending" && (e.status = "fulfilled", e.value = t);
 			}, function(t) {
 				e.status === "pending" && (e.status = "rejected", e.reason = t);
@@ -110,7 +110,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		}
 		if (c) return o = o(e), c = a === "" ? "." + se(e, 0) : a, ee(o) ? (i = "", c != null && (i = c.replace(oe, "$&/") + "/"), le(o, r, i, "", function(e) {
 			return e;
-		})) : o != null && (ie(o) && (o = re(o, i + (o.key == null || e && e.key === o.key ? "" : ("" + o.key).replace(oe, "$&/") + "/") + c)), r.push(o)), 1;
+		})) : o != null && (C(o) && (o = ie(o, i + (o.key == null || e && e.key === o.key ? "" : ("" + o.key).replace(oe, "$&/") + "/") + c)), r.push(o)), 1;
 		c = 0;
 		var l = a === "" ? "." : a + ":";
 		if (ee(e)) for (var u = 0; u < e.length; u++) a = e[u], s = l + se(a, u), c += le(a, r, i, s, o);
@@ -173,14 +173,14 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			}) || [];
 		},
 		only: function(e) {
-			if (!ie(e)) throw Error("React.Children.only expected to receive a single React element child.");
+			if (!C(e)) throw Error("React.Children.only expected to receive a single React element child.");
 			return e;
 		}
 	};
-	e.Activity = f, e.Children = T, e.Component = v, e.Fragment = r, e.Profiler = a, e.PureComponent = b, e.StrictMode = i, e.Suspense = l, e.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE = C, e.__COMPILER_RUNTIME = {
+	e.Activity = f, e.Children = T, e.Component = v, e.Fragment = r, e.Profiler = a, e.PureComponent = b, e.StrictMode = i, e.Suspense = l, e.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE = S, e.__COMPILER_RUNTIME = {
 		__proto__: null,
 		c: function(e) {
-			return C.H.useMemoCache(e);
+			return S.H.useMemoCache(e);
 		}
 	}, e.cache = function(e) {
 		return function() {
@@ -191,14 +191,14 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 	}, e.cloneElement = function(e, t, n) {
 		if (e == null) throw Error("The argument must be a React element, but you passed " + e + ".");
 		var r = g({}, e.props), i = e.key;
-		if (t != null) for (a in t.key !== void 0 && (i = "" + t.key), t) !te.call(t, a) || a === "key" || a === "__self" || a === "__source" || a === "ref" && t.ref === void 0 || (r[a] = t[a]);
+		if (t != null) for (a in t.key !== void 0 && (i = "" + t.key), t) !ne.call(t, a) || a === "key" || a === "__self" || a === "__source" || a === "ref" && t.ref === void 0 || (r[a] = t[a]);
 		var a = arguments.length - 2;
 		if (a === 1) r.children = n;
 		else if (1 < a) {
 			for (var o = Array(a), s = 0; s < a; s++) o[s] = arguments[s + 2];
 			r.children = o;
 		}
-		return ne(e.type, i, r);
+		return re(e.type, i, r);
 	}, e.createContext = function(e) {
 		return e = {
 			$$typeof: s,
@@ -213,7 +213,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		}, e;
 	}, e.createElement = function(e, t, n) {
 		var r, i = {}, a = null;
-		if (t != null) for (r in t.key !== void 0 && (a = "" + t.key), t) te.call(t, r) && r !== "key" && r !== "__self" && r !== "__source" && (i[r] = t[r]);
+		if (t != null) for (r in t.key !== void 0 && (a = "" + t.key), t) ne.call(t, r) && r !== "key" && r !== "__self" && r !== "__source" && (i[r] = t[r]);
 		var o = arguments.length - 2;
 		if (o === 1) i.children = n;
 		else if (1 < o) {
@@ -221,7 +221,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			i.children = s;
 		}
 		if (e && e.defaultProps) for (r in o = e.defaultProps, o) i[r] === void 0 && (i[r] = o[r]);
-		return ne(e, a, i);
+		return re(e, a, i);
 	}, e.createRef = function() {
 		return { current: null };
 	}, e.forwardRef = function(e) {
@@ -229,7 +229,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			$$typeof: c,
 			render: e
 		};
-	}, e.isValidElement = ie, e.lazy = function(e) {
+	}, e.isValidElement = C, e.lazy = function(e) {
 		return {
 			$$typeof: d,
 			_payload: {
@@ -245,54 +245,54 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			compare: t === void 0 ? null : t
 		};
 	}, e.startTransition = function(e) {
-		var t = C.T, n = {};
-		C.T = n;
+		var t = S.T, n = {};
+		S.T = n;
 		try {
-			var r = e(), i = C.S;
-			i !== null && i(n, r), typeof r == "object" && r && typeof r.then == "function" && r.then(S, w);
+			var r = e(), i = S.S;
+			i !== null && i(n, r), typeof r == "object" && r && typeof r.then == "function" && r.then(te, w);
 		} catch (e) {
 			w(e);
 		} finally {
-			t !== null && n.types !== null && (t.types = n.types), C.T = t;
+			t !== null && n.types !== null && (t.types = n.types), S.T = t;
 		}
 	}, e.unstable_useCacheRefresh = function() {
-		return C.H.useCacheRefresh();
+		return S.H.useCacheRefresh();
 	}, e.use = function(e) {
-		return C.H.use(e);
+		return S.H.use(e);
 	}, e.useActionState = function(e, t, n) {
-		return C.H.useActionState(e, t, n);
+		return S.H.useActionState(e, t, n);
 	}, e.useCallback = function(e, t) {
-		return C.H.useCallback(e, t);
+		return S.H.useCallback(e, t);
 	}, e.useContext = function(e) {
-		return C.H.useContext(e);
+		return S.H.useContext(e);
 	}, e.useDebugValue = function() {}, e.useDeferredValue = function(e, t) {
-		return C.H.useDeferredValue(e, t);
+		return S.H.useDeferredValue(e, t);
 	}, e.useEffect = function(e, t) {
-		return C.H.useEffect(e, t);
+		return S.H.useEffect(e, t);
 	}, e.useEffectEvent = function(e) {
-		return C.H.useEffectEvent(e);
+		return S.H.useEffectEvent(e);
 	}, e.useId = function() {
-		return C.H.useId();
+		return S.H.useId();
 	}, e.useImperativeHandle = function(e, t, n) {
-		return C.H.useImperativeHandle(e, t, n);
+		return S.H.useImperativeHandle(e, t, n);
 	}, e.useInsertionEffect = function(e, t) {
-		return C.H.useInsertionEffect(e, t);
+		return S.H.useInsertionEffect(e, t);
 	}, e.useLayoutEffect = function(e, t) {
-		return C.H.useLayoutEffect(e, t);
+		return S.H.useLayoutEffect(e, t);
 	}, e.useMemo = function(e, t) {
-		return C.H.useMemo(e, t);
+		return S.H.useMemo(e, t);
 	}, e.useOptimistic = function(e, t) {
-		return C.H.useOptimistic(e, t);
+		return S.H.useOptimistic(e, t);
 	}, e.useReducer = function(e, t, n) {
-		return C.H.useReducer(e, t, n);
+		return S.H.useReducer(e, t, n);
 	}, e.useRef = function(e) {
-		return C.H.useRef(e);
+		return S.H.useRef(e);
 	}, e.useState = function(e) {
-		return C.H.useState(e);
+		return S.H.useState(e);
 	}, e.useSyncExternalStore = function(e, t, n) {
-		return C.H.useSyncExternalStore(e, t, n);
+		return S.H.useSyncExternalStore(e, t, n);
 	}, e.useTransition = function() {
-		return C.H.useTransition();
+		return S.H.useTransition();
 	}, e.version = "19.2.8";
 })), u = /* @__PURE__ */ o(((e, t) => {
 	t.exports = l();
@@ -349,29 +349,29 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 	}
 	function x(e) {
 		if (h = !1, b(e), !m) {
-			if (n(c) !== null) m = !0, ee || (ee = !0, ie());
+			if (n(c) !== null) m = !0, ee || (ee = !0, C());
 			else {
 				var t = n(l);
 				t !== null && se(x, t.startTime - e);
 			}
 		}
 	}
-	var ee = !1, S = -1, C = 5, te = -1;
-	function ne() {
-		return g ? !0 : !(e.unstable_now() - te < C);
-	}
+	var ee = !1, te = -1, S = 5, ne = -1;
 	function re() {
+		return g ? !0 : !(e.unstable_now() - ne < S);
+	}
+	function ie() {
 		if (g = !1, ee) {
 			var t = e.unstable_now();
-			te = t;
+			ne = t;
 			var i = !0;
 			try {
 				a: {
-					m = !1, h && (h = !1, v(S), S = -1), p = !0;
+					m = !1, h && (h = !1, v(te), te = -1), p = !0;
 					var a = f;
 					try {
 						b: {
-							for (b(t), d = n(c); d !== null && !(d.expirationTime > t && ne());) {
+							for (b(t), d = n(c); d !== null && !(d.expirationTime > t && re());) {
 								var o = d.callback;
 								if (typeof o == "function") {
 									d.callback = null, f = d.priorityLevel;
@@ -397,31 +397,31 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 					i = void 0;
 				}
 			} finally {
-				i ? ie() : ee = !1;
+				i ? C() : ee = !1;
 			}
 		}
 	}
-	var ie;
-	if (typeof y == "function") ie = function() {
-		y(re);
+	var C;
+	if (typeof y == "function") C = function() {
+		y(ie);
 	};
 	else if (typeof MessageChannel < "u") {
 		var ae = new MessageChannel(), oe = ae.port2;
-		ae.port1.onmessage = re, ie = function() {
+		ae.port1.onmessage = ie, C = function() {
 			oe.postMessage(null);
 		};
-	} else ie = function() {
-		_(re, 0);
+	} else C = function() {
+		_(ie, 0);
 	};
 	function se(t, n) {
-		S = _(function() {
+		te = _(function() {
 			t(e.unstable_now());
 		}, n);
 	}
 	e.unstable_IdlePriority = 5, e.unstable_ImmediatePriority = 1, e.unstable_LowPriority = 4, e.unstable_NormalPriority = 3, e.unstable_Profiling = null, e.unstable_UserBlockingPriority = 2, e.unstable_cancelCallback = function(e) {
 		e.callback = null;
 	}, e.unstable_forceFrameRate = function(e) {
-		0 > e || 125 < e ? console.error("forceFrameRate takes a positive int between 0 and 125, forcing frame rates higher than 125 fps is not supported") : C = 0 < e ? Math.floor(1e3 / e) : 5;
+		0 > e || 125 < e ? console.error("forceFrameRate takes a positive int between 0 and 125, forcing frame rates higher than 125 fps is not supported") : S = 0 < e ? Math.floor(1e3 / e) : 5;
 	}, e.unstable_getCurrentPriorityLevel = function() {
 		return f;
 	}, e.unstable_next = function(e) {
@@ -482,8 +482,8 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			startTime: a,
 			expirationTime: s,
 			sortIndex: -1
-		}, a > o ? (r.sortIndex = a, t(l, r), n(c) === null && r === n(l) && (h ? (v(S), S = -1) : h = !0, se(x, a - o))) : (r.sortIndex = s, t(c, r), m || p || (m = !0, ee || (ee = !0, ie()))), r;
-	}, e.unstable_shouldYield = ne, e.unstable_wrapCallback = function(e) {
+		}, a > o ? (r.sortIndex = a, t(l, r), n(c) === null && r === n(l) && (h ? (v(te), te = -1) : h = !0, se(x, a - o))) : (r.sortIndex = s, t(c, r), m || p || (m = !0, ee || (ee = !0, C()))), r;
+	}, e.unstable_shouldYield = re, e.unstable_wrapCallback = function(e) {
 		var t = f;
 		return function() {
 			var n = f;
@@ -734,7 +734,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		}
 		return null;
 	}
-	var h = Object.assign, g = Symbol.for("react.element"), _ = Symbol.for("react.transitional.element"), v = Symbol.for("react.portal"), y = Symbol.for("react.fragment"), b = Symbol.for("react.strict_mode"), x = Symbol.for("react.profiler"), ee = Symbol.for("react.consumer"), S = Symbol.for("react.context"), C = Symbol.for("react.forward_ref"), te = Symbol.for("react.suspense"), ne = Symbol.for("react.suspense_list"), re = Symbol.for("react.memo"), ie = Symbol.for("react.lazy"), ae = Symbol.for("react.activity"), oe = Symbol.for("react.memo_cache_sentinel"), se = Symbol.iterator;
+	var h = Object.assign, g = Symbol.for("react.element"), _ = Symbol.for("react.transitional.element"), v = Symbol.for("react.portal"), y = Symbol.for("react.fragment"), b = Symbol.for("react.strict_mode"), x = Symbol.for("react.profiler"), ee = Symbol.for("react.consumer"), te = Symbol.for("react.context"), S = Symbol.for("react.forward_ref"), ne = Symbol.for("react.suspense"), re = Symbol.for("react.suspense_list"), ie = Symbol.for("react.memo"), C = Symbol.for("react.lazy"), ae = Symbol.for("react.activity"), oe = Symbol.for("react.memo_cache_sentinel"), se = Symbol.iterator;
 	function ce(e) {
 		return typeof e != "object" || !e ? null : (e = se && e[se] || e["@@iterator"], typeof e == "function" ? e : null);
 	}
@@ -747,19 +747,19 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			case y: return "Fragment";
 			case x: return "Profiler";
 			case b: return "StrictMode";
-			case te: return "Suspense";
-			case ne: return "SuspenseList";
+			case ne: return "Suspense";
+			case re: return "SuspenseList";
 			case ae: return "Activity";
 		}
 		if (typeof e == "object") switch (e.$$typeof) {
 			case v: return "Portal";
-			case S: return e.displayName || "Context";
+			case te: return e.displayName || "Context";
 			case ee: return (e._context.displayName || "Context") + ".Consumer";
-			case C:
+			case S:
 				var t = e.render;
 				return e = e.displayName, e ||= (e = t.displayName || t.name || "", e === "" ? "ForwardRef" : "ForwardRef(" + e + ")"), e;
-			case re: return t = e.displayName || null, t === null ? ue(e.type) || "Memo" : t;
-			case ie:
+			case ie: return t = e.displayName || null, t === null ? ue(e.type) || "Memo" : t;
+			case C:
 				t = e._payload, e = e._init;
 				try {
 					return ue(e(t));
@@ -2039,23 +2039,23 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 				s = 8, a |= 24;
 				break;
 			case x: return e = gi(12, n, t, a | 2), e.elementType = x, e.lanes = o, e;
-			case te: return e = gi(13, n, t, a), e.elementType = te, e.lanes = o, e;
-			case ne: return e = gi(19, n, t, a), e.elementType = ne, e.lanes = o, e;
+			case ne: return e = gi(13, n, t, a), e.elementType = ne, e.lanes = o, e;
+			case re: return e = gi(19, n, t, a), e.elementType = re, e.lanes = o, e;
 			default:
 				if (typeof e == "object" && e) switch (e.$$typeof) {
-					case S:
+					case te:
 						s = 10;
 						break a;
 					case ee:
 						s = 9;
 						break a;
-					case C:
+					case S:
 						s = 11;
 						break a;
-					case re:
+					case ie:
 						s = 14;
 						break a;
-					case ie:
+					case C:
 						s = 16, r = null;
 						break a;
 				}
@@ -2314,7 +2314,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			});
 		};
 	}, fa = t.unstable_scheduleCallback, pa = t.unstable_NormalPriority, N = {
-		$$typeof: S,
+		$$typeof: te,
 		Consumer: null,
 		Provider: null,
 		_currentValue: null,
@@ -2479,7 +2479,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		}
 		function l(e, t, n, r) {
 			var i = n.type;
-			return i === y ? d(e, t, n.props.children, r, n.key) : t !== null && (t.elementType === i || typeof i == "object" && i && i.$$typeof === ie && Pa(i) === t.type) ? (t = a(t, n.props), Va(t, n), t.return = e, t) : (t = bi(n.type, n.key, n.props, null, e.mode, r), Va(t, n), t.return = e, t);
+			return i === y ? d(e, t, n.props.children, r, n.key) : t !== null && (t.elementType === i || typeof i == "object" && i && i.$$typeof === C && Pa(i) === t.type) ? (t = a(t, n.props), Va(t, n), t.return = e, t) : (t = bi(n.type, n.key, n.props, null, e.mode, r), Va(t, n), t.return = e, t);
 		}
 		function u(e, t, n, r) {
 			return t === null || t.tag !== 4 || t.stateNode.containerInfo !== n.containerInfo || t.stateNode.implementation !== n.implementation ? (t = wi(n, e.mode, r), t.return = e, t) : (t = a(t, n.children || []), t.return = e, t);
@@ -2493,11 +2493,11 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 				switch (t.$$typeof) {
 					case _: return n = bi(t.type, t.key, t.props, null, e.mode, n), Va(n, t), n.return = e, n;
 					case v: return t = wi(t, e.mode, n), t.return = e, t;
-					case ie: return t = Pa(t), f(e, t, n);
+					case C: return t = Pa(t), f(e, t, n);
 				}
 				if (de(t) || ce(t)) return t = xi(t, e.mode, n, null), t.return = e, t;
 				if (typeof t.then == "function") return f(e, Ba(t), n);
-				if (t.$$typeof === S) return f(e, la(e, t), n);
+				if (t.$$typeof === te) return f(e, la(e, t), n);
 				Ha(e, t);
 			}
 			return null;
@@ -2509,11 +2509,11 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 				switch (n.$$typeof) {
 					case _: return n.key === i ? l(e, t, n, r) : null;
 					case v: return n.key === i ? u(e, t, n, r) : null;
-					case ie: return n = Pa(n), p(e, t, n, r);
+					case C: return n = Pa(n), p(e, t, n, r);
 				}
 				if (de(n) || ce(n)) return i === null ? d(e, t, n, r, null) : null;
 				if (typeof n.then == "function") return p(e, t, Ba(n), r);
-				if (n.$$typeof === S) return p(e, t, la(e, n), r);
+				if (n.$$typeof === te) return p(e, t, la(e, n), r);
 				Ha(e, n);
 			}
 			return null;
@@ -2524,11 +2524,11 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 				switch (r.$$typeof) {
 					case _: return e = e.get(r.key === null ? n : r.key) || null, l(t, e, r, i);
 					case v: return e = e.get(r.key === null ? n : r.key) || null, u(t, e, r, i);
-					case ie: return r = Pa(r), m(e, t, n, r, i);
+					case C: return r = Pa(r), m(e, t, n, r, i);
 				}
 				if (de(r) || ce(r)) return e = e.get(n) || null, d(t, e, r, i, null);
 				if (typeof r.then == "function") return m(e, t, n, Ba(r), i);
-				if (r.$$typeof === S) return m(e, t, n, la(t, r), i);
+				if (r.$$typeof === te) return m(e, t, n, la(t, r), i);
 				Ha(t, r);
 			}
 			return null;
@@ -2586,7 +2586,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 											n(e, r.sibling), c = a(r, o.props.children), c.return = e, e = c;
 											break a;
 										}
-									} else if (r.elementType === l || typeof l == "object" && l && l.$$typeof === ie && Pa(l) === r.type) {
+									} else if (r.elementType === l || typeof l == "object" && l && l.$$typeof === C && Pa(l) === r.type) {
 										n(e, r.sibling), c = a(r, o.props), Va(c, o), c.return = e, e = c;
 										break a;
 									}
@@ -2614,7 +2614,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 							c = wi(o, e.mode, c), c.return = e, e = c;
 						}
 						return s(e);
-					case ie: return o = Pa(o), b(e, r, o, c);
+					case C: return o = Pa(o), b(e, r, o, c);
 				}
 				if (de(o)) return h(e, r, o, c);
 				if (ce(o)) {
@@ -2622,7 +2622,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 					return o = l.call(o), g(e, r, o, c);
 				}
 				if (typeof o.then == "function") return b(e, r, Ba(o), c);
-				if (o.$$typeof === S) return b(e, r, la(e, o), c);
+				if (o.$$typeof === te) return b(e, r, la(e, o), c);
 				Ha(e, o);
 			}
 			return typeof o == "string" && o !== "" || typeof o == "number" || typeof o == "bigint" ? (o = "" + o, r !== null && r.tag === 6 ? (n(e, r.sibling), c = a(r, o), c.return = e, e = c) : (n(e, r), c = Si(o, e.mode, c), c.return = e, e = c), s(e)) : n(e, r);
@@ -2934,7 +2934,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 	function Lo(e) {
 		if (typeof e == "object" && e) {
 			if (typeof e.then == "function") return Io(e);
-			if (e.$$typeof === S) return ca(e);
+			if (e.$$typeof === te) return ca(e);
 		}
 		throw Error(i(438, String(e)));
 	}
@@ -4190,11 +4190,11 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 					else {
 						if (e != null) {
 							var a = e.$$typeof;
-							if (a === C) {
+							if (a === S) {
 								t.tag = 11, t = cc(null, t, e, r, n);
 								break a;
 							}
-							if (a === re) {
+							if (a === ie) {
 								t.tag = 14, t = lc(null, t, e, r, n);
 								break a;
 							}
@@ -7603,7 +7603,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		}
 	}
 	var Qf = {
-		$$typeof: S,
+		$$typeof: te,
 		Provider: null,
 		Consumer: null,
 		_currentValue: fe,
@@ -8057,7 +8057,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			props: r
 		};
 	}
-	e.jsx = n;
+	e.jsx = n, e.jsxs = n;
 })), b = (/* @__PURE__ */ o(((e, t) => {
 	t.exports = y();
 })))();
@@ -8073,27 +8073,27 @@ function x({ children: e, ...t }) {
 function ee(e) {
 	return typeof e == "object" && !!e && !Array.isArray(e);
 }
-function S(e, t, n) {
+function te(e, t, n) {
 	if (ee(e)) {
 		if (typeof e.detail == "string" && e.detail.trim()) return e.detail;
 		if (typeof e.message == "string" && e.message.trim()) return e.message;
 	}
 	return typeof e == "string" && e.trim() ? e : n?.trim() || `La requête a échoué (${t})`;
 }
-var C = class extends Error {
+var S = class extends Error {
 	status;
 	detail;
 	code;
 	validation;
 	data;
 	constructor(e) {
-		let t = S(e.data, e.status, e.statusText);
+		let t = te(e.data, e.status, e.statusText);
 		super(t, e.cause === void 0 ? void 0 : { cause: e.cause }), this.name = "ApiError", this.status = e.status, this.detail = t, this.data = e.data, ee(e.data) && (this.code = typeof e.data.code == "string" ? e.data.code : void 0, this.validation = e.data.validation ?? e.data.errors ?? (Array.isArray(e.data.detail) ? e.data.detail : void 0));
 	}
 };
 //#endregion
 //#region src/shared/api/orvalFetch.ts
-async function te(e) {
+async function ne(e) {
 	if (e.status === 204 || e.status === 205 || !e.body) return;
 	let t = e.headers.get("content-type")?.toLowerCase() ?? "";
 	if (t.includes("application/json") || t.includes("+json")) {
@@ -8107,9 +8107,9 @@ async function te(e) {
 	}
 	return t.startsWith("text/") ? e.text() : e.blob();
 }
-async function ne(e, t) {
-	let n = await fetch(e, t), r = await te(n);
-	if (!n.ok) throw new C({
+async function re(e, t) {
+	let n = await fetch(e, t), r = await ne(n);
+	if (!n.ok) throw new S({
 		status: n.status,
 		statusText: n.statusText,
 		data: r
@@ -8118,7 +8118,7 @@ async function ne(e, t) {
 }
 //#endregion
 //#region src/generated/openapi.ts
-var re = () => "/health", ie = async (e) => ne(re(), {
+var ie = () => "/health", C = async (e) => re(ie(), {
 	...e,
 	method: "GET"
 }), ae = _.createContext(void 0), oe = (e) => {
@@ -9712,14 +9712,200 @@ var St = new st({ defaultOptions: {
 		refetchOnWindowFocus: !1
 	},
 	mutations: { retry: 0 }
-} }), Ct = xt({
+} }), Ct = [
+	"studio:workspace-changed",
+	"studio:project-changed",
+	"studio:episode-loaded",
+	"studio:episode-cleared",
+	"studio:shot-selected",
+	"studio:runtime",
+	"studio:runtime-preparation",
+	"studio:job",
+	"studio:episode-job",
+	"studio:stage-job",
+	"studio:narrative-job",
+	"studio:demo-job"
+], wt = /* @__PURE__ */ new WeakMap();
+function Tt() {
+	if (typeof window > "u") throw Error("LegacyBridge requires a browser window or an injected host.");
+	return window;
+}
+function Et(e) {
+	return typeof e == "object" && !!e && !Array.isArray(e);
+}
+function Dt(e) {
+	return Et(e) ? e : {};
+}
+function A(e) {
+	return typeof e == "string" && e.length > 0 ? e : null;
+}
+function Ot(e, t) {
+	return Dt(e[t]);
+}
+function kt(e) {
+	return e === "studio:job" || e === "studio:episode-job" || e === "studio:stage-job" || e === "studio:narrative-job" || e === "studio:demo-job";
+}
+var At = class {
+	#e;
+	#t;
+	#n;
+	#r = /* @__PURE__ */ new Map();
+	#i = /* @__PURE__ */ new Map();
+	#a = !1;
+	constructor(e = {}) {
+		this.#e = e.host ?? Tt(), this.#t = e.development ?? !1, this.#n = e.logger ?? console;
+	}
+	start() {
+		if (this.#a) return this.#d("Duplicate LegacyBridge subscription prevented."), this;
+		let e = wt.get(this.#e);
+		e && e !== this && (this.#d("Replacing an active LegacyBridge subscription (HMR)."), e.#o());
+		for (let e of Ct) {
+			let t = (t) => this.#s(e, t);
+			this.#e.addEventListener(e, t), this.#i.set(e, t);
+		}
+		return wt.set(this.#e, this), this.#a = !0, this;
+	}
+	subscribe(e, t) {
+		let n = this.#r.get(e) ?? /* @__PURE__ */ new Set(), r = t;
+		n.has(r) ? this.#d(`Duplicate LegacyBridge listener prevented for "${e}".`) : (n.add(r), this.#r.set(e, n));
+		let i = !0;
+		return () => {
+			i && (i = !1, n.delete(r), n.size === 0 && this.#r.delete(e));
+		};
+	}
+	async initialSnapshot() {
+		await this.#e.SerreProjects?.ready;
+		let e = Dt(this.#e.SerreProjects?.current()), t = Dt(this.#e.SerreEpisode?.current()), n = Ot(t, "episode"), r = Dt(this.#e.SerreRuntimeManager?.current()), i = this.#e.SerreActivity?.current();
+		return {
+			workspace: {
+				view: this.#l(this.#e.SerreWorkspace?.current()),
+				payload: {}
+			},
+			project: {
+				projectId: A(e.active_id),
+				payload: e
+			},
+			episode: {
+				episodeId: A(n.id),
+				seriesId: A(n.series_id),
+				payload: t
+			},
+			runtime: {
+				enabled: typeof r.enabled == "boolean" ? r.enabled : null,
+				services: Array.isArray(r.services) ? r.services.filter(Et) : [],
+				payload: r
+			},
+			activity: Et(i) ? i : null
+		};
+	}
+	dispatch(e) {
+		switch (e.type) {
+			case "workspace.show": return this.#u(e.type, this.#e.SerreWorkspace, this.#e.SerreWorkspace?.show, e.view);
+			case "studio.notify": return this.#u(e.type, this.#e.SerreStudio, this.#e.SerreStudio?.notify, e.message, e.level === "error");
+			case "project.activate": return this.#u(e.type, this.#e.SerreProjects, this.#e.SerreProjects?.activate, e.projectId);
+			case "episode.select": return this.#u(e.type, this.#e.SerreEpisode, this.#e.SerreEpisode?.refresh, e.episodeId);
+			case "notifications.capture-error": return this.#u(e.type, this.#e.SerreNotifications, this.#e.SerreNotifications?.captureError, e.message);
+			case "runtime.refresh": return this.#u(e.type, this.#e.SerreRuntimeManager, this.#e.SerreRuntimeManager?.refresh);
+			case "runtime.prepare": return this.#u(e.type, this.#e.SerreRuntimeManager, this.#e.SerreRuntimeManager?.prepareAll);
+			case "runtime.control": return this.#u(e.type, this.#e.SerreRuntimeManager, this.#e.SerreRuntimeManager?.control, e.service, e.action);
+			case "runtime.show-logs": return this.#u(e.type, this.#e.SerreRuntimeManager, this.#e.SerreRuntimeManager?.showLogs, e.service);
+			case "activity.open-log": return this.#u(e.type, this.#e.SerreActivity, this.#e.SerreActivity?.openLog);
+			case "activity.close": return this.#u(e.type, this.#e.SerreActivity, this.#e.SerreActivity?.close);
+			case "activity.publish": return this.#e.dispatchEvent(new CustomEvent("studio:stage-job", { detail: e.payload })), !0;
+			default: return this.#d(`Unknown legacy command "${e.type}".`, e), !1;
+		}
+	}
+	dispose() {
+		this.#o();
+		let e = [...this.#r.values()].reduce((e, t) => e + t.size, 0);
+		e > 0 && this.#d(`LegacyBridge disposed with ${e} subscription(s) still active.`), this.#r.clear();
+	}
+	get subscriptionCount() {
+		return this.#i.size;
+	}
+	#o() {
+		for (let [e, t] of this.#i) this.#e.removeEventListener(e, t);
+		this.#i.clear(), this.#a = !1, wt.get(this.#e) === this && wt.delete(this.#e);
+	}
+	#s(e, t) {
+		let n = Dt(t instanceof CustomEvent ? t.detail : void 0);
+		if (kt(e)) {
+			this.#c("activityChanged", {
+				sourceEvent: e,
+				payload: n
+			});
+			return;
+		}
+		switch (e) {
+			case "studio:workspace-changed":
+				this.#c("workspaceChanged", {
+					view: this.#l(n.view),
+					payload: n
+				});
+				break;
+			case "studio:project-changed":
+				this.#c("projectChanged", {
+					projectId: A(n.active_id),
+					payload: n
+				});
+				break;
+			case "studio:episode-loaded": {
+				let e = Ot(n, "episode");
+				this.#c("episodeLoaded", {
+					episodeId: A(e.id),
+					seriesId: A(e.series_id),
+					payload: n
+				});
+				break;
+			}
+			case "studio:episode-cleared":
+				this.#c("episodeCleared", void 0);
+				break;
+			case "studio:shot-selected": {
+				let e = Ot(n, "episode"), t = Ot(n, "shot");
+				this.#c("shotSelected", {
+					episodeId: A(e.id),
+					shotId: A(t.id) ?? A(t.shot_id),
+					index: typeof n.index == "number" ? n.index : null,
+					payload: n
+				});
+				break;
+			}
+			case "studio:runtime":
+				this.#c("runtimeChanged", {
+					enabled: typeof n.enabled == "boolean" ? n.enabled : null,
+					services: Array.isArray(n.services) ? n.services.filter(Et) : [],
+					payload: n
+				});
+				break;
+			case "studio:runtime-preparation": this.#c("runtimePreparation", {
+				status: A(n.status),
+				message: A(n.message),
+				progress: Et(n.progress) ? n.progress : null,
+				payload: n
+			});
+		}
+	}
+	#c(e, t) {
+		for (let n of this.#r.get(e) ?? []) n(t);
+	}
+	#l(e) {
+		return e === "guided" || e === "graph" || e === "plan" || e === "outputs" || e === "bible" || e === "settings" ? e : null;
+	}
+	#u(e, t, n, ...r) {
+		return n ? (n.call(t, ...r), !0) : (this.#d(`Legacy command "${e}" is unavailable.`), !1);
+	}
+	#d(e, t) {
+		this.#t && this.#n.warn(`[LegacyBridge] ${e}`, t);
+	}
+}, jt = xt({
 	queryKey: ["api", "health"],
-	queryFn: ({ signal: e }) => ie({ signal: e })
+	queryFn: ({ signal: e }) => C({ signal: e })
 });
 //#endregion
 //#region src/features/api-status/ApiStatus.tsx
-function wt() {
-	let e = bt(Ct), t = e.isPending ? "Connexion à l’API…" : e.isError ? "API indisponible" : `API connectée : ${e.data.status}`;
+function Mt() {
+	let e = bt(jt), t = e.isPending ? "Connexion à l’API…" : e.isError ? "API indisponible" : `API connectée : ${e.data.status}`;
 	return /* @__PURE__ */ (0, b.jsx)(x, {
 		role: "status",
 		children: t
@@ -9727,13 +9913,13 @@ function wt() {
 }
 //#endregion
 //#region src/features/api-status/index.ts
-var Tt = {
+var Nt = {
 	id: "api-status",
-	Component: wt
+	Component: Mt
 };
 //#endregion
 //#region src/features/studio-status/StudioStatus.tsx
-function Et() {
+function Pt() {
 	return /* @__PURE__ */ (0, b.jsx)(x, {
 		role: "status",
 		children: "Interface React initialisée"
@@ -9741,20 +9927,234 @@ function Et() {
 }
 //#endregion
 //#region src/features/index.ts
-var Dt = [{
+var Ft = [{
 	id: "studio-status",
-	Component: Et
-}, Tt];
+	Component: Pt
+}, Nt], It = (0, _.createContext)(null);
+function Lt({ children: e, kernel: t }) {
+	return /* @__PURE__ */ (0, b.jsx)(It.Provider, {
+		value: t,
+		children: e
+	});
+}
+function Rt() {
+	let e = (0, _.useContext)(It);
+	if (e === null) throw Error("AppKernelProvider is missing from the React tree.");
+	return e;
+}
+function zt() {
+	return Rt().activeContext;
+}
+function Bt() {
+	let e = zt();
+	return (0, _.useSyncExternalStore)(e.subscribe, e.getSnapshot, e.getSnapshot);
+}
+//#endregion
+//#region src/app/kernel/LegacyAppKernel.ts
+var Vt = {
+	projectId: null,
+	seriesId: null,
+	episodeId: null,
+	shotId: null
+};
+function Ht(e, t) {
+	let n = e, r = /* @__PURE__ */ new Set();
+	return {
+		getSnapshot: () => n,
+		setSnapshot: (e) => {
+			t(n, e) || (n = e, r.forEach((e) => e()));
+		},
+		subscribe: (e) => (r.add(e), () => r.delete(e))
+	};
+}
+function Ut(e, t) {
+	return e.projectId === t.projectId && e.seriesId === t.seriesId && e.episodeId === t.episodeId && e.shotId === t.shotId;
+}
+function Wt(e) {
+	return e.message ? e.title + " · " + e.message : e.title;
+}
+function Gt(e) {
+	return {
+		running: "GENERATING",
+		succeeded: "COMPLETED",
+		failed: "FAILED",
+		cancelled: "CANCELLED"
+	}[e] ?? e;
+}
+function Kt(e = {}) {
+	let t = e.bridge ?? new At({ host: e.host }), n = Ht(Vt, Ut), r = !1, i = 0, a = 0, o = [], s = (e) => {
+		n.setSnapshot({
+			...n.getSnapshot(),
+			...e
+		});
+	}, c = () => (a += 1, "kernel-" + Date.now() + "-" + a), l = {
+		activeContext: {
+			getSnapshot: n.getSnapshot,
+			subscribe: n.subscribe,
+			selectProject: (e) => {
+				if (e === null) {
+					n.setSnapshot(Vt);
+					return;
+				}
+				t.dispatch({
+					type: "project.activate",
+					projectId: e
+				});
+			},
+			selectSeries: (e) => s({
+				seriesId: e,
+				episodeId: null,
+				shotId: null
+			}),
+			selectEpisode: (e) => {
+				if (e === null) {
+					s({
+						episodeId: null,
+						shotId: null
+					});
+					return;
+				}
+				t.dispatch({
+					type: "episode.select",
+					episodeId: e
+				});
+			},
+			selectShot: (e) => s({ shotId: e })
+		},
+		navigation: { navigate: (e) => {
+			t.dispatch({
+				type: "workspace.show",
+				view: e.view
+			});
+		} },
+		notifications: { notify: (e) => (t.dispatch({
+			type: "studio.notify",
+			message: Wt(e),
+			level: e.level
+		}), c()) },
+		runtime: {
+			environment: "production",
+			capabilities: {
+				filesystem: !0,
+				generation: !0,
+				export: !0
+			},
+			now: () => /* @__PURE__ */ new Date(),
+			createId: c,
+			reportError: (e) => {
+				let n = e instanceof Error ? e.message : String(e);
+				t.dispatch({
+					type: "notifications.capture-error",
+					message: n
+				});
+			}
+		},
+		activity: { start: (e) => {
+			let n = c(), r = (r) => {
+				t.dispatch({
+					type: "activity.publish",
+					payload: {
+						id: n,
+						kind: e.kind,
+						title: e.label,
+						context: e.context,
+						...r,
+						status: Gt(r.status)
+					}
+				});
+			};
+			return r({ status: "running" }), {
+				id: n,
+				update: (e) => r({
+					status: e.status ?? "running",
+					...e
+				}),
+				finish: (e = "succeeded") => r({ status: e })
+			};
+		} }
+	}, u = () => {
+		o = [
+			t.subscribe("projectChanged", ({ projectId: e }) => {
+				n.setSnapshot({
+					projectId: e,
+					seriesId: null,
+					episodeId: null,
+					shotId: null
+				});
+			}),
+			t.subscribe("episodeLoaded", ({ episodeId: e, seriesId: t }) => {
+				s({
+					seriesId: t,
+					episodeId: e,
+					shotId: null
+				});
+			}),
+			t.subscribe("episodeCleared", () => {
+				s({
+					seriesId: null,
+					episodeId: null,
+					shotId: null
+				});
+			}),
+			t.subscribe("shotSelected", ({ episodeId: e, shotId: t }) => {
+				s({
+					episodeId: e,
+					shotId: t
+				});
+			})
+		];
+	};
+	return {
+		kernel: l,
+		async start() {
+			if (r) return;
+			r = !0, i += 1;
+			let e = i;
+			u(), t.start();
+			try {
+				let a = await t.initialSnapshot();
+				if (!r || i !== e) return;
+				n.setSnapshot({
+					projectId: a.project.projectId,
+					seriesId: a.episode.seriesId,
+					episodeId: a.episode.episodeId,
+					shotId: null
+				});
+			} catch (t) {
+				r && i === e && l.runtime.reportError(t);
+			}
+		},
+		dispose() {
+			r && (r = !1, i += 1, o.forEach((e) => e()), o = [], t.dispose());
+		}
+	};
+}
 //#endregion
 //#region src/app/StudioReactRoot.tsx
-function A() {
-	return /* @__PURE__ */ (0, b.jsx)(se, {
-		client: St,
-		children: Dt.map(({ Component: e, id: t }) => /* @__PURE__ */ (0, b.jsx)(e, {}, t))
+function qt() {
+	let e = Bt();
+	return /* @__PURE__ */ (0, b.jsx)(x, {
+		"data-episode-id": e.episodeId ?? "",
+		"data-project-id": e.projectId ?? "",
+		"data-series-id": e.seriesId ?? "",
+		"data-shot-id": e.shotId ?? "",
+		"data-studio-kernel-context": !0,
+		role: "status",
+		children: e.projectId ? "Contexte Studio synchronisé" : "Contexte Studio en attente"
+	});
+}
+function Jt() {
+	let [e] = (0, _.useState)(Kt);
+	return (0, _.useEffect)(() => (e.start(), () => e.dispose()), [e]), /* @__PURE__ */ (0, b.jsx)(Lt, {
+		kernel: e.kernel,
+		children: /* @__PURE__ */ (0, b.jsxs)(se, {
+			client: St,
+			children: [/* @__PURE__ */ (0, b.jsx)(qt, {}), Ft.map(({ Component: e, id: t }) => /* @__PURE__ */ (0, b.jsx)(e, {}, t))]
+		})
 	});
 }
 //#endregion
 //#region src/main.tsx
-var Ot = document.getElementById("studio-react-root");
-Ot && (Ot.dataset.reactMounted = "true", (0, v.createRoot)(Ot).render(/* @__PURE__ */ (0, b.jsx)(_.StrictMode, { children: /* @__PURE__ */ (0, b.jsx)(A, {}) })));
+var Yt = document.getElementById("studio-react-root");
+Yt && (Yt.dataset.reactMounted = "true", (0, v.createRoot)(Yt).render(/* @__PURE__ */ (0, b.jsx)(_.StrictMode, { children: /* @__PURE__ */ (0, b.jsx)(Jt, {}) })));
 //#endregion

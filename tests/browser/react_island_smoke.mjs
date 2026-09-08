@@ -29,11 +29,48 @@ await root.waitFor();
 expect(await root.getAttribute("data-react-mounted") === "true", "L’îlot React n’est pas monté");
 expect((await root.textContent()).includes("Interface React initialisée"), "Le composant témoin React est absent");
 
+const contextMarker = root.locator("[data-studio-kernel-context]");
+await contextMarker.waitFor();
+await page.waitForFunction(() => {
+  const marker = document.querySelector("[data-studio-kernel-context]");
+  const project = window.SerreProjects?.current?.();
+  const episode = window.SerreEpisode?.current?.();
+  return marker?.dataset.projectId === (project?.active_id || "")
+    && marker?.dataset.episodeId === (episode?.episode?.id || "");
+});
+
+await page.evaluate(() => {
+  const marker = document.querySelector("[data-studio-kernel-context]");
+  window.__kernelProjectUpdates = 0;
+  new MutationObserver((records) => {
+    window.__kernelProjectUpdates += records.length;
+  }).observe(marker, { attributes: true, attributeFilter: ["data-project-id"] });
+  window.dispatchEvent(new CustomEvent("studio:project-changed", {
+    detail: { active_id: "smoke-project" },
+  }));
+});
+await page.waitForFunction(() =>
+  document.querySelector("[data-studio-kernel-context]")?.dataset.projectId === "smoke-project",
+);
+expect(
+  await page.evaluate(() => window.__kernelProjectUpdates) === 1,
+  "Le changement projet legacy a été appliqué plusieurs fois dans React",
+);
+
+await page.evaluate(() => {
+  window.dispatchEvent(new CustomEvent("studio:episode-loaded", {
+    detail: { episode: { id: "smoke-episode", series_id: "smoke-series" }, shots: [] },
+  }));
+});
+await page.waitForFunction(() =>
+  document.querySelector("[data-studio-kernel-context]")?.dataset.episodeId === "smoke-episode",
+);
+
 await page.evaluate(() => window.SerreWorkspace?.show("bible"));
 await page.locator("#bible-workspace:not(.hidden)").waitFor();
 await page.evaluate(() => window.SerreWorkspace?.show("graph"));
 await page.locator(".graph-workbench").waitFor();
 
 expect(errors.length === 0, "Erreurs navigateur : " + errors.join(" | "));
-console.log(JSON.stringify({ reactMounted: true, legacyViews: ["bible", "graph"] }));
+console.log(JSON.stringify({ reactMounted: true, kernelContext: true, legacyViews: ["bible", "graph"] }));
 await browser.close();

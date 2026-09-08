@@ -6,6 +6,7 @@ const workspaceShell = (() => {
 
   function show(view) {
     if (!allowed.has(view)) return;
+    const previous = document.body.dataset.workspaceView || null;
     document.body.dataset.workspaceView = view;
     buttons.forEach((button) => {
       const selected = button.dataset.workspaceTarget === view;
@@ -13,6 +14,9 @@ const workspaceShell = (() => {
       button.setAttribute("aria-pressed", String(selected));
     });
     try { localStorage.setItem("serre-studio-workspace-view", view); } catch (_error) { /* no-op */ }
+    if (previous !== view) {
+      window.dispatchEvent(new CustomEvent("studio:workspace-changed", { detail: { view } }));
+    }
     window.setTimeout(() => window.dispatchEvent(new Event("resize")), 20);
   }
 
@@ -40,7 +44,8 @@ const workspaceShell = (() => {
     const requested = new URLSearchParams(window.location.search).get("view");
     initial = allowed.has(requested) ? requested : localStorage.getItem("serre-studio-workspace-view") || initial;
   } catch (_error) { /* no-op */ }
-  window.SerreWorkspace = { show };
+  const current = () => document.body.dataset.workspaceView || null;
+  window.SerreWorkspace = { show, current };
   show(allowed.has(initial) ? initial : "guided");
-  return { show };
+  return { show, current };
 })();
