@@ -4,6 +4,7 @@ import { QueryClientProvider, studioQueryClient } from "@shared/query";
 import { useEffect, useState } from "react";
 
 import { ComponentGallery } from "./dev/ComponentGallery";
+import { StudioShell } from "./StudioShell";
 import {
   AppKernelProvider,
   createLegacyAppKernel,
@@ -40,6 +41,7 @@ function StudioApplication() {
     <AppKernelProvider kernel={legacyKernel.kernel}>
       <QueryClientProvider client={studioQueryClient}>
         <ActiveContextStatus />
+        <StudioShell />
         {studioExtensions.map(({ Component, id }) => (
           <Component key={id} />
         ))}

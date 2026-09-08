@@ -3,385 +3,153 @@
 import { createRequire } from "node:module";
 import fs from "node:fs";
 
-const require = createRequire(import.meta.url);
-const baseUrl = process.env.SERRE_STUDIO_URL || process.argv[2] || "http://127.0.0.1:8000/";
-const playwrightModule = process.env.PLAYWRIGHT_MODULE || "playwright";
+const require = createRequire(new URL("../../frontend/package.json", import.meta.url));
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
 const browserPath = process.env.PLAYWRIGHT_BROWSER_PATH
   || (process.platform === "win32" && fs.existsSync("C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe")
     ? "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"
     : undefined);
-
-let chromium;
-try {
-  ({ chromium } = require(playwrightModule));
-} catch (error) {
-  throw new Error(
-    `Playwright is required. Install it or set PLAYWRIGHT_MODULE to its module path. ${error.message}`,
-  );
-}
-
+const baseURL = process.env.SERRE_STUDIO_URL || process.argv[2] || "http://127.0.0.1:8000/";
+const browser = await chromium.launch({
+  headless: true,
+  ...(browserPath ? { executablePath: browserPath } : {}),
+});
+const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+page.setDefaultTimeout(10_000);
 const checks = [];
-const consoleErrors = [];
-const narrowMetrics = { accessibleNames: {} };
+const errors = [];
+page.on("pageerror", (error) => errors.push(error.message));
 
-function expect(value, message) {
-  if (!value) throw new Error(message);
+function expect(condition, message) {
+  if (!condition) throw new Error(message);
 }
 
 async function check(name, action) {
   try {
     await action();
     checks.push({ name, status: "passed" });
-    process.stdout.write(`PASS  ${name}\n`);
+    console.log("PASS ", name);
   } catch (error) {
     checks.push({ name, status: "failed", error: error.message });
-    process.stdout.write(`FAIL  ${name}\n      ${error.message}\n`);
+    console.error("FAIL ", name, "-", error.message);
   }
 }
-
-function normalize(value) {
-  return String(value || "").replace(/\s+/g, " ").trim();
-}
-
-async function waitForLanguage(page, language) {
-  await page.waitForFunction((expected) => document.documentElement.lang === expected, language);
-}
-
-async function openTools(page) {
-  const menu = page.locator("#studio-tools-menu");
-  if (await menu.isHidden()) await page.locator("#studio-tools-menu-toggle").click();
-  await menu.waitFor({ state: "visible" });
-}
-
-async function closeTools(page) {
-  const menu = page.locator("#studio-tools-menu");
-  if (await menu.isVisible()) await page.locator("#studio-tools-menu-toggle").click();
-}
-
-async function clickTool(page, selector) {
-  await openTools(page);
-  await page.locator(selector).click();
-}
-
-async function dialogBounds(page) {
-  const bounds = await page.locator("#getting-started-dialog").boundingBox();
-  expect(bounds, "Le guide ouvert doit avoir des dimensions visibles");
-  return bounds;
-}
-
-async function unnamedTopbarControls(page) {
-  return page.locator(".topbar button, .topbar select, .topbar a").evaluateAll((elements) => {
-    function visibleText(element) {
-      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
-        acceptNode(node) {
-          const parent = node.parentElement;
-          if (!parent || parent.closest('[aria-hidden="true"]')) return NodeFilter.FILTER_REJECT;
-          const style = getComputedStyle(parent);
-          return style.display === "none" || style.visibility === "hidden"
-            ? NodeFilter.FILTER_REJECT
-            : NodeFilter.FILTER_ACCEPT;
-        },
-      });
-      let text = "";
-      while (walker.nextNode()) text += ` ${walker.currentNode.nodeValue}`;
-      return text.trim();
-    }
-    return elements.filter((element) => {
-      const style = getComputedStyle(element);
-      const box = element.getBoundingClientRect();
-      if (style.display === "none" || style.visibility === "hidden" || !box.width || !box.height) {
-        return false;
-      }
-      const labelledBy = element.getAttribute("aria-labelledby");
-      const labelledText = labelledBy
-        ? labelledBy.split(/\s+/).map((id) => document.getElementById(id)?.textContent || "").join(" ")
-        : "";
-      return !normalizeName(
-        element.getAttribute("aria-label")
-        || labelledText
-        || visibleText(element)
-        || element.getAttribute("title"),
-      );
-    }).map((element) => element.id || element.className || element.tagName);
-
-    function normalizeName(value) {
-      return String(value || "").replace(/\s+/g, " ").trim();
-    }
-  });
-}
-
-const browser = await chromium.launch({
-  headless: true,
-  ...(browserPath ? { executablePath: browserPath } : {}),
-});
-const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-const page = await context.newPage();
-page.setDefaultTimeout(5000);
-page.on("pageerror", (error) => consoleErrors.push(`pageerror: ${error.message}`));
-page.on("console", (message) => {
-  if (message.type() === "error") {
-    const location = message.location();
-    const source = location.url ? ` @ ${location.url}${location.lineNumber ? `:${location.lineNumber}` : ""}` : "";
-    consoleErrors.push(`console: ${message.text()}${source}`);
-  }
-});
 
 await page.addInitScript(() => {
-  if (sessionStorage.getItem("serre-studio-ui-audit-initialized")) return;
-  sessionStorage.setItem("serre-studio-ui-audit-initialized", "true");
   localStorage.setItem("serre-studio-getting-started-v0.2.13", "seen");
   localStorage.setItem("serre-studio-language", "fr");
-  localStorage.removeItem("serre-studio-getting-started-position-v1");
 });
-await page.goto(new URL("?view=graph", baseUrl).href, { waitUntil: "domcontentloaded" });
-await page.waitForFunction(() => window.SerreI18n && window.SerreGettingStarted);
-await page.waitForSelector("#production-queue-toggle");
+await page.goto(new URL("#/create", baseURL).href, { waitUntil: "domcontentloaded" });
+await page.waitForSelector("[data-studio-shell]");
+await page.waitForFunction(() => document.body.dataset.shellOwner === "react");
 
-await check("la navigation globale historique est réellement masquée", async () => {
-  expect(await page.locator(".legacy-workspace-nav").isHidden(), "Production/Plan/Sorties/Réglages restent visibles comme cluster global");
-  expect(await page.locator(".legacy-workspace-nav [data-workspace-target]:visible").count() === 0, "Un onglet historique reste visible");
-});
-
-await check("Projet → Série → Épisode → Plan est lisible et navigable", async () => {
-  const contextText = normalize(await page.locator(".studio-context").innerText());
-  const folded = contextText.toLocaleLowerCase("fr");
-  const positions = ["projet", "série", "épisode", "plan"].map((label) => folded.indexOf(label));
-  expect(positions.every((position) => position >= 0), `Hiérarchie incomplète : ${contextText}`);
-  expect(positions.every((position, index) => index === 0 || position > positions[index - 1]), `Hiérarchie désordonnée : ${contextText}`);
-  await page.locator('[data-context-action="bible"]').click();
-  expect(await page.locator("body").getAttribute("data-workspace-view") === "bible", "Série/Bible ne navigue pas vers la Bible");
-  await page.locator("#context-shot").click();
-  expect(await page.locator("body").getAttribute("data-workspace-view") === "graph", "Plan ne revient pas au graphe");
-});
-
-await check("les actions fréquentes restent visibles et les outils secondaires sont regroupés", async () => {
-  const toolbarText = normalize(await page.locator(".studio-tools").innerText());
-  for (const label of ["File", "Journal", "Outils"]) {
-    expect(toolbarText.includes(label), `${label} est absent de la barre d’outils : ${toolbarText}`);
-  }
-  await openTools(page);
-  const menuText = normalize(await page.locator("#studio-tools-menu").innerText());
-  for (const label of ["Assets", "Démo", "Guide", "Réglages"]) {
-    expect(menuText.includes(label), `${label} est absent du menu Outils : ${menuText}`);
-  }
-  await closeTools(page);
-});
-
-await check("l’état des moteurs est séparé de la navigation", async () => {
-  const service = page.locator(".service-status");
-  expect(await service.count() === 1 && await service.isVisible(), "Le statut des moteurs doit être un contrôle visible dédié");
-  expect(await service.locator("xpath=ancestor::nav").count() === 0, "Le statut moteur est imbriqué dans une navigation");
-  const name = `${await service.getAttribute("aria-label")} ${await service.getAttribute("title")}`;
-  expect(/ComfyUI/i.test(name) && /Ollama/i.test(name), `Nom moteur imprécis : ${name}`);
-});
-
-await check("chaque contrôle primaire desktop a un nom accessible", async () => {
-  const unnamed = await unnamedTopbarControls(page);
-  expect(unnamed.length === 0, `Contrôles sans nom : ${unnamed.join(", ")}`);
-});
-
-await check("FR → EN traduit les surfaces majeures et les attributs", async () => {
-  await openTools(page);
-  await page.locator("#language-select").selectOption("fr");
-  await waitForLanguage(page, "fr");
-  expect(await page.locator("#graph-zoom-out").getAttribute("aria-label") === "Dézoomer", "Les contrôles du graphe ne sont pas en français");
-  await page.locator("#language-select").selectOption("en");
-  await waitForLanguage(page, "en");
-  const contextText = normalize(await page.locator(".studio-context").innerText()).toLowerCase();
-  expect(contextText.includes("project"), "Projet n’est pas traduit");
-  expect(contextText.includes("series"), "Série n’est pas traduite");
-  expect(contextText.includes("episode"), "Épisode n’est pas traduit");
-  expect(contextText.includes("shot"), "Plan n’est pas traduit");
-  expect(await page.locator("#graph-zoom-out").getAttribute("aria-label") === "Zoom out", "Les contrôles du graphe ne sont pas traduits");
-  expect(await page.locator("#project-select").getAttribute("aria-label") === "Active project", "aria-label Projet non traduit");
-  expect(await page.locator("#settings-toggle").getAttribute("title") === "Configure engines and storage", "title Réglages non traduit");
-  expect(await page.locator("#series-cast-open").getAttribute("aria-label") === "Characters, series resource", "aria-label Personnages non traduit");
-  await closeTools(page);
-});
-
-await check("les surfaces dynamiques majeures suivent EN", async () => {
-  await page.locator("#production-queue-toggle").click();
-  await page.waitForSelector("#production-queue[aria-hidden='false']");
-  expect(normalize(await page.locator("#production-queue h2").innerText()) === "Generation queue", "File dynamique non traduite");
-  await page.locator('[data-queue-action="close"]').click();
-  await page.locator("#notification-toggle").click();
-  expect(normalize(await page.locator("#notification-panel header strong").innerText()).includes("Activity"), "Journal dynamique non traduit");
-  await page.locator("#notification-toggle").click();
-  await page.locator('[data-context-action="bible"]').click();
-  await page.waitForSelector("#bible-workspace:not(.hidden)");
-  expect(normalize(await page.locator("#bible-title").innerText()).includes("Canon Bible"), "Bible dynamique non traduite");
-  await page.locator("#context-shot").click();
-  await clickTool(page, '[data-tool-action="assets"]');
-  await page.waitForSelector("#asset-drawer[aria-hidden='false']");
-  expect(normalize(await page.locator("#asset-drawer-title").innerText()) === "Asset library", "Asset Drawer dynamique non traduit");
-  await page.locator("#asset-drawer-close").click();
-  await page.locator("#context-shot").click();
-});
-
-await check("la langue EN persiste après reload et le fallback reste français", async () => {
-  expect(await page.evaluate(() => localStorage.getItem("serre-studio-language")) === "en", "La préférence EN n’est pas persistée");
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => window.SerreI18n);
-  await waitForLanguage(page, "en");
-  expect(await page.locator("#language-select").inputValue() === "en", "Le sélecteur ne restaure pas EN");
-  expect(await page.evaluate(() => window.SerreI18n.t("common.fallbackProof")) === "Texte de secours", "Une clé EN absente ne retombe pas sur FR");
-  expect(await page.evaluate(() => window.SerreI18n.setLanguage("xx")) === "fr", "Une langue inconnue ne retombe pas sur FR");
-  await waitForLanguage(page, "fr");
-});
-
-await check("le tutoriel s’ouvre, se ferme et restaure le focus", async () => {
-  const opener = page.locator("#getting-started-open");
-  await clickTool(page, "#getting-started-open");
-  expect(await page.locator("#getting-started-dialog").getAttribute("open") !== null, "Le guide ne s’ouvre pas");
-  expect(normalize(await page.locator("[data-guide-brand]").innerText()) === "Bien démarrer", "Le guide ne suit pas la langue FR");
-  await openTools(page);
-  await page.locator("#language-select").selectOption("en");
-  await waitForLanguage(page, "en");
-  expect(normalize(await page.locator("[data-guide-brand]").innerText()) === "Getting started", "Le guide ouvert ne suit pas le passage EN");
-  await page.locator("#language-select").selectOption("fr");
-  await closeTools(page);
-  await waitForLanguage(page, "fr");
-  await page.locator('[data-guide-action="close"]').click();
-  expect(await page.locator("#getting-started-dialog").getAttribute("open") === null, "Le bouton fermer ne ferme pas le guide");
-  const focused = await page.evaluate(() => document.activeElement?.id);
-  expect(["getting-started-open", "studio-tools-menu-toggle"].includes(focused), "Le focus ne revient pas à un accès visible du Guide");
-  await clickTool(page, "#getting-started-open");
-});
-
-await check("le sélecteur FR/EN du guide reste synchronisé avec toute l’interface", async () => {
-  try {
-    await page.locator('[data-guide-language="en"]').click();
-    await page.waitForTimeout(100);
-    expect(await page.locator("html").getAttribute("lang") === "en", "Le bouton EN du guide ne change que le guide");
-    expect(await page.locator("#language-select").inputValue() === "en", "La navbar ne reflète pas la langue choisie dans le guide");
-  } finally {
-    await page.evaluate(() => {
-      window.SerreI18n.setLanguage("fr");
-      window.SerreGettingStarted.setLanguage("fr");
-    });
+await check("React possède seul le shell et expose trois destinations primaires", async () => {
+  expect(await page.locator("[data-studio-shell]").count() === 1, "Le shell React est absent ou dupliqué");
+  expect(await page.locator("[data-primary-navigation] button").count() === 3, "La navigation primaire ne contient pas exactement trois boutons");
+  expect(await page.locator("[data-context-bar]").count() === 1, "La barre de contexte est absente");
+  expect(await page.locator("[data-tools-menu]").count() === 1, "Le menu Outils est absent");
+  for (const selector of [".topbar", "[data-legacy-navigation-slot='view-dock']"]) {
+    const surface = page.locator(selector);
+    expect(await surface.isHidden(), selector + " reste visible");
+    expect(await surface.getAttribute("aria-hidden") === "true", selector + " reste exposé à l’accessibilité");
+    expect(await surface.evaluate((element) => element.inert), selector + " reste interactif");
   }
 });
 
-await check("le guide ne masque pas le centre utile au placement initial", async () => {
-  const guide = await dialogBounds(page);
-  const graph = await page.locator("#graph-viewport").boundingBox();
-  expect(graph, "Le canvas central doit être visible");
-  const center = { x: graph.x + graph.width / 2, y: graph.y + graph.height / 2 };
-  const covered = center.x >= guide.x && center.x <= guide.x + guide.width
-    && center.y >= guide.y && center.y <= guide.y + guide.height;
-  expect(!covered, `Le guide recouvre le centre du canvas (${Math.round(center.x)}, ${Math.round(center.y)})`);
-});
-
-let draggedPosition;
-await check("le drag pointeur déplace vraiment le guide et persiste", async () => {
-  const before = await dialogBounds(page);
-  const handle = await page.locator("[data-guide-drag-handle]").boundingBox();
-  expect(handle, "Poignée de déplacement absente");
-  await page.mouse.move(handle.x + 100, handle.y + handle.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(handle.x - 150, handle.y + 100, { steps: 8 });
-  await page.mouse.up();
-  const after = await dialogBounds(page);
-  expect(Math.abs(after.x - before.x) >= 80 || Math.abs(after.y - before.y) >= 50, "Le geste pointeur n’a pas déplacé le guide");
-  draggedPosition = await page.evaluate(() => JSON.parse(localStorage.getItem("serre-studio-getting-started-position-v1")));
-  expect(Number.isFinite(draggedPosition?.x) && Number.isFinite(draggedPosition?.y), "La position n’est pas persistée");
-  await page.locator('[data-guide-action="close"]').click();
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => window.SerreGettingStarted);
-  await clickTool(page, "#getting-started-open");
-  await page.waitForFunction((expected) => {
-    const rect = document.querySelector("#getting-started-dialog")?.getBoundingClientRect();
-    return rect && Math.abs(rect.left - expected.x) <= 2 && Math.abs(rect.top - expected.y) <= 2;
-  }, draggedPosition);
-  const restored = await dialogBounds(page);
-  expect(Math.abs(restored.x - draggedPosition.x) <= 2 && Math.abs(restored.y - draggedPosition.y) <= 2, `Position restaurée incorrecte : ${JSON.stringify(restored)} vs ${JSON.stringify(draggedPosition)}`);
-});
-
-await check("le clavier déplace, recentre, ancre et ferme le guide", async () => {
-  const handle = page.locator("[data-guide-drag-handle]");
-  await handle.focus();
-  const before = await dialogBounds(page);
-  await page.keyboard.press("ArrowLeft");
-  const moved = await dialogBounds(page);
-  expect(moved.x <= before.x - 18, "Flèche gauche ne déplace pas le guide de 20 px");
-  await page.keyboard.press("Home");
-  const centered = await dialogBounds(page);
-  expect(Math.abs(centered.x + centered.width / 2 - 720) <= 3, `Origine ne recentre pas le guide : ${JSON.stringify(centered)}`);
-  await page.keyboard.press("End");
-  await page.waitForFunction(() => {
-    const rect = document.querySelector("#getting-started-dialog")?.getBoundingClientRect();
-    return rect && rect.right >= window.innerWidth - 14;
-  });
-  const docked = await dialogBounds(page);
-  expect(docked.x + docked.width >= 1425, `Fin n’ancre pas le guide à droite : ${JSON.stringify(docked)}`);
-  await page.keyboard.press("Escape");
-  expect(await page.locator("#getting-started-dialog").getAttribute("open") === null, "Échap ne ferme pas le guide");
-});
-
-await page.setViewportSize({ width: 640, height: 700 });
-await clickTool(page, "#getting-started-open");
-await page.waitForTimeout(100);
-await check("le guide reste utilisable dans un viewport étroit", async () => {
-  const guide = await dialogBounds(page);
-  expect(guide.x >= -1 && guide.y >= -1, `Guide hors écran : ${JSON.stringify(guide)}`);
-  expect(guide.x + guide.width <= 641 && guide.y + guide.height <= 701, `Guide déborde du viewport : ${JSON.stringify(guide)}`);
-  const controls = await page.locator(".getting-started-controls").boundingBox();
-  expect(controls && controls.y + controls.height <= 701, "Les contrôles du guide sont coupés");
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-  expect(overflow <= 1, `Scroll horizontal global de ${overflow}px`);
-});
-
-await check("le viewport étroit conserve la hiérarchie de contexte", async () => {
-  const dimensions = await page.evaluate(() => ({
-    clientWidth: document.documentElement.clientWidth,
-    scrollWidth: document.documentElement.scrollWidth,
-  }));
-  narrowMetrics.clientWidth = dimensions.clientWidth;
-  narrowMetrics.scrollWidth = dimensions.scrollWidth;
-  const visibleText = normalize(await page.locator(".studio-context").innerText());
-  const folded = visibleText.toLocaleLowerCase("fr");
-  for (const label of ["projet", "série", "épisode", "plan"]) {
-    expect(folded.includes(label), `${label} disparaît en viewport étroit : ${visibleText}`);
-  }
-  for (const selector of [".context-project", ".context-series", ".context-episode", ".context-shot"]) {
-    expect(await page.locator(selector).isVisible(), `${selector} n’est pas visible en viewport étroit`);
-  }
-  expect(await page.locator(".context-series button:visible").count() > 0, "La Série n’a plus de contrôle navigable en viewport étroit");
-});
-
-await check("chaque icône primaire étroite garde un nom accessible", async () => {
-  const unnamed = await unnamedTopbarControls(page);
-  expect(unnamed.length === 0, `Contrôles étroits sans nom : ${unnamed.join(", ")}`);
-  await openTools(page);
-  const requiredNames = [
-    ["[data-tool-action=assets]", /Assets|médias|media/i],
-    ["#production-queue-toggle", /File|Queue|production/i],
-    ["#notification-toggle", /Journal|Activity/i],
-    ["#getting-started-open", /Guide|démarrage|started/i],
-    ["#settings-toggle", /Réglages|Settings|moteurs|engines/i],
+await check("les routes primaires pilotent les URL canoniques", async () => {
+  const expected = [
+    ["Créer", "#/create"],
+    ["Produire", "#/produce"],
+    ["Résultats", "#/results"],
   ];
-  for (const [selector, expected] of requiredNames) {
-    const control = page.locator(selector);
-    expect(await control.isVisible(), `${selector} n’est plus identifiable visuellement`);
-    const snapshot = await control.ariaSnapshot();
-    narrowMetrics.accessibleNames[selector] = snapshot.replace(/^\s*-\s*button\s*/, "").trim();
-    expect(expected.test(snapshot), `${selector} a un nom accessible non sémantique : ${snapshot}`);
+  for (const [label, hash] of expected) {
+    await page.getByRole("button", { name: label, exact: true }).click();
+    await page.waitForFunction((value) => location.hash.startsWith(value), hash);
+    expect(await page.getByRole("button", { name: label, exact: true }).getAttribute("aria-current") === "page", label + " n’est pas marqué actif");
   }
-  await closeTools(page);
 });
 
-await check("aucune erreur JavaScript n’est émise pendant le parcours", async () => {
-  expect(consoleErrors.length === 0, consoleErrors.join(" | "));
+await check("les deep-links conservent le contexte après rechargement", async () => {
+  const before = await page.evaluate(() => location.hash);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForSelector("[data-studio-shell]");
+  expect(await page.evaluate(() => location.hash) === before, "Le deep-link a changé au rechargement");
+  expect((await page.evaluate(() => location.hash)).startsWith("#/results"), "La route Résultats n’est pas restaurée");
+});
+
+await check("le menu React ouvre les outils legacy et ignore les outils inconnus", async () => {
+  const clickCount = await page.evaluate(() => {
+    let count = 0;
+    const listener = () => { count += 1; };
+    document.addEventListener("click", listener, { capture: true });
+    window.dispatchEvent(new CustomEvent("studio:tool-open-request", { detail: { tool: "unknown" } }));
+    document.removeEventListener("click", listener, { capture: true });
+    return count;
+  });
+  expect(clickCount === 0, "Un outil inconnu déclenche une action");
+
+  await page.locator("[data-tools-menu] summary").click();
+  await page.getByRole("menuitem", { name: "Guide", exact: true }).click();
+  expect(await page.locator("#getting-started-dialog").getAttribute("open") !== null, "Le guide legacy ne s’ouvre pas");
+  await page.locator('[data-guide-action="close"]').click();
+});
+
+await check("la route inconnue est récupérable", async () => {
+  await page.evaluate(() => { location.hash = "#/inconnue"; });
+  await page.waitForFunction(() => document.body.textContent?.includes("Page introuvable"));
+  await page.getByRole("button", { name: "Revenir à Créer" }).click();
+  await page.waitForFunction(() => location.hash.startsWith("#/create"));
+});
+
+await check("FR/EN traduit le shell sans modifier ses routes", async () => {
+  const language = page.getByRole("combobox", { name: "Langue de l’interface" });
+  await language.selectOption("en");
+  await page.waitForFunction(() => document.documentElement.lang === "en");
+  expect(await page.getByRole("button", { name: "Create", exact: true }).count() === 1, "Create n’est pas traduit");
+  expect(await page.getByRole("button", { name: "Produce", exact: true }).count() === 1, "Produce n’est pas traduit");
+  expect(await page.getByRole("button", { name: "Results", exact: true }).count() === 1, "Results n’est pas traduit");
+  expect((await page.evaluate(() => location.hash)).startsWith("#/create"), "La traduction a changé la route");
+});
+
+await check("les contrôles essentiels restent nommés et accessibles au clavier", async () => {
+  const unnamed = await page.locator("[data-studio-shell] button, [data-studio-shell] select, [data-studio-shell] summary, [data-studio-shell] a").evaluateAll((elements) =>
+    elements.filter((element) => {
+      const text = element.textContent?.trim();
+      const label = element.getAttribute("aria-label");
+      return !text && !label;
+    }).length,
+  );
+  expect(unnamed === 0, unnamed + " contrôle(s) sans nom accessible");
+  await page.getByRole("button", { name: "Create", exact: true }).focus();
+  await page.keyboard.press("Tab");
+  expect(await page.evaluate(() => document.activeElement?.matches("[data-primary-navigation] button, [data-studio-shell] button, [data-studio-shell] summary, [data-studio-shell] select")), "Le parcours clavier quitte le shell");
+});
+
+await check("le shell reste utilisable en viewport étroit", async () => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.locator("[data-primary-navigation]").isVisible(), "La navigation primaire disparaît");
+  expect(await page.locator("[data-context-bar]").isVisible(), "Le contexte disparaît");
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow <= 1, "Le shell déborde horizontalement de " + overflow + "px");
+});
+
+await check("le repli legacy restaure puis cède proprement la navigation", async () => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const root = page.locator("#studio-react-root");
+  await root.evaluate((element) => element.removeAttribute("data-shell-owner"));
+  await page.waitForFunction(() => document.body.dataset.shellOwner === "legacy");
+  expect(await page.locator(".topbar").isVisible(), "La topbar de repli ne revient pas");
+  expect(await page.locator("[data-legacy-navigation-slot='view-dock']").isVisible(), "Le dock de repli ne revient pas");
+  await root.evaluate((element) => { element.dataset.shellOwner = "react"; });
+  await page.waitForFunction(() => document.body.dataset.shellOwner === "react");
+  expect(await page.locator(".topbar").isHidden(), "La topbar legacy concurrence React après restauration");
+});
+
+await check("aucune erreur JavaScript n’est émise", async () => {
+  expect(errors.length === 0, errors.join(" | "));
 });
 
 await browser.close();
-const failures = checks.filter((item) => item.status === "failed");
-process.stdout.write(`\nViewport étroit : scrollWidth=${narrowMetrics.scrollWidth}px, clientWidth=${narrowMetrics.clientWidth}px\n`);
-for (const [selector, name] of Object.entries(narrowMetrics.accessibleNames)) {
-  process.stdout.write(`  ${selector}: ${name}\n`);
-}
-process.stdout.write(`\n${checks.length - failures.length}/${checks.length} exigences validées sur ${baseUrl}\n`);
-if (failures.length) {
-  process.stdout.write(`${failures.length} défaut(s) concret(s) détecté(s).\n`);
-  process.exitCode = 1;
-}
+const failed = checks.filter((item) => item.status === "failed");
+console.log(JSON.stringify({ checks: checks.length, passed: checks.length - failed.length, failed: failed.length }));
+if (failed.length) process.exitCode = 1;

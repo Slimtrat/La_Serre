@@ -38,7 +38,7 @@
     <link rel="stylesheet" href="/static/ui/studio-react.css" />
   </head>
   <body data-workspace-view="guided">
-    <div id="studio-react-root"></div>
+    <div id="studio-react-root" data-shell-slot="react"></div>
     <div class="ambient ambient-one"></div>
     <div class="ambient ambient-two"></div>
     <header class="topbar" aria-label="Navigation principale" data-i18n-aria-label="shell.mainNavigation">
@@ -93,7 +93,7 @@
         </label>
       </div>
     </header>
-    <aside id="studio-view-dock" class="studio-view-dock" aria-label="Changer de vue" data-i18n-aria-label="shell.viewDock">
+    <aside id="studio-view-dock" class="studio-view-dock" aria-label="Changer de vue" data-i18n-aria-label="shell.viewDock" data-legacy-navigation-slot="view-dock">
       <span class="view-dock-handle" aria-hidden="true"><small>VUES</small><b>›</b></span>
       <header><small data-i18n="shell.views">VUES</small><strong data-i18n="shell.navigate">Naviguer</strong></header>
       <nav>
@@ -111,7 +111,7 @@
       <ol id="notification-list"><li class="empty">Aucune notification.</li></ol>
     </aside>
 
-    <main class="shell">
+    <main class="shell" data-legacy-workspace-host>
       <section id="guided-workspace" class="guided-workspace" aria-labelledby="guided-title">
         <div class="guided-loading">Ouverture de ton atelier…</div>
       </section>
