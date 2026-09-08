@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
+from typing import Any, cast
 
 from PIL import Image, ImageDraw
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 BRAND_ROOT = PROJECT_ROOT / "assets" / "branding"
@@ -49,7 +50,8 @@ def main() -> int:
 def _normalise_source(source: Image.Image) -> Image.Image:
     image = source.convert("RGBA")
     alpha = image.getchannel("A")
-    if alpha.getextrema()[0] < 250:
+    alpha_extrema = cast(tuple[int, int], alpha.getextrema())
+    if alpha_extrema[0] < 250:
         bounds = alpha.getbbox()
         if bounds is None:
             raise ValueError("The ImageGen master is fully transparent")
@@ -59,9 +61,8 @@ def _normalise_source(source: Image.Image) -> Image.Image:
     # the near-black app tile, then rebuild its rounded alpha edge deterministically.
     rgb = image.convert("RGB")
     dark_mask = Image.new("L", image.size)
-    dark_mask.putdata(
-        [255 if max(pixel) < 80 else 0 for pixel in rgb.get_flattened_data()]
-    )
+    rgb_pixels = cast(Iterable[tuple[int, int, int]], rgb.get_flattened_data())
+    dark_mask.putdata([255 if max(pixel) < 80 else 0 for pixel in rgb_pixels])
     bounds = dark_mask.getbbox()
     if bounds is None:
         raise ValueError("Could not locate the dark app tile in the ImageGen master")
@@ -79,7 +80,7 @@ def _normalise_source(source: Image.Image) -> Image.Image:
     # Remove any baked neutral checkerboard pixels that fall just inside the
     # reconstructed rounded tile without disturbing the green/violet emblem.
     cleaned = tile.copy()
-    pixels = cleaned.load()
+    pixels = cast(Any, cleaned.load())
     for y in range(cleaned.height):
         for x in range(cleaned.width):
             red, green, blue, _ = pixels[x, y]
