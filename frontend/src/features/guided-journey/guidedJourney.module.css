@@ -1,0 +1,23 @@
+.root { padding: var(--ui-space-6); display: grid; gap: var(--ui-space-5); }
+.hero { display: flex; align-items: end; justify-content: space-between; gap: var(--ui-space-5); }
+.hero h1, .stage h1 { margin: 0; }
+.hero p { color: var(--ui-color-text-muted); }
+.stepper { display: grid; grid-template-columns: repeat(8, minmax(7rem, 1fr)); gap: var(--ui-space-2); overflow-x: auto; padding-block-end: var(--ui-space-2); }
+.stepper button { text-align: left; padding: var(--ui-space-3); min-height: 5rem; color: var(--ui-color-text); background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-md); display: grid; }
+.stepper button[aria-current="step"] { border-color: var(--ui-color-brand); box-shadow: var(--ui-focus-ring); }
+.stepper button[data-status="approved"], .stepper button[data-status="completed"] { background: var(--ui-color-success-subtle); }
+.stepper small, .stage small { color: var(--ui-color-text-muted); }
+.stage { background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg); padding: var(--ui-space-5); }
+.stage > header { display: flex; justify-content: space-between; gap: var(--ui-space-4); margin-block-end: var(--ui-space-5); }
+.form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ui-space-4); }
+.form label { display: grid; gap: var(--ui-space-2); font-weight: var(--ui-font-weight-semibold); }
+.form input:not([type="checkbox"]), .form textarea { min-height: var(--ui-control-height); padding: var(--ui-space-3); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-md); color: var(--ui-color-text); background: var(--ui-color-canvas); font: inherit; }
+.form textarea { min-height: 8rem; resize: vertical; }
+.form label span { color: var(--ui-color-text-muted); font-size: var(--ui-font-size-xs); font-weight: normal; }
+.actions { display: flex; gap: var(--ui-space-3); align-items: center; grid-column: 1 / -1; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: var(--ui-space-3); margin-block-end: var(--ui-space-4); }
+.cards article, .statusCard { padding: var(--ui-space-4); border-radius: var(--ui-radius-md); background: var(--ui-color-surface); }
+.reviewGrid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-4); }
+.reviewGrid pre, .reviewGrid textarea { width: 100%; min-height: 22rem; overflow: auto; white-space: pre-wrap; color: var(--ui-color-text); background: var(--ui-color-canvas); border: 1px solid var(--ui-color-border); padding: var(--ui-space-3); }
+.error { color: var(--ui-color-danger); }
+@media (max-width: 44rem) { .root { padding: var(--ui-space-3); } .hero, .stage > header { align-items: stretch; flex-direction: column; } .form, .reviewGrid { grid-template-columns: 1fr; } }

@@ -3,7 +3,7 @@
 import { createRequire } from "node:module";
 import fs from "node:fs";
 
-const require = createRequire(import.meta.url);
+const require = createRequire(new URL("../../frontend/package.json", import.meta.url));
 const baseUrl = process.env.SERRE_STUDIO_URL || process.argv[2] || "http://127.0.0.1:8000/";
 const playwrightModule = process.env.PLAYWRIGHT_MODULE || "playwright";
 const browserPath = process.env.PLAYWRIGHT_BROWSER_PATH
@@ -33,22 +33,19 @@ await page.addInitScript(() => {
 
 try {
   await page.goto(new URL("?view=guided", baseUrl).href, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => (
-    window.SerreGuided && window.SerreGraph && window.SerreWorkflowTemplates && window.SerreWorkspace
-  ));
-
-  await page.evaluate(async () => {
-    await window.SerreGuided.load();
-    window.SerreGuided.goTo(4);
-    await window.SerreWorkflowTemplates.load(true);
-  });
-  await page.waitForFunction(() => (
-    document.querySelectorAll("#guided-template-catalogue .workflow-template-node").length === 4
-  ));
-  const productionTemplates = await page.locator(
-    "#guided-template-catalogue .workflow-template-node",
-  ).evaluateAll((nodes) => nodes.map((node) => node.dataset.templateId));
-  expect(new Set(productionTemplates).size === 4, "Le catalogue Production doit montrer quatre templates distincts");
+  await page.waitForSelector("[data-guided-journey]");
+  await page.waitForFunction(() => window.SerreGraph && window.SerreWorkspace);
+  const steps = page.locator("[data-guided-journey] nav button");
+  expect(await steps.count() === 8, "Le parcours React doit exposer huit étapes");
+  await page.getByRole("button", { name: /Production/ }).click();
+  expect(
+    await page.getByRole("heading", { name: "Produis sans perdre le fil" }).count() === 1,
+    "L’étape Production React ne s’ouvre pas",
+  );
+  expect(
+    await page.locator("#guided-workspace .guided-shell").count() === 0,
+    "Le parcours legacy reste monté sur le chemin principal",
+  );
 
   await page.evaluate(async () => {
     window.SerreWorkspace.show("graph");
@@ -105,7 +102,7 @@ try {
     `journey:storyboard n’est pas centré (${storyboardState.horizontalDelta}, ${storyboardState.verticalDelta})`,
   );
   expect(pageErrors.length === 0, `Erreur JavaScript : ${pageErrors.join(" | ")}`);
-  console.log("PASS guided graph: 6 journey nodes, 4 production templates, storyboard running centered");
+  console.log("PASS guided React + graph: 8 stages, 6 graph nodes, storyboard running centered");
 } finally {
   await browser.close();
 }

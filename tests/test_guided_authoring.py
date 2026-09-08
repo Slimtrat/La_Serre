@@ -195,19 +195,18 @@ def test_ai_modes_use_context_and_respect_filled_and_locked_fields(tmp_path: Pat
     assert guided_completion(state)["brief"]["ready"] is False
 
 
-def test_guided_workspace_is_the_default_visual_product_path() -> None:
+def test_guided_journey_is_owned_by_react_on_the_default_product_path() -> None:
     static = Path("apps/api/static")
     index = (static / "index.html").read_text(encoding="utf-8")
-    script = (static / "guided-workspace.js").read_text(encoding="utf-8")
-    styles = (static / "guided-workspace.css").read_text(encoding="utf-8")
+    feature = Path("frontend/src/features/guided-journey")
+    journey = (feature / "GuidedJourney.tsx").read_text(encoding="utf-8")
+    stage_host = (feature / "StageHost.tsx").read_text(encoding="utf-8")
 
     assert 'data-workspace-view="guided"' in index
-    assert 'data-workspace-target="guided"' in index
     assert 'id="guided-workspace"' in index
-    assert "/static/guided-workspace.js" in index
-    assert len([line for line in script.splitlines() if '["' in line[:8]]) >= 6
-    for mode in ("improve", "fill_missing", "prepare_next"):
-        assert f'data-ai-mode="{mode}"' in script
-    assert "CONTEXTE UTILISÉ PAR L’IA" in script
-    assert ".guided-journey" in styles
-    assert ".guided-proposal" in styles
+    assert "/static/guided-workspace.js" not in index
+    assert "data-guided-journey" in journey
+    assert "journeyApiStudioJourneyGet" in journey
+    assert "expected_revision: guided.revision" in journey
+    for stage in ("casting", "relationships", "season", "production", "release"):
+        assert stage in stage_host
