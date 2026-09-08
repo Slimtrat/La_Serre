@@ -16,8 +16,9 @@ from apps.api.demo_pipeline import MEDIA_TYPES, DemoPipeline, DemoStage
 from apps.api.notifications import StudioNotificationLog
 from engine.config import Settings
 from engine.narrative.ollama import OllamaClient, OllamaModel
+from engine.runtime.capability_packs import DEFAULT_CAPABILITY_PACK
 
-RECOMMENDED_NARRATIVE_MODEL = "qwen3:4b"
+RECOMMENDED_NARRATIVE_MODEL = DEFAULT_CAPABILITY_PACK.recommended_narrative_model
 _NON_NARRATIVE_MODEL_MARKERS = ("coder", "embedding", "embed")
 
 

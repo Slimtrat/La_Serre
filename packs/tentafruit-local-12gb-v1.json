@@ -1,0 +1,227 @@
+{
+  "schema_version": 1,
+  "id": "tentafruit-local-12gb-v1",
+  "version": 1,
+  "label": "Tentafruit local — NVIDIA 12 Go",
+  "description": "Pack officiellement supporté pour écrire, illustrer, animer et exporter trois épisodes verticaux Tentafruit en local.",
+  "hardware": {
+    "minimum_vram_gb": 12,
+    "recommended_vram_gb": 12,
+    "minimum_system_ram_gb": 32,
+    "workspace_reserve_bytes": 16106127360,
+    "supported_gpu_vendor": "NVIDIA",
+    "preset": "rtx-5070-12gb"
+  },
+  "workflow_model_roles": ["keyframe.sdxl", "video.ltx-2b", "text-encoder.t5-fp8"],
+  "components": [
+    {
+      "id": "ollama-engine",
+      "role": "Moteur narratif local",
+      "kind": "engine",
+      "size_bytes": 0,
+      "source": "https://github.com/ollama/ollama",
+      "destination": "http://127.0.0.1:11434",
+      "license": {
+        "id": "mit",
+        "name": "MIT License",
+        "url": "https://github.com/ollama/ollama/blob/main/LICENSE",
+        "summary": "Moteur local redistribuable sous licence MIT.",
+        "commercial_use": "allowed"
+      },
+      "checksum": {"algorithm": "source-declared", "value": null},
+      "detection": {"kind": "ollama", "value": "ollama"},
+      "action": "Démarre Ollama localement; aucun modèle n’est téléchargé automatiquement."
+    },
+    {
+      "id": "narrative-qwen3-4b",
+      "role": "Narration structurée Tentafruit",
+      "kind": "model",
+      "size_bytes": 2500000000,
+      "source": "https://ollama.com/library/qwen3:4b",
+      "destination": "ollama://qwen3:4b",
+      "license": {
+        "id": "apache-2.0",
+        "name": "Apache License 2.0",
+        "url": "https://huggingface.co/Qwen/Qwen3-4B/blob/main/LICENSE",
+        "summary": "Qwen3-4B est publié sous Apache-2.0.",
+        "commercial_use": "allowed"
+      },
+      "checksum": {"algorithm": "ollama-manifest", "value": "359d7dd4bcda"},
+      "detection": {"kind": "ollama_model", "value": "qwen3:4b", "aliases": ["qwen3:4b-thinking"]},
+      "action": "Choisis explicitement Installer Qwen3 4B dans le Studio ou exécute ollama pull qwen3:4b."
+    },
+    {
+      "id": "comfyui-engine",
+      "role": "Moteur image et vidéo local",
+      "kind": "engine",
+      "size_bytes": 0,
+      "source": "https://github.com/comfyanonymous/ComfyUI",
+      "destination": "http://127.0.0.1:8188",
+      "license": {
+        "id": "gpl-3.0",
+        "name": "GNU GPL v3",
+        "url": "https://github.com/comfyanonymous/ComfyUI/blob/master/LICENSE",
+        "summary": "ComfyUI est distribué sous GPL-3.0.",
+        "commercial_use": "allowed"
+      },
+      "checksum": {"algorithm": "source-declared", "value": null},
+      "detection": {"kind": "comfyui", "value": "comfyui"},
+      "action": "Installe puis démarre ComfyUI; le diagnostic reste lisible lorsqu’il est arrêté."
+    },
+    {
+      "id": "keyframe-sdxl",
+      "role": "Images clés SDXL",
+      "kind": "model",
+      "size_bytes": 6940000000,
+      "source": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors",
+      "destination": "checkpoints/sd_xl_base_1.0.safetensors",
+      "license": {
+        "id": "openrail++-m",
+        "name": "CreativeML Open RAIL++-M",
+        "url": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/blob/main/LICENSE.md",
+        "summary": "Usage soumis aux restrictions d’usage responsable Open RAIL++-M.",
+        "commercial_use": "allowed"
+      },
+      "checksum": {"algorithm": "source-declared", "value": null},
+      "detection": {"kind": "comfy_model", "value": "keyframe.sdxl"},
+      "action": "Télécharge SDXL depuis sa source puis place-le dans models/checkpoints."
+    },
+    {
+      "id": "video-ltx-2b",
+      "role": "Animation verticale LTX 2B",
+      "kind": "model",
+      "size_bytes": 5720000000,
+      "source": "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.5.safetensors",
+      "destination": "checkpoints/ltx-video-2b-v0.9.5.safetensors",
+      "license": {
+        "id": "ltx-video-open-weights-0.9.5",
+        "name": "LTX Video Open Weights License 0.9.5",
+        "url": "https://huggingface.co/Lightricks/LTX-Video/blob/main/LICENSE",
+        "summary": "Consulte les conditions spécifiques des poids LTX 0.9.5 avant usage.",
+        "commercial_use": "review_required"
+      },
+      "checksum": {"algorithm": "source-declared", "value": null},
+      "detection": {"kind": "comfy_model", "value": "video.ltx-2b"},
+      "action": "Télécharge LTX 2B v0.9.5 depuis sa source puis place-le dans models/checkpoints."
+    },
+    {
+      "id": "text-encoder-t5-fp8",
+      "role": "Encodage texte vidéo T5 FP8",
+      "kind": "model",
+      "size_bytes": 4890000000,
+      "source": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn_scaled.safetensors",
+      "destination": "text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors",
+      "license": {
+        "id": "apache-2.0-t5",
+        "name": "Apache License 2.0",
+        "url": "https://huggingface.co/google-t5/t5-11b/blob/main/LICENSE",
+        "summary": "T5 est publié sous Apache-2.0; vérifie également la fiche du fichier quantifié.",
+        "commercial_use": "review_required"
+      },
+      "checksum": {"algorithm": "source-declared", "value": null},
+      "detection": {"kind": "comfy_model", "value": "text-encoder.t5-fp8"},
+      "action": "Télécharge l’encodeur T5 FP8 puis place-le dans models/text_encoders."
+    },
+    {
+      "id": "comfyui-required-nodes",
+      "role": "Nodes ComfyUI du golden path",
+      "kind": "node_bundle",
+      "size_bytes": 0,
+      "source": "https://github.com/Lightricks/ComfyUI-LTXVideo",
+      "destination": "ComfyUI runtime",
+      "license": {
+        "id": "apache-2.0-ltx-nodes",
+        "name": "Apache License 2.0",
+        "url": "https://github.com/Lightricks/ComfyUI-LTXVideo/blob/main/LICENSE",
+        "summary": "Nodes LTX et intégrations associés sous Apache-2.0.",
+        "commercial_use": "allowed"
+      },
+      "checksum": {"algorithm": "source-declared", "value": null},
+      "detection": {
+        "kind": "nodes",
+        "value": "CheckpointLoaderSimple",
+        "aliases": ["CLIPLoader", "CLIPTextEncode", "EmptyLatentImage", "KSampler", "VAEEncode", "VAEDecode", "SaveImage", "LoadImage", "ImageScale", "LTXVImgToVideo", "LTXVAddGuide", "LTXVConditioning", "LTXVSpatioTemporalGuidance", "LTXVScheduler", "KSamplerSelect", "SamplerCustom", "CreateVideo", "SaveVideo"]
+      },
+      "action": "Démarre ComfyUI et installe les nodes listés comme absents par le diagnostic."
+    },
+    {
+      "id": "tentafruit-workflows",
+      "role": "Workflows verticaux versionnés",
+      "kind": "workflow_bundle",
+      "size_bytes": 0,
+      "source": "https://github.com/Slimtrat/La_Serre",
+      "destination": "workflows/local",
+      "license": {
+        "id": "la-serre-project",
+        "name": "Licence du projet La Serre",
+        "url": "https://github.com/Slimtrat/La_Serre",
+        "summary": "Workflows fournis avec le projet; vérifier la licence du dépôt avant redistribution.",
+        "commercial_use": "review_required"
+      },
+      "checksum": {"algorithm": "source-declared", "value": null},
+      "detection": {"kind": "files", "value": "keyframe.profile.json", "aliases": ["keyframe-guide.profile.json", "video.profile.json"]},
+      "action": "Génère explicitement les workflows locaux depuis l’écran Runtime."
+    },
+    {
+      "id": "character-flux-dev-fp8",
+      "role": "Référence personnage FLUX (optionnelle)",
+      "kind": "model",
+      "required": false,
+      "size_bytes": 17200000000,
+      "source": "https://huggingface.co/black-forest-labs/FLUX.1-dev",
+      "destination": "checkpoints/flux1-dev-fp8.safetensors",
+      "license": {
+        "id": "flux-1-dev-non-commercial",
+        "name": "FLUX.1 dev Non-Commercial License 1.1.1",
+        "url": "https://huggingface.co/black-forest-labs/FLUX.1-dev/blob/main/LICENSE.md",
+        "summary": "Poids limités aux usages non commerciaux et non productifs; accès soumis à acceptation.",
+        "commercial_use": "restricted"
+      },
+      "checksum": {"algorithm": "source-declared", "value": null},
+      "detection": {"kind": "comfy_model", "value": "character.flux-dev-fp8"},
+      "action": "Optionnel: accepte d’abord la licence FLUX.1 dev puis importe manuellement un checkpoint FP8 compatible."
+    },
+    {
+      "id": "character-cartoon-lora",
+      "role": "Style 3D cartoon (optionnel)",
+      "kind": "model",
+      "required": false,
+      "size_bytes": 0,
+      "source": "https://huggingface.co/models?search=FLUX%203D%20cartoon%20LoRA",
+      "destination": "loras/FLUX_3Dcartoon.safetensors",
+      "license": {
+        "id": "user-selected-lora",
+        "name": "Licence du LoRA choisi par l’utilisateur",
+        "url": "https://huggingface.co/docs/hub/repositories-licenses",
+        "summary": "La licence dépend du LoRA importé; aucune redistribution ni installation silencieuse.",
+        "commercial_use": "review_required"
+      },
+      "checksum": {"algorithm": "sha256", "value": null},
+      "detection": {"kind": "comfy_model", "value": "character.cartoon-lora"},
+      "action": "Optionnel: choisis un LoRA licencié, vérifie son SHA-256 puis importe-le manuellement."
+    }
+  ],
+  "smoke_checks": [
+    {
+      "id": "narrative-contracts",
+      "label": "Contrats narratifs Tentafruit",
+      "description": "Valide les six TaskSpecs sans modèle ni réseau.",
+      "required_roles": ["ollama-engine", "narrative-qwen3-4b"],
+      "command": "python -m tools.evaluate_narrative_tasks --provider fake"
+    },
+    {
+      "id": "workflow-contracts",
+      "label": "Workflows API ComfyUI",
+      "description": "Valide les graphes et mappings verticaux sans lancer ComfyUI.",
+      "required_roles": ["tentafruit-workflows", "keyframe-sdxl", "video-ltx-2b", "text-encoder-t5-fp8"],
+      "command": "pytest tests/test_workflow_factory.py tests/test_workflow_templates.py"
+    },
+    {
+      "id": "guided-golden-path",
+      "label": "Parcours guidé local",
+      "description": "Vérifie le golden path Studio dans un navigateur local.",
+      "required_roles": ["ollama-engine", "comfyui-engine", "tentafruit-workflows"],
+      "command": "node tests/browser/guided_graph_smoke.mjs"
+    }
+  ]
+}

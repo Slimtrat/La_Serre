@@ -30,6 +30,8 @@ def create_workflow_template_router(
                 filename=model.filename,
                 folder=model.folder,
                 url=model.url or "",
+                component_id=model.source_note or "",
+                capability_role=model.capability_role,
             )
             for template in templates
             for model in template.spec.models

@@ -29,6 +29,7 @@ from apps.api.production_queue_routes import create_production_queue_router
 from apps.api.project_storage_routes import create_project_storage_router
 from apps.api.projects import ProjectRegistry
 from apps.api.run_history import RUN_FILES, RunHistory
+from apps.api.runtime_pack_routes import create_runtime_pack_router
 from apps.api.schemas import (
     AssetReuseRequest,
     EpisodeGenerationRequest,
@@ -147,6 +148,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(create_guided_router(current_settings))
     app.include_router(create_guided_autopilot_router(current_settings))
     app.include_router(create_workflow_template_router(current_settings))
+    app.include_router(create_runtime_pack_router(current_settings))
     app.include_router(create_editorial_router(current_settings))
     app.include_router(
         create_demo_router(

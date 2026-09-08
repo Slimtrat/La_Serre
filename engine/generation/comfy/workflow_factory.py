@@ -10,14 +10,9 @@ from engine.generation.comfy.workflow_loader import (
     WorkflowLoader,
     WorkflowProfile,
 )
+from engine.runtime.capability_packs import DEFAULT_CAPABILITY_PACK, ModelRequirement
 
-
-@dataclass(frozen=True, slots=True)
-class ModelRequirement:
-    role: str
-    filename: str
-    folder: str
-    url: str
+__all__ = ["ModelRequirement", "WorkflowFactory"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,57 +27,14 @@ class GeneratedWorkflows:
 class WorkflowFactory:
     """Creates small API-format workflows from stable ComfyUI core nodes."""
 
-    preset = "rtx-5070-12gb"
-    requirements = (
-        ModelRequirement(
-            role="Keyframes SDXL",
-            filename="sd_xl_base_1.0.safetensors",
-            folder="checkpoints",
-            url=(
-                "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/"
-                "resolve/main/sd_xl_base_1.0.safetensors?download=true"
-            ),
-        ),
-        ModelRequirement(
-            role="Animation LTX 2B",
-            filename="ltx-video-2b-v0.9.5.safetensors",
-            folder="checkpoints",
-            url=(
-                "https://huggingface.co/Lightricks/LTX-Video/resolve/main/"
-                "ltx-video-2b-v0.9.5.safetensors"
-            ),
-        ),
-        ModelRequirement(
-            role="Encodeur texte T5 FP8",
-            filename="t5xxl_fp8_e4m3fn_scaled.safetensors",
-            folder="text_encoders",
-            url=(
-                "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/"
-                "t5xxl_fp8_e4m3fn_scaled.safetensors"
-            ),
-        ),
-    )
+    capability_pack = DEFAULT_CAPABILITY_PACK
+    preset = capability_pack.hardware.preset
+    requirements = capability_pack.comfy_model_requirements()
+    _node_component = capability_pack.component("comfyui-required-nodes")
     required_nodes = frozenset(
         {
-            "CheckpointLoaderSimple",
-            "CLIPLoader",
-            "CLIPTextEncode",
-            "EmptyLatentImage",
-            "KSampler",
-            "VAEEncode",
-            "VAEDecode",
-            "SaveImage",
-            "LoadImage",
-            "ImageScale",
-            "LTXVImgToVideo",
-            "LTXVAddGuide",
-            "LTXVConditioning",
-            "LTXVSpatioTemporalGuidance",
-            "LTXVScheduler",
-            "KSamplerSelect",
-            "SamplerCustom",
-            "CreateVideo",
-            "SaveVideo",
+            _node_component.detection.value,
+            *_node_component.detection.aliases,
         }
     )
 

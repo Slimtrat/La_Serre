@@ -27,6 +27,7 @@ class TemplateModelRequirement(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     role: str = Field(min_length=1)
+    capability_role: str = Field(min_length=1)
     filename: str = Field(min_length=1)
     folder: str = Field(min_length=1)
     url: str | None = None
@@ -36,9 +37,10 @@ class TemplateModelRequirement(BaseModel):
     def from_factory(cls, requirement: ModelRequirement) -> TemplateModelRequirement:
         return cls(
             role=requirement.role,
+            capability_role=requirement.capability_role,
             filename=requirement.filename,
             folder=requirement.folder,
-            url=requirement.url,
+            source_note=f"Composant du pack : {requirement.component_id}",
         )
 
 
@@ -292,6 +294,7 @@ class WorkflowTemplateCatalogue:
             models=(
                 TemplateModelRequirement(
                     role="Référence personnage FLUX",
+                    capability_role="character.flux-dev-fp8",
                     filename="flux1-dev-fp8.safetensors",
                     folder="checkpoints",
                     source_note=(
@@ -301,6 +304,7 @@ class WorkflowTemplateCatalogue:
                 ),
                 TemplateModelRequirement(
                     role="Style 3D cartoon",
+                    capability_role="character.cartoon-lora",
                     filename="FLUX_3Dcartoon.safetensors",
                     folder="loras",
                     source_note="LoRA utilisée par le workflow de référence fourni.",

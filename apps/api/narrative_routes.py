@@ -25,12 +25,13 @@ from engine.narrative.narrative_workflow import (
 )
 from engine.narrative.ollama import OllamaClient, OllamaModel
 from engine.narrative.shot_director import OllamaShotDirector
+from engine.runtime.capability_packs import DEFAULT_CAPABILITY_PACK
 from engine.world.bible import BibleRegistry
 from engine.world.catalog import EpisodeCatalog
 from engine.world.models import ProjectBible
 
 _NON_NARRATIVE_MODEL_MARKERS = ("coder", "embedding", "embed")
-RECOMMENDED_NARRATIVE_MODEL = "qwen3:4b"
+RECOMMENDED_NARRATIVE_MODEL = DEFAULT_CAPABILITY_PACK.recommended_narrative_model
 
 
 class NarrativeFieldSuggestionRequest(BaseModel):
