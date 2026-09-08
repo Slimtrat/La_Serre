@@ -145,10 +145,12 @@ détaillée est consignée dans [AppKernel et pont legacy typé](frontend-app-ke
 
 ## CSS et framework
 
-Cette décision ne sélectionne pas de framework CSS. Le choix, l'évaluation de la réduction du CSS
-maintenu, la stratégie de tokens et l'éventuelle migration sont volontairement différés à **F05**.
-Jusqu'à cette décision, les ajouts privilégient des styles locaux, sobres et colocalisés, sans
-introduire une nouvelle dépendance CSS ni lancer une migration transversale.
+F05 retient des modules CSS colocalisés et des tokens sémantiques partagés, sans framework CSS.
+Cette solution native à Vite évite un runtime et une convention de classes supplémentaires. Le CSS
+historique sera supprimé par tranche fonctionnelle lors de la migration des parcours, ce qui est la
+réduction de maintenance effective ; ajouter un framework avant cette migration ne supprimerait
+aucune règle existante. Les conventions de composition et de variantes sont détaillées dans le
+[kit d'interface Tentafruit](../frontend-ui-kit.md).
 
 ## Conséquences
 

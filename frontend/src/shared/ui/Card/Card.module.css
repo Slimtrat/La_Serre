@@ -1,0 +1,11 @@
+.root {
+  color: var(--ui-color-text);
+  background: var(--ui-color-surface);
+  border: var(--ui-border-width) solid var(--ui-color-border);
+  border-radius: var(--ui-radius-card);
+}
+.elevated { box-shadow: var(--ui-shadow-card); }
+.none { padding: 0; }
+.small { padding: var(--ui-space-3); }
+.medium { padding: var(--ui-space-5); }
+.large { padding: var(--ui-space-7); }

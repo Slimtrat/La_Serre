@@ -1,0 +1,11 @@
+.root {
+  display: block;
+  min-block-size: var(--ui-skeleton-min-size);
+  background: var(--ui-color-neutral-subtle);
+  animation: pulse var(--ui-duration-skeleton) ease-in-out infinite alternate;
+}
+.small { border-radius: var(--ui-radius-small); }
+.medium { border-radius: var(--ui-radius-control); }
+.round { border-radius: var(--ui-radius-pill); }
+@keyframes pulse { from { opacity: var(--ui-opacity-skeleton-low); } to { opacity: var(--ui-opacity-skeleton-high); } }
+@media (prefers-reduced-motion: reduce) { .root { animation: none; } }

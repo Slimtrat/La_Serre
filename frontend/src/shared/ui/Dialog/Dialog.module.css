@@ -1,0 +1,67 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-modal);
+  display: grid;
+  place-items: center;
+  padding: var(--ui-space-4);
+  background: var(--ui-color-overlay);
+}
+
+.panel {
+  width: min(100%, 36rem);
+  max-height: calc(100dvh - (2 * var(--ui-space-4)));
+  overflow: auto;
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-color-surface-raised);
+  color: var(--ui-color-text);
+  box-shadow: var(--ui-shadow-lg);
+  padding: var(--ui-space-6);
+}
+
+.panel:focus-visible {
+  outline: 2px solid var(--ui-color-focus);
+  outline-offset: 2px;
+}
+
+.title {
+  margin: 0;
+  color: var(--ui-color-text-strong);
+  font: var(--ui-font-heading-sm);
+}
+
+.description {
+  margin: var(--ui-space-2) 0 0;
+  color: var(--ui-color-text-muted);
+  font: var(--ui-font-body-md);
+}
+
+.content {
+  margin-top: var(--ui-space-5);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .backdrop {
+    animation: backdrop-in var(--ui-motion-duration-fast)
+      var(--ui-motion-easing-standard);
+  }
+
+  .panel {
+    animation: panel-in var(--ui-motion-duration-fast)
+      var(--ui-motion-easing-standard);
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes panel-in {
+  from {
+    transform: translateY(var(--ui-space-2));
+    opacity: 0;
+  }
+}

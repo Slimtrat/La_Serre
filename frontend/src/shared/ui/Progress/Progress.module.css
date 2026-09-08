@@ -1,0 +1,6 @@
+.root { display: grid; gap: var(--ui-space-2); inline-size: 100%; }
+.labelRow { display: flex; justify-content: space-between; gap: var(--ui-space-3); color: var(--ui-color-text); font-size: var(--ui-font-size-small); }
+.track { inline-size: 100%; block-size: var(--ui-progress-size); overflow: hidden; border: 0; border-radius: var(--ui-radius-pill); background: var(--ui-color-neutral-subtle); }
+.track::-webkit-progress-bar { background: var(--ui-color-neutral-subtle); }
+.track::-webkit-progress-value { background: var(--ui-color-accent); border-radius: inherit; }
+.track::-moz-progress-bar { background: var(--ui-color-accent); border-radius: inherit; }

@@ -3,6 +3,7 @@ import { VisuallyHidden } from "@shared";
 import { QueryClientProvider, studioQueryClient } from "@shared/query";
 import { useEffect, useState } from "react";
 
+import { ComponentGallery } from "./dev/ComponentGallery";
 import {
   AppKernelProvider,
   createLegacyAppKernel,
@@ -27,7 +28,7 @@ function ActiveContextStatus() {
   );
 }
 
-export function StudioReactRoot() {
+function StudioApplication() {
   const [legacyKernel] = useState(createLegacyAppKernel);
 
   useEffect(() => {
@@ -45,4 +46,13 @@ export function StudioReactRoot() {
       </QueryClientProvider>
     </AppKernelProvider>
   );
+}
+
+export function StudioReactRoot() {
+  const galleryRequested =
+    import.meta.env.MODE === "development" &&
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("gallery") === "components";
+
+  return galleryRequested ? <ComponentGallery /> : <StudioApplication />;
 }

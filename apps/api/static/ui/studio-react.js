@@ -8068,6 +8068,19 @@ function x({ children: e, ...t }) {
 		children: e
 	});
 }
+m(), [
+	"a[href]",
+	"area[href]",
+	"button:not([disabled])",
+	"input:not([disabled]):not([type='hidden'])",
+	"select:not([disabled])",
+	"textarea:not([disabled])",
+	"iframe",
+	"object",
+	"embed",
+	"[contenteditable='true']",
+	"[tabindex]:not([tabindex='-1'])"
+].join(",");
 //#endregion
 //#region src/shared/api/ApiError.ts
 function ee(e) {
@@ -10153,8 +10166,11 @@ function Jt() {
 		})
 	});
 }
+function Yt() {
+	return /* @__PURE__ */ (0, b.jsx)(Jt, {});
+}
 //#endregion
 //#region src/main.tsx
-var Yt = document.getElementById("studio-react-root");
-Yt && (Yt.dataset.reactMounted = "true", (0, v.createRoot)(Yt).render(/* @__PURE__ */ (0, b.jsx)(_.StrictMode, { children: /* @__PURE__ */ (0, b.jsx)(Jt, {}) })));
+var Xt = document.getElementById("studio-react-root");
+Xt && (Xt.dataset.reactMounted = "true", (0, v.createRoot)(Xt).render(/* @__PURE__ */ (0, b.jsx)(_.StrictMode, { children: /* @__PURE__ */ (0, b.jsx)(Yt, {}) })));
 //#endregion
