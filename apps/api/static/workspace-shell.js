@@ -3,6 +3,30 @@ const workspaceShell = (() => {
   const allowed = new Set(buttons.map((button) => button.dataset.workspaceTarget));
   const contextShot = document.querySelector("#context-shot");
   const contextShotLabel = document.querySelector("#context-shot-label");
+  const reactRoot = document.querySelector("#studio-react-root");
+  const legacyDock = document.querySelector("[data-legacy-navigation-slot='view-dock']");
+  const legacyTopbar = document.querySelector(".topbar");
+
+  function setLegacySurfaceAvailable(surface, available) {
+    if (!surface) return;
+    surface.hidden = !available;
+    surface.inert = !available;
+    if (available) {
+      surface.removeAttribute("aria-hidden");
+      surface.style.removeProperty("display");
+    } else {
+      surface.setAttribute("aria-hidden", "true");
+      surface.style.display = "none";
+    }
+  }
+
+  function refreshShellOwnership() {
+    const reactOwnsShell = reactRoot?.dataset.shellOwner === "react";
+    document.body.dataset.shellOwner = reactOwnsShell ? "react" : "legacy";
+    setLegacySurfaceAvailable(legacyDock, !reactOwnsShell);
+    setLegacySurfaceAvailable(legacyTopbar, !reactOwnsShell);
+    return reactOwnsShell;
+  }
 
   function show(view) {
     if (!allowed.has(view)) return;
@@ -45,7 +69,15 @@ const workspaceShell = (() => {
     initial = allowed.has(requested) ? requested : localStorage.getItem("serre-studio-workspace-view") || initial;
   } catch (_error) { /* no-op */ }
   const current = () => document.body.dataset.workspaceView || null;
-  window.SerreWorkspace = { show, current };
+  window.SerreWorkspace = { show, current, refreshShellOwnership };
+  refreshShellOwnership();
+  if (reactRoot) {
+    new MutationObserver(refreshShellOwnership).observe(reactRoot, {
+      attributes: true,
+      attributeFilter: ["data-shell-owner"],
+    });
+  }
+  window.addEventListener("studio:shell-owner-changed", refreshShellOwnership);
   show(allowed.has(initial) ? initial : "guided");
-  return { show, current };
+  return { show, current, refreshShellOwnership };
 })();

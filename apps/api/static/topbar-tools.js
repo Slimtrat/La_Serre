@@ -62,5 +62,21 @@
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !menu.hidden) { setOpen(false); toggle.focus(); }
   });
+  const toolControls = new Map([
+    ["assets", "[data-tool-action='assets']"],
+    ["journal", "#notification-toggle"],
+    ["guide", "#getting-started-open"],
+    ["demo", "#demo-production-open"],
+    ["writing", "#narrative-workflow-open"],
+    ["settings", "#settings-toggle"],
+    ["services", ".service-status"],
+    ["project-new", "#project-create-open"],
+  ]);
+  window.addEventListener("studio:tool-open-request", (event) => {
+    const selector = toolControls.get(event.detail?.tool);
+    if (!selector) return;
+    const control = document.querySelector(selector);
+    if (control instanceof HTMLButtonElement && !control.disabled) control.click();
+  });
   window.addEventListener("studio:workspace-changed", () => setOpen(false));
 })();

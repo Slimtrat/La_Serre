@@ -1,0 +1,280 @@
+.shell {
+  position: relative;
+  z-index: var(--ui-z-sticky);
+  color: var(--ui-color-text);
+  background: color-mix(in srgb, var(--ui-color-canvas) 94%, transparent);
+  box-shadow: var(--ui-shadow-sm);
+  font: var(--ui-font-body-md);
+  backdrop-filter: blur(18px);
+}
+
+.header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--ui-space-3) var(--ui-space-5);
+  align-items: center;
+  min-height: 4rem;
+  padding: var(--ui-space-2) var(--ui-space-4);
+  border-block-end: var(--ui-border-width) solid var(--ui-color-border);
+}
+
+.brand {
+  display: flex;
+  gap: var(--ui-space-2);
+  align-items: center;
+  color: var(--ui-color-text);
+  text-decoration: none;
+}
+
+.brandMark {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-color-brand);
+  color: var(--ui-color-text-inverse);
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.brandText strong,
+.brandText small {
+  display: block;
+}
+
+.brandText small {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-xs);
+}
+
+.primaryNavigation {
+  display: flex;
+  gap: var(--ui-space-1);
+  justify-self: center;
+  padding: var(--ui-space-1);
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-color-surface);
+}
+
+.primaryNavigation button,
+.toolsMenu summary,
+.toolsMenu button,
+.languageSelect,
+.contextLink {
+  min-height: var(--ui-control-height);
+  color: var(--ui-color-text-muted);
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.primaryNavigation button {
+  padding-inline: var(--ui-space-4);
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.primaryNavigation button[aria-current="page"] {
+  background: var(--ui-color-brand);
+  color: var(--ui-color-text-inverse);
+}
+
+.actions {
+  display: flex;
+  gap: var(--ui-space-2);
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.runtimeStatus {
+  display: inline-flex;
+  gap: var(--ui-space-2);
+  align-items: center;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-xs);
+}
+
+.runtimeStatus span {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-color-warning);
+}
+
+.runtimeStatus[data-state="ready"] span {
+  background: var(--ui-color-success);
+}
+
+.runtimeStatus[data-state="unavailable"] span {
+  background: var(--ui-color-danger);
+}
+
+.toolsMenu {
+  position: relative;
+}
+
+.toolsMenu summary {
+  display: grid;
+  padding-inline: var(--ui-space-3);
+  place-items: center;
+  border: var(--ui-border-width) solid var(--ui-color-border);
+  list-style: none;
+}
+
+.toolsMenu summary::-webkit-details-marker {
+  display: none;
+}
+
+.toolsMenu[open] summary {
+  color: var(--ui-color-text);
+  border-color: var(--ui-color-brand);
+}
+
+.toolsMenu > div {
+  position: absolute;
+  z-index: var(--ui-z-dialog);
+  inset-block-start: calc(100% + var(--ui-space-2));
+  inset-inline-end: 0;
+  display: grid;
+  width: 13rem;
+  padding: var(--ui-space-2);
+  border: var(--ui-border-width) solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-color-surface-raised);
+  box-shadow: var(--ui-shadow-md);
+}
+
+.toolsMenu button {
+  padding-inline: var(--ui-space-3);
+  border-radius: var(--ui-radius-sm);
+  text-align: start;
+}
+
+.toolsMenu button:hover,
+.toolsMenu button:focus-visible {
+  background: var(--ui-color-surface-interactive-hover);
+  color: var(--ui-color-text);
+}
+
+.languageSelect {
+  padding-inline: var(--ui-space-2);
+  border: var(--ui-border-width) solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+}
+
+.contextBar {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(10rem, 1fr) minmax(8rem, auto) minmax(10rem, 1fr) minmax(7rem, auto);
+  gap: var(--ui-space-2);
+  align-items: stretch;
+  padding-block-start: var(--ui-space-2);
+  border-block-start: var(--ui-border-width) solid var(--ui-color-border);
+}
+
+.contextControl,
+.contextValue,
+.contextLink {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+  padding: var(--ui-space-2) var(--ui-space-3);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-color-surface);
+}
+
+/* Selectors target independent component regions inside the shell. */
+/* biome-ignore lint/style/noDescendingSpecificity: component-scoped selectors do not overlap */
+.contextControl span,
+.contextValue small,
+.contextLink small {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-xs);
+}
+
+.contextControl select {
+  min-width: 0;
+  color: var(--ui-color-text);
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.contextLink {
+  border-radius: var(--ui-radius-md);
+  text-align: start;
+}
+
+.contextLink:disabled {
+  cursor: not-allowed;
+  opacity: var(--ui-opacity-disabled);
+}
+
+.primaryNavigation button:focus-visible,
+.toolsMenu summary:focus-visible,
+.toolsMenu button:focus-visible,
+.languageSelect:focus-visible,
+.contextControl select:focus-visible,
+.contextLink:focus-visible {
+  outline: var(--ui-focus-width) solid var(--ui-color-focus);
+  outline-offset: var(--ui-focus-offset);
+}
+
+.routeState {
+  width: min(100% - 2rem, 44rem);
+  margin: var(--ui-space-7) auto;
+}
+
+@media (max-width: 64rem) {
+  .header {
+    grid-template-columns: auto 1fr;
+  }
+
+  .primaryNavigation {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+  }
+
+  .primaryNavigation button {
+    flex: 1;
+  }
+
+  .actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .runtimeStatus {
+    display: none;
+  }
+}
+
+@media (max-width: 44rem) {
+  .header {
+    padding-inline: var(--ui-space-3);
+  }
+
+  .brandText,
+  .runtimeStatus {
+    display: none;
+  }
+
+  .contextBar {
+    display: flex;
+    grid-column: 1 / -1;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
+
+  .contextControl,
+  .contextValue,
+  .contextLink {
+    min-width: min(72vw, 15rem);
+    scroll-snap-align: start;
+  }
+}
+
