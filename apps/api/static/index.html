@@ -35,8 +35,10 @@
     <link rel="stylesheet" href="/static/view-dock.css" />
     <link rel="stylesheet" href="/static/guided-workspace.css" />
     <link rel="stylesheet" href="/static/workflow-template-catalogue.css" />
+    <link rel="stylesheet" href="/static/ui/studio-react.css" />
   </head>
   <body data-workspace-view="guided">
+    <div id="studio-react-root"></div>
     <div class="ambient ambient-one"></div>
     <div class="ambient ambient-two"></div>
     <header class="topbar" aria-label="Navigation principale" data-i18n-aria-label="shell.mainNavigation">
@@ -629,5 +631,6 @@
     <script src="/static/field-assistant.js" defer></script>
     <script src="/static/topbar-tools.js" defer></script>
     <script src="/static/desktop-lifecycle.js" defer></script>
+    <script type="module" src="/static/ui/studio-react.js"></script>
   </body>
 </html>
