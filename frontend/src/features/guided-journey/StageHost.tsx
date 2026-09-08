@@ -3,6 +3,8 @@ import type { FormEvent, ReactNode } from "react";
 import type { GuidedProjectBrief, JourneyStageSnapshot } from "@/generated/openapi";
 import { Button } from "@shared";
 
+import { CastingBoard } from "@features/casting";
+
 import { useJourneyContext } from "./JourneyContext";
 import type { GuidedPayload } from "./model";
 import styles from "./guidedJourney.module.css";
@@ -79,7 +81,7 @@ export function StageHost({ stage, guided, busy, locale, onAddCharacter, onCreat
     );
   }
   if (!content && stage.id === "casting") {
-    content = <div><div className={styles.cards}>{guided.characters.map((character) => <article key={character.id}><strong>{character.name || "Nouveau personnage"}</strong><p>{character.role || "Rôle à préciser"}</p><small>{character.promoted_revision ? "Dans la Bible" : "Brouillon"}</small><Button onClick={() => onPropose(`character:${character.id}`)} variant="ghost">Améliorer</Button></article>)}</div><Button disabled={busy} onClick={onAddCharacter}>Ajouter un personnage</Button></div>;
+    content = <div><CastingBoard characters={guided.characters.map(({ id, name }) => ({ id, name: name || id }))} locale={locale} /><div className={styles.actions}><Button disabled={busy} onClick={onAddCharacter}>Ajouter un personnage</Button></div></div>;
   }
   if (!content) {
     content = <div className={styles.statusCard}><p>{stage.blockers?.[0]?.message ?? `État : ${stage.status}`}</p><Button onClick={() => stage.primary_action.target.includes("results") ? journey.navigate("results") : stage.primary_action.target.includes("settings") ? journey.navigate("settings") : stage.primary_action.target.includes("bible") ? journey.navigate("bible") : journey.navigate("produce")}>{stage.primary_action.label}</Button></div>;

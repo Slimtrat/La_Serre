@@ -30,6 +30,7 @@ from engine.production.artifacts import write_text_atomic
 from engine.world.bible import BibleRegistry
 from engine.world.catalog import EpisodeCatalog
 from engine.world.models import ProjectBible
+from engine.world.visual_identity import VisualIdentityRegistry
 
 
 def create_episode_router(
@@ -266,6 +267,7 @@ def create_episode_router(
                 episode,
                 payload.candidate,
                 BibleRegistry(catalog.root).load(),
+                VisualIdentityRegistry(catalog.root, output_root_provider()).active_references(),
             )
             updated = updated.model_copy(
                 update={
