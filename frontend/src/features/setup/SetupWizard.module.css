@@ -1,0 +1,41 @@
+.root { width: min(72rem, 100%); margin: 0 auto; padding: clamp(1rem, 3vw, 2.5rem); display: grid; gap: 1.5rem; }
+.root h1 { margin: .45rem 0; font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.05; }
+.root h2, .root h3, .root p { margin-top: 0; }
+.stepper { overflow-x: auto; }
+.stepper ol { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(5, minmax(7.5rem, 1fr)); }
+.stepper li { color: var(--color-text-muted, #68745f); display: grid; gap: .4rem; font-size: .78rem; font-weight: 700; }
+.stepper li::after { content: ""; height: .22rem; background: var(--color-border, #dce3d8); }
+.stepper li > span { width: 1.7rem; height: 1.7rem; display: grid; place-items: center; border-radius: 999px; background: var(--color-surface-muted, #edf1e9); }
+.stepper li[aria-current="step"], .stepper li[data-complete="true"] { color: var(--color-text, #24301f); }
+.stepper li[aria-current="step"]::after, .stepper li[data-complete="true"]::after, .stepper li[data-complete="true"] > span { background: var(--color-accent, #577b46); color: #fff; }
+.hero { padding-block: clamp(1rem, 4vw, 3rem); max-width: 52rem; }
+.machine { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin: 0; }
+.machine div { min-width: 0; }
+.machine dt { color: var(--color-text-muted, #68745f); font-size: .8rem; }
+.machine dd { margin: .3rem 0 0; font-weight: 700; overflow-wrap: anywhere; }
+.capabilities { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .75rem; }
+.capabilities h3 { margin: .9rem 0 .35rem; }
+.capabilities p { color: var(--color-text-muted, #68745f); font-size: .88rem; }
+.primaryAction { display: flex; justify-content: flex-end; position: sticky; bottom: 1rem; }
+.fieldset { border: 1px solid var(--color-border, #dce3d8); border-radius: .8rem; padding: 1rem; display: grid; gap: .9rem; }
+.fieldset legend { font-weight: 800; padding-inline: .4rem; }
+.fieldset label, .consent { display: flex; align-items: flex-start; gap: .7rem; padding: .4rem; }
+.fieldset input, .consent input { width: 1.15rem; height: 1.15rem; margin-top: .15rem; flex: none; }
+.fieldset small { display: block; color: var(--color-text-muted, #68745f); margin-top: .25rem; }
+.actions { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 1.25rem; }
+.notice { border-left: .25rem solid var(--color-accent, #577b46); padding: .8rem 1rem; background: var(--color-surface-muted, #edf1e9); }
+.jobSteps { list-style: none; padding: 0; display: grid; gap: .55rem; }
+.jobSteps li { display: flex; align-items: flex-start; gap: .65rem; padding-block: .55rem; border-bottom: 1px solid var(--color-border, #dce3d8); }
+.jobSteps small { display: block; color: var(--color-text-muted, #68745f); }
+.technical { margin-top: 1.5rem; border-top: 1px solid var(--color-border, #dce3d8); padding-top: 1rem; }
+.technical summary { cursor: pointer; font-weight: 700; }
+.technical pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 16rem; overflow-y: auto; background: #172019; color: #d8e8d3; border-radius: .6rem; padding: 1rem; }
+.ready { text-align: center; }
+.readyGrid { text-align: left; display: grid; grid-template-columns: minmax(16rem, .8fr) minmax(20rem, 1.2fr); gap: 1rem; margin: 2rem 0; }
+.readyGrid ul { list-style: none; padding: 0; display: grid; gap: .7rem; }
+.preview { width: 100%; height: 100%; min-height: 14rem; display: grid; place-content: center; text-align: center; color: #f4f5e9; background: radial-gradient(circle at 68% 28%, #c4da7c 0 5%, transparent 6%), linear-gradient(145deg, #182d20, #547343 55%, #a46f3c); }
+.previewLabel { letter-spacing: .28em; font-size: .7rem; }
+.preview strong { font-family: Georgia, serif; font-size: clamp(2rem, 5vw, 4rem); }
+@media (max-width: 52rem) { .machine, .capabilities { grid-template-columns: repeat(2, minmax(0, 1fr)); } .readyGrid { grid-template-columns: 1fr; } }
+@media (max-width: 32rem) { .root { padding: 1rem; } .machine, .capabilities { grid-template-columns: 1fr; } .actions > *, .primaryAction > * { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .root * { scroll-behavior: auto; } }
