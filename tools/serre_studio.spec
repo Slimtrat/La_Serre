@@ -4,6 +4,19 @@ from pathlib import Path
 from PyInstaller.utils.hooks import collect_all, collect_submodules
 
 project_root = Path.cwd()
+ui_root = project_root / "apps" / "api" / "static" / "ui"
+required_ui_assets = ("studio-react.js", "studio-react.css")
+missing_ui_assets = [
+    str(ui_root / filename)
+    for filename in required_ui_assets
+    if not (ui_root / filename).is_file()
+]
+if missing_ui_assets:
+    raise FileNotFoundError(
+        "Build the frontend before PyInstaller; missing assets: "
+        + ", ".join(missing_ui_assets)
+    )
+
 webview_data, webview_binaries, webview_hidden = collect_all("webview")
 tray_data, tray_binaries, tray_hidden = collect_all("pystray")
 pillow_data, pillow_binaries, pillow_hidden = collect_all("PIL")

@@ -39,6 +39,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser().error("the desktop executable can only be built on Windows")
 
     project_root = Path(__file__).resolve().parents[1]
+    build_frontend(project_root)
     subprocess.run(
         [
             sys.executable,
@@ -72,6 +73,33 @@ def main(argv: Sequence[str] | None = None) -> int:
     else:
         print(executable)
     return 0
+
+
+def build_frontend(project_root: Path) -> None:
+    """Install locked frontend dependencies and produce the embedded UI bundle."""
+    frontend = project_root / "frontend"
+    package_lock = frontend / "package-lock.json"
+    if not package_lock.is_file():
+        raise FileNotFoundError(
+            f"Frontend lockfile not found: {package_lock}; the desktop build must be reproducible"
+        )
+
+    npm = shutil.which("npm.cmd" if sys.platform == "win32" else "npm")
+    if npm is None:
+        raise FileNotFoundError(
+            "npm not found; install Node.js to build Serre Studio "
+            "(Node is not required at runtime)"
+        )
+    subprocess.run(
+        [npm, "--prefix", str(frontend), "ci"],
+        cwd=project_root,
+        check=True,
+    )
+    subprocess.run(
+        [npm, "--prefix", str(frontend), "run", "build"],
+        cwd=project_root,
+        check=True,
+    )
 
 
 def publish_desktop_release(executable: Path, destination: Path, version: str) -> Path:
