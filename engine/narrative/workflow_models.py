@@ -85,6 +85,13 @@ class GeneralValidation(StrictWorkflowModel):
         return self
 
 
+class ContinuityDelta(StrictWorkflowModel):
+    character_changes: dict[str, list[str]] = Field(default_factory=dict)
+    relationship_changes: list[str] = Field(default_factory=list, max_length=50)
+    world_changes: list[str] = Field(default_factory=list, max_length=50)
+    unresolved_threads: list[str] = Field(default_factory=list, max_length=50)
+
+
 class DirectorStage(StrictWorkflowModel):
     status: StageStatus = StageStatus.EMPTY
     content: DirectorBrief | None = None

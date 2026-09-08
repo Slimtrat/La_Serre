@@ -71,6 +71,7 @@ async def test_director_ai_returns_a_non_canonical_structured_candidate() -> Non
     def handler(request: httpx.Request) -> httpx.Response:
         payload = json.loads(request.content)
         assert payload["format"]["type"] == "object"
+        assert payload["options"] == {"temperature": 0.35}
         assert "priorise les relations" in payload["messages"][1]["content"]
         return httpx.Response(
             200,
@@ -93,7 +94,8 @@ async def test_director_ai_returns_a_non_canonical_structured_candidate() -> Non
         "http://ollama.test",
         transport=httpx.MockTransport(handler),
     ) as client:
-        candidate = await OllamaNarrativeAuthor(client).director(
+        author = OllamaNarrativeAuthor(client)
+        candidate = await author.director(
             "Une romance botanique dangereuse et ludique.",
             bible=ProjectBible(),
             model="tiny:latest",
@@ -102,6 +104,11 @@ async def test_director_ai_returns_a_non_canonical_structured_candidate() -> Non
 
     assert candidate.genre == "Fantasy gothique"
     assert candidate.target_episode_duration == 30
+    assert author.last_execution is not None
+    assert author.last_execution.task_id == "narrative.director"
+    assert author.last_execution.task_version == 1
+    assert author.last_execution.model == "tiny:latest"
+    assert len(author.last_execution.input_fingerprint) == 64
 
 
 async def test_manual_series_workflow_requires_each_gate_and_publishes_episodes(
@@ -268,3 +275,44 @@ async def test_episode_authoring_review_gate_and_manual_breakdown(tmp_path: Path
         "end",
     ]
     assert payload["episode"]["provenance"][-1]["stage"] == "breakdown"
+
+
+async def test_ai_task_identity_is_persisted_when_episode_candidate_is_applied(
+    tmp_path: Path,
+) -> None:
+    settings = _settings(tmp_path)
+    _seed_bible(settings.private_content_dir)
+    app = create_app(settings)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        created = await client.post(
+            "/api/episodes",
+            json={"title": "Le pacte d’Iris", "concept": "Iris négocie avec la serre."},
+        )
+        episode_id = created.json()["id"]
+        applied = await client.post(
+            f"/api/episodes/{episode_id}/draft/apply",
+            json={
+                "candidate": {
+                    "title": "Le pacte d’Iris",
+                    "logline": "Iris négocie avec la serre qui conserve chacun de ses silences.",
+                    "story": {"hook": "La vitre répond."},
+                    "narrative_source": (
+                        "Iris pose sa main sur la vitre et attend que la serre formule son prix."
+                    ),
+                    "character_ids": ["iris"],
+                    "location_ids": ["glass_room"],
+                },
+                "mode": "ai",
+                "model": "tiny:latest",
+                "task_id": "tentafruit.short-episode",
+                "task_version": 1,
+                "input_fingerprint": "b" * 64,
+            },
+        )
+
+    assert applied.status_code == 200
+    provenance = applied.json()["provenance"][-1]
+    assert provenance["task_id"] == "tentafruit.short-episode"
+    assert provenance["task_version"] == 1
+    assert provenance["input_fingerprint"] == "b" * 64

@@ -1,13 +1,10 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import threading
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TypeVar
-
-from pydantic import ValidationError
+from typing import Any, cast
 
 from engine.director.models import (
     Camera,
@@ -25,6 +22,13 @@ from engine.narrative.episode_models import (
     NarrativeProvenance,
 )
 from engine.narrative.ollama import OllamaClient
+from engine.narrative.tasks import (
+    DEFAULT_TASK_REGISTRY,
+    NarrativeTaskId,
+    TaskContext,
+    TaskExecution,
+)
+from engine.narrative.tasks.provider import OllamaTaskProvider
 from engine.narrative.workflow_models import (
     DirectorBrief,
     DirectorStage,
@@ -35,15 +39,12 @@ from engine.narrative.workflow_models import (
     ScreenwriterStage,
     SeriesNarrativeWorkflow,
     StageStatus,
-    StrictWorkflowModel,
     ValidatorStage,
 )
 from engine.production.artifacts import write_text_atomic
 from engine.world.bible import BibleRegistry
 from engine.world.catalog import EpisodeCatalog
 from engine.world.models import ProjectBible
-
-StructuredT = TypeVar("StructuredT", bound=StrictWorkflowModel)
 
 
 class NarrativeWorkflowRegistry:
@@ -237,7 +238,8 @@ class NarrativeWorkflowRegistry:
 
 class OllamaNarrativeAuthor:
     def __init__(self, client: OllamaClient) -> None:
-        self.client = client
+        self.provider = OllamaTaskProvider(client)
+        self.last_execution: TaskExecution[Any] | None = None
 
     async def director(
         self,
@@ -247,18 +249,12 @@ class OllamaNarrativeAuthor:
         model: str,
         custom_prompt: str = "",
     ) -> DirectorBrief:
-        return await self._generate(
-            DirectorBrief,
+        execution = await self._execute(
+            NarrativeTaskId.DIRECTOR,
+            TaskContext({"source": source, "custom_prompt": custom_prompt, "bible": bible}),
             model=model,
-            system=(
-                "Tu es le showrunner d’une série courte. Transforme l’intention en brief "
-                "actionnable. La Bible fournie est l’autorité éditoriale : préserve son humour, "
-                "son rythme, ses silences, ses contradictions intentionnelles et ses limites. "
-                "N’invente aucune contrainte absente et ne déduis jamais la personnalité depuis "
-                "l’apparence d’un personnage."
-            ),
-            user=_context(source, custom_prompt, bible),
         )
+        return cast(DirectorBrief, execution.result)
 
     async def screenwriter(
         self,
@@ -268,18 +264,12 @@ class OllamaNarrativeAuthor:
         model: str,
         custom_prompt: str = "",
     ) -> ScreenwriterPlan:
-        return await self._generate(
-            ScreenwriterPlan,
+        execution = await self._execute(
+            NarrativeTaskId.SEASON_PLAN,
+            TaskContext({"source": brief, "custom_prompt": custom_prompt, "bible": bible}),
             model=model,
-            system=(
-                "Tu es le scénariste en chef. Propose une progression concrète, des épisodes "
-                "distincts et des cliffhangers. Les character_ids et location_ids doivent venir "
-                "strictement de la Bible. Ses règles de ton et de dialogue sont prioritaires. "
-                "Préserve les silences et contradictions utiles; personnalité, comportement et "
-                "apparence restent des dimensions séparées."
-            ),
-            user=_context(brief.model_dump_json(indent=2), custom_prompt, bible),
         )
+        return cast(ScreenwriterPlan, execution.result)
 
     async def validate_series(
         self,
@@ -290,28 +280,18 @@ class OllamaNarrativeAuthor:
         model: str,
         custom_prompt: str = "",
     ) -> GeneralValidation:
-        return await self._generate(
-            GeneralValidation,
+        execution = await self._execute(
+            NarrativeTaskId.AUDIT,
+            TaskContext(
+                {
+                    "source": {"director": brief, "plan": plan},
+                    "custom_prompt": custom_prompt,
+                    "bible": bible,
+                }
+            ),
             model=model,
-            system=(
-                "Tu es le validateur général. Cherche contradictions de Bible, répétitions, "
-                "chronologie, évolution, durée et cohérence des personnages. Tu n’édites rien : "
-                "tu rends un verdict explicable. Ne signale pas comme erreur une contradiction "
-                "ou un silence explicitement prévu par la Bible éditoriale."
-            ),
-            user=_context(
-                json.dumps(
-                    {
-                        "director": brief.model_dump(mode="json"),
-                        "plan": plan.model_dump(mode="json"),
-                    },
-                    ensure_ascii=False,
-                    indent=2,
-                ),
-                custom_prompt,
-                bible,
-            ),
         )
+        return cast(GeneralValidation, execution.result)
 
     async def episode_draft(
         self,
@@ -321,17 +301,12 @@ class OllamaNarrativeAuthor:
         model: str,
         custom_prompt: str = "",
     ) -> EpisodeDraftCandidate:
-        return await self._generate(
-            EpisodeDraftCandidate,
+        execution = await self._execute(
+            NarrativeTaskId.SHORT_EPISODE,
+            TaskContext({"source": episode, "custom_prompt": custom_prompt, "bible": bible}),
             model=model,
-            system=(
-                "Tu écris un épisode court prêt à relire. Respecte la Bible et les identifiants "
-                "canoniques. Reproduis ses règles d’humour, de rythme, de silence et de "
-                "contradiction sans importer le ton d’une autre série. Retourne uniquement une "
-                "proposition : l’humain décidera de l’appliquer."
-            ),
-            user=_context(episode.model_dump_json(indent=2), custom_prompt, bible),
         )
+        return cast(EpisodeDraftCandidate, execution.result)
 
     async def breakdown(
         self,
@@ -341,51 +316,28 @@ class OllamaNarrativeAuthor:
         model: str,
         custom_prompt: str = "",
     ) -> EpisodeBreakdownCandidate:
-        return await self._generate(
-            EpisodeBreakdownCandidate,
+        execution = await self._execute(
+            NarrativeTaskId.BREAKDOWN,
+            TaskContext({"source": episode, "custom_prompt": custom_prompt, "bible": bible}),
             model=model,
-            system=(
-                "Tu découpes l’épisode en plans de 1 à 12 secondes. Chaque plan doit faire avancer "
-                "l’action, utiliser seulement des IDs canoniques, et décrire caméra, lumière "
-                "et jeu. Distingue mode=on_screen (locuteur visible), mode=off_screen (personnage "
-                "canonique hors cadre) et mode=voice_over (narration superposée aux images). Un "
-                "plan de voix off peut ne contenir aucun personnage visible. Préserve les silences "
-                "et le ton définis par la Bible."
-            ),
-            user=_context(episode.model_dump_json(indent=2), custom_prompt, bible),
         )
+        return cast(EpisodeBreakdownCandidate, execution.result)
 
-    async def _generate(
+    async def _execute(
         self,
-        contract: type[StructuredT],
+        task_id: NarrativeTaskId,
+        context: TaskContext,
         *,
         model: str,
-        system: str,
-        user: str,
-    ) -> StructuredT:
-        errors: list[str] = []
-        for attempt in range(1, 4):
-            messages = [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ]
-            if errors:
-                messages.append(
-                    {
-                        "role": "user",
-                        "content": "Corrige strictement ces erreurs de contrat : " + errors[-1],
-                    }
-                )
-            try:
-                raw = await self.client.chat_structured(
-                    model,
-                    messages,
-                    contract.ollama_schema(),
-                )
-                return contract.model_validate_json(raw)
-            except (ValidationError, ValueError) as exc:
-                errors.append(f"essai {attempt}: {exc}")
-        raise ValueError("La proposition ne respecte pas le contrat après 3 essais : " + errors[-1])
+    ) -> TaskExecution[Any]:
+        spec = DEFAULT_TASK_REGISTRY.get(task_id)
+        execution = await self.provider.execute(
+            spec.compile(context),
+            model=model,
+            contract=spec.contract,
+        )
+        self.last_execution = execution
+        return execution
 
 
 def build_shots(
@@ -491,16 +443,3 @@ def build_shots(
         }
     )
     return updated, shots
-
-
-def _context(source: str, custom_prompt: str, bible: ProjectBible) -> str:
-    return json.dumps(
-        {
-            "source": source,
-            "custom_prompt": custom_prompt,
-            "bible": bible.model_dump(mode="json"),
-        },
-        ensure_ascii=False,
-        indent=2,
-        default=str,
-    )

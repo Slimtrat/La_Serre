@@ -140,6 +140,9 @@ class DirectorSaveRequest(StrictRequest):
     prompt: str = Field(default="", max_length=10_000)
     model: str | None = None
     source_label: str = Field(default="", max_length=500)
+    task_id: str | None = Field(default=None, min_length=1, max_length=200)
+    task_version: int | None = Field(default=None, ge=1)
+    input_fingerprint: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
 
 class ScreenwriterSaveRequest(StrictRequest):
@@ -148,6 +151,9 @@ class ScreenwriterSaveRequest(StrictRequest):
     prompt: str = Field(default="", max_length=10_000)
     model: str | None = None
     source_label: str = Field(default="", max_length=500)
+    task_id: str | None = Field(default=None, min_length=1, max_length=200)
+    task_version: int | None = Field(default=None, ge=1)
+    input_fingerprint: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
 
 class ValidatorSaveRequest(StrictRequest):
@@ -156,6 +162,9 @@ class ValidatorSaveRequest(StrictRequest):
     prompt: str = Field(default="", max_length=10_000)
     model: str | None = None
     source_label: str = Field(default="", max_length=500)
+    task_id: str | None = Field(default=None, min_length=1, max_length=200)
+    task_version: int | None = Field(default=None, ge=1)
+    input_fingerprint: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
 
 class NarrativeApprovalRequest(StrictRequest):
@@ -187,6 +196,9 @@ class EpisodeDraftApplyRequest(StrictRequest):
     prompt: str = Field(default="", max_length=10_000)
     model: str | None = None
     source_label: str = Field(default="", max_length=500)
+    task_id: str | None = Field(default=None, min_length=1, max_length=200)
+    task_version: int | None = Field(default=None, ge=1)
+    input_fingerprint: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
 
 class BreakdownApplyRequest(StrictRequest):
@@ -195,6 +207,9 @@ class BreakdownApplyRequest(StrictRequest):
     prompt: str = Field(default="", max_length=10_000)
     model: str | None = None
     source_label: str = Field(default="", max_length=500)
+    task_id: str | None = Field(default=None, min_length=1, max_length=200)
+    task_version: int | None = Field(default=None, ge=1)
+    input_fingerprint: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
 
 class JobIdentifier(BaseModel):

@@ -481,12 +481,15 @@ export interface EpisodeBreakdownCandidate {
 
 export interface BreakdownApplyRequest {
   candidate: EpisodeBreakdownCandidate;
+  input_fingerprint?: string | null;
   mode?: BreakdownApplyRequestMode;
   model?: string | null;
   /** @maxLength 10000 */
   prompt?: string;
   /** @maxLength 500 */
   source_label?: string;
+  task_id?: string | null;
+  task_version?: number | null;
 }
 
 export interface CoherenceApprovalRequest {
@@ -679,12 +682,15 @@ export const DirectorSaveRequestMode = {
 
 export interface DirectorSaveRequest {
   content: DirectorBrief;
+  input_fingerprint?: string | null;
   mode?: DirectorSaveRequestMode;
   model?: string | null;
   /** @maxLength 10000 */
   prompt?: string;
   /** @maxLength 500 */
   source_label?: string;
+  task_id?: string | null;
+  task_version?: number | null;
 }
 
 export type EditorialExplanationRequestScope = typeof EditorialExplanationRequestScope[keyof typeof EditorialExplanationRequestScope];
@@ -820,12 +826,15 @@ export interface EpisodeDraftCandidate {
 
 export interface EpisodeDraftApplyRequest {
   candidate: EpisodeDraftCandidate;
+  input_fingerprint?: string | null;
   mode?: EpisodeDraftApplyRequestMode;
   model?: string | null;
   /** @maxLength 10000 */
   prompt?: string;
   /** @maxLength 500 */
   source_label?: string;
+  task_id?: string | null;
+  task_version?: number | null;
 }
 
 export type EpisodeGenerationRequestTts = typeof EpisodeGenerationRequestTts[keyof typeof EpisodeGenerationRequestTts];
@@ -1547,12 +1556,15 @@ export const ScreenwriterSaveRequestMode = {
 
 export interface ScreenwriterSaveRequest {
   content: ScreenwriterPlan;
+  input_fingerprint?: string | null;
   mode?: ScreenwriterSaveRequestMode;
   model?: string | null;
   /** @maxLength 10000 */
   prompt?: string;
   /** @maxLength 500 */
   source_label?: string;
+  task_id?: string | null;
+  task_version?: number | null;
 }
 
 export interface ShotDraftRequest {
@@ -1616,12 +1628,15 @@ export const ValidatorSaveRequestMode = {
 
 export interface ValidatorSaveRequest {
   content: GeneralValidation;
+  input_fingerprint?: string | null;
   mode?: ValidatorSaveRequestMode;
   model?: string | null;
   /** @maxLength 10000 */
   prompt?: string;
   /** @maxLength 500 */
   source_label?: string;
+  task_id?: string | null;
+  task_version?: number | null;
 }
 
 export type WorkflowImportRequestKind = typeof WorkflowImportRequestKind[keyof typeof WorkflowImportRequestKind];
