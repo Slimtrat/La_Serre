@@ -1,0 +1,127 @@
+:root {
+  color-scheme: dark;
+
+  --ui-color-canvas: #090d0b;
+  --ui-color-surface: #111813;
+  --ui-color-surface-raised: #17201a;
+  --ui-color-surface-subtle: #1d2821;
+  --ui-color-surface-overlay: rgb(9 13 11 / 78%);
+  --ui-color-text: #edf4ed;
+  --ui-color-text-muted: #9aaba0;
+  --ui-color-text-inverse: #0a100c;
+  --ui-color-border: rgb(190 220 195 / 16%);
+  --ui-color-border-strong: rgb(190 220 195 / 34%);
+  --ui-color-brand: #8fcf9d;
+  --ui-color-brand-strong: #5fae75;
+  --ui-color-accent: #a387c4;
+  --ui-color-info: #79add9;
+  --ui-color-success: #8fcf9d;
+  --ui-color-warning: #e2bb78;
+  --ui-color-danger: #e18181;
+  --ui-color-stale: #c39bd3;
+
+  --ui-space-0: 0;
+  --ui-space-1: 0.25rem;
+  --ui-space-2: 0.5rem;
+  --ui-space-3: 0.75rem;
+  --ui-space-4: 1rem;
+  --ui-space-5: 1.5rem;
+  --ui-space-6: 2rem;
+  --ui-space-7: 3rem;
+  --ui-space-8: 4rem;
+
+  --ui-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --ui-font-display: "Avenir Next", var(--ui-font-sans);
+  --ui-font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --ui-font-size-xs: 0.75rem;
+  --ui-font-size-sm: 0.875rem;
+  --ui-font-size-md: 1rem;
+  --ui-font-size-lg: 1.25rem;
+  --ui-font-size-xl: 1.75rem;
+  --ui-line-height-tight: 1.2;
+  --ui-line-height-normal: 1.5;
+  --ui-font-weight-medium: 500;
+  --ui-font-weight-semibold: 650;
+
+  --ui-radius-sm: 0.375rem;
+  --ui-radius-md: 0.625rem;
+  --ui-radius-lg: 1.125rem;
+  --ui-radius-pill: 999px;
+  --ui-shadow-sm: 0 0.25rem 0.75rem rgb(0 0 0 / 18%);
+  --ui-shadow-md: 0 1rem 2.5rem rgb(0 0 0 / 36%);
+
+  --ui-duration-fast: 120ms;
+  --ui-duration-base: 200ms;
+  --ui-duration-slow: 320ms;
+  --ui-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  --ui-z-base: 0;
+  --ui-z-sticky: 10;
+  --ui-z-drawer: 40;
+  --ui-z-dialog: 50;
+  --ui-z-toast: 60;
+
+  --ui-control-height: 2.5rem;
+  --ui-focus-ring: 0 0 0 0.1875rem rgb(143 207 157 / 42%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ui-duration-fast: 0.01ms;
+    --ui-duration-base: 0.01ms;
+    --ui-duration-slow: 0.01ms;
+  }
+}
+
+:root {
+  --ui-color-text-strong: var(--ui-color-text);
+  --ui-color-on-accent: var(--ui-color-text-inverse);
+  --ui-color-on-danger: #1a0808;
+  --ui-color-focus: var(--ui-color-brand);
+  --ui-color-overlay: var(--ui-color-surface-overlay);
+  --ui-color-surface-interactive: #202d25;
+  --ui-color-surface-interactive-hover: #29392f;
+  --ui-color-neutral-subtle: rgb(154 171 160 / 14%);
+  --ui-color-info-subtle: rgb(121 173 217 / 16%);
+  --ui-color-success-subtle: rgb(143 207 157 / 16%);
+  --ui-color-warning-subtle: rgb(226 187 120 / 16%);
+  --ui-color-danger-subtle: rgb(225 129 129 / 16%);
+  --ui-color-danger-border: rgb(225 129 129 / 55%);
+  --ui-color-danger-hover: #ee9999;
+
+  --ui-border-width: 1px;
+  --ui-focus-width: 3px;
+  --ui-focus-offset: 2px;
+  --ui-opacity-disabled: 0.48;
+  --ui-control-min-size: 2.75rem;
+  --ui-control-height-md: var(--ui-control-height);
+  --ui-control-size-small: 2rem;
+  --ui-control-size-medium: 2.5rem;
+  --ui-control-size-large: 3rem;
+  --ui-content-width-compact: 32rem;
+  --ui-progress-size: 0.5rem;
+  --ui-badge-size: 0.375rem;
+  --ui-skeleton-min-size: 1rem;
+
+  --ui-font-body-md: var(--ui-font-size-md) / var(--ui-line-height-normal) var(--ui-font-sans);
+  --ui-font-label-md: var(--ui-font-weight-semibold) var(--ui-font-size-sm) / var(--ui-line-height-normal) var(--ui-font-sans);
+  --ui-font-heading-sm: var(--ui-font-weight-semibold) var(--ui-font-size-lg) / var(--ui-line-height-tight) var(--ui-font-display);
+  --ui-font-size-small: var(--ui-font-size-sm);
+  --ui-font-size-medium: var(--ui-font-size-md);
+  --ui-font-size-large: var(--ui-font-size-lg);
+  --ui-font-size-heading: var(--ui-font-size-xl);
+
+  --ui-radius-small: var(--ui-radius-sm);
+  --ui-radius-control: var(--ui-radius-md);
+  --ui-radius-card: var(--ui-radius-lg);
+  --ui-shadow-card: var(--ui-shadow-sm);
+  --ui-shadow-lg: var(--ui-shadow-md);
+
+  --ui-motion-duration-fast: var(--ui-duration-fast);
+  --ui-motion-duration-normal: var(--ui-duration-base);
+  --ui-motion-easing-standard: var(--ui-ease-standard);
+  --ui-duration-skeleton: 1.4s;
+  --ui-opacity-skeleton-low: 0.38;
+  --ui-opacity-skeleton-high: 0.72;
+  --ui-z-modal: var(--ui-z-dialog);
+}

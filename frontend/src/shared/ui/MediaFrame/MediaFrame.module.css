@@ -1,0 +1,5 @@
+.root { display: grid; gap: var(--ui-space-2); margin: 0; }
+.media { display: grid; place-items: center; overflow: hidden; aspect-ratio: var(--media-frame-ratio); border-radius: var(--ui-radius-card); background: var(--ui-color-neutral-subtle); }
+.media > :where(img, video, canvas, svg) { inline-size: 100%; block-size: 100%; object-fit: cover; }
+.media[data-fit="contain"] > :where(img, video, canvas, svg) { object-fit: contain; }
+.caption { color: var(--ui-color-text-muted); font-size: var(--ui-font-size-small); }
