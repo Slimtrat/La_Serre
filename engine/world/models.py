@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Protocol
+from typing import Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -52,6 +52,11 @@ class LocationProfile(StrictWorldModel):
     canonical_prompt_id: str | None = None
 
 
+class CanonicalEditProvenance(StrictWorldModel):
+    source: Literal["legacy", "template", "manual", "import"] = "legacy"
+    note: str = Field(default="", max_length=500)
+
+
 class RelationshipState(StrictWorldModel):
     id: str = Field(pattern=r"^[a-z0-9][a-z0-9_-]*$")
     source: str = Field(pattern=r"^[a-z0-9][a-z0-9_-]*$")
@@ -63,7 +68,9 @@ class RelationshipState(StrictWorldModel):
     anger: int = Field(ge=-100, le=100)
     fear: int = Field(ge=-100, le=100)
     attachment: int = Field(ge=-100, le=100)
+    jealousy: int = Field(default=0, ge=0, le=100)
     toxicity: int = Field(default=0, ge=0, le=100)
+    provenance: CanonicalEditProvenance = Field(default_factory=CanonicalEditProvenance)
 
     @model_validator(mode="after")
     def endpoints_are_distinct(self) -> RelationshipState:
@@ -81,6 +88,23 @@ class Secret(StrictWorldModel):
     severity: float = Field(ge=0, le=1)
     created_episode: int = Field(ge=1)
     revealed: bool = False
+    provenance: CanonicalEditProvenance = Field(default_factory=CanonicalEditProvenance)
+
+    @model_validator(mode="after")
+    def knowledge_sets_are_coherent(self) -> Secret:
+        for label, values in (
+            ("owners", self.owners),
+            ("known_by", self.known_by),
+            ("hidden_from", self.hidden_from),
+        ):
+            if len(values) != len(set(values)):
+                raise ValueError(f"Secret {self.id} contains duplicate {label}")
+        overlap = set(self.known_by) & set(self.hidden_from)
+        if overlap:
+            raise ValueError(
+                f"Secret {self.id} cannot be both known and hidden for {sorted(overlap)}"
+            )
+        return self
 
 
 class TimelineEvent(StrictWorldModel):

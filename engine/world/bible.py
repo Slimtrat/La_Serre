@@ -48,6 +48,15 @@ BibleEntity = (
     | CanonicalReference
     | CanonicalPrompt
 )
+
+
+class BibleRevisionConflictError(ValueError):
+    def __init__(self, expected: int, current: int) -> None:
+        self.expected = expected
+        self.current = current
+        super().__init__(f"Bible revision conflict: expected {expected}, current {current}")
+
+
 class EntityWithId(Protocol):
     id: str
 
@@ -114,8 +123,13 @@ class BibleRegistry:
     def put_location(self, entity: LocationProfile) -> ProjectBible:
         return self._upsert("locations", entity)
 
-    def put_relationship(self, entity: RelationshipState) -> ProjectBible:
-        return self._upsert("relationships", entity)
+    def put_relationship(
+        self,
+        entity: RelationshipState,
+        *,
+        expected_revision: int | None = None,
+    ) -> ProjectBible:
+        return self._upsert("relationships", entity, expected_revision=expected_revision)
 
     def put_world_rule(self, entity: WorldRule) -> ProjectBible:
         return self._upsert("world_rules", entity)
@@ -123,8 +137,13 @@ class BibleRegistry:
     def put_narrative_arc(self, entity: NarrativeArc) -> ProjectBible:
         return self._upsert("narrative_arcs", entity)
 
-    def put_secret(self, entity: Secret) -> ProjectBible:
-        return self._upsert("secrets", entity)
+    def put_secret(
+        self,
+        entity: Secret,
+        *,
+        expected_revision: int | None = None,
+    ) -> ProjectBible:
+        return self._upsert("secrets", entity, expected_revision=expected_revision)
 
     def put_reference(self, entity: CanonicalReference) -> ProjectBible:
         return self._upsert("references", entity)
@@ -132,9 +151,16 @@ class BibleRegistry:
     def put_prompt(self, entity: CanonicalPrompt) -> ProjectBible:
         return self._upsert("prompts", entity)
 
-    def delete(self, collection: CollectionName, entity_id: str) -> ProjectBible:
+    def delete(
+        self,
+        collection: CollectionName,
+        entity_id: str,
+        *,
+        expected_revision: int | None = None,
+    ) -> ProjectBible:
         with self._lock:
             current = self.load()
+            self._check_revision(current, expected_revision)
             raw_items = cast(list[dict[str, object]], current.model_dump(mode="json")[collection])
             items = [item for item in raw_items if item.get("id") != entity_id]
             if len(items) == len(raw_items):
@@ -294,9 +320,16 @@ class BibleRegistry:
                 shots.update(_string_list(episode.get("shot_order")))
         return episodes, shots
 
-    def _upsert(self, collection: CollectionName, entity: BibleEntity) -> ProjectBible:
+    def _upsert(
+        self,
+        collection: CollectionName,
+        entity: BibleEntity,
+        *,
+        expected_revision: int | None = None,
+    ) -> ProjectBible:
         with self._lock:
             current = self.load()
+            self._check_revision(current, expected_revision)
             entity_id = str(entity.id)
             raw_items = cast(list[dict[str, object]], current.model_dump(mode="json")[collection])
             found = any(item.get("id") == entity_id for item in raw_items)
@@ -320,6 +353,14 @@ class BibleRegistry:
             self._synchronize_shot_snapshots(bible)
             self._save(bible)
             return bible
+
+    @staticmethod
+    def _check_revision(
+        current: ProjectBible,
+        expected_revision: int | None,
+    ) -> None:
+        if expected_revision is not None and current.revision != expected_revision:
+            raise BibleRevisionConflictError(expected_revision, current.revision)
 
     def _context(
         self,

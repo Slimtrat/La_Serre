@@ -330,6 +330,30 @@
         "title": "BreakdownApplyRequest",
         "type": "object"
       },
+      "CanonicalEditProvenance": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          },
+          "source": {
+            "default": "legacy",
+            "enum": [
+              "legacy",
+              "template",
+              "manual",
+              "import"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "title": "CanonicalEditProvenance",
+        "type": "object"
+      },
       "CanonicalPrompt": {
         "additionalProperties": false,
         "properties": {
@@ -3598,6 +3622,114 @@
         "title": "ReferenceOwner",
         "type": "string"
       },
+      "RelationshipBoardCharacter": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "RelationshipBoardCharacter",
+        "type": "object"
+      },
+      "RelationshipBoardSnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "bible_revision": {
+            "title": "Bible Revision",
+            "type": "integer"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipBoardCharacter"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/BibleChange"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "impact": {
+            "additionalProperties": true,
+            "title": "Impact",
+            "type": "object"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipState"
+            },
+            "title": "Relationships",
+            "type": "array"
+          },
+          "secrets": {
+            "items": {
+              "$ref": "#/components/schemas/Secret"
+            },
+            "title": "Secrets",
+            "type": "array"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "bible_revision",
+          "updated_at",
+          "characters",
+          "relationships",
+          "secrets",
+          "history",
+          "impact"
+        ],
+        "title": "RelationshipBoardSnapshot",
+        "type": "object"
+      },
+      "RelationshipMutationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "confirmed_by_user": {
+            "const": true,
+            "title": "Confirmed By User",
+            "type": "boolean"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          },
+          "relationship": {
+            "$ref": "#/components/schemas/RelationshipState"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "confirmed_by_user",
+          "relationship"
+        ],
+        "title": "RelationshipMutationRequest",
+        "type": "object"
+      },
       "RelationshipState": {
         "additionalProperties": false,
         "properties": {
@@ -3630,10 +3762,20 @@
             "title": "Id",
             "type": "string"
           },
+          "jealousy": {
+            "default": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Jealousy",
+            "type": "integer"
+          },
           "label": {
             "minLength": 1,
             "title": "Label",
             "type": "string"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/CanonicalEditProvenance"
           },
           "source": {
             "pattern": "^[a-z0-9][a-z0-9_-]*$",
@@ -3677,6 +3819,55 @@
           "attachment"
         ],
         "title": "RelationshipState",
+        "type": "object"
+      },
+      "RelationshipSummaryCandidate": {
+        "additionalProperties": false,
+        "properties": {
+          "base_revision": {
+            "title": "Base Revision",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/SummaryProvenance"
+          },
+          "relationship_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Relationship Ids",
+            "type": "array"
+          },
+          "secret_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Secret Ids",
+            "type": "array"
+          },
+          "status": {
+            "const": "candidate",
+            "default": "candidate",
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "base_revision",
+          "summary",
+          "relationship_ids",
+          "secret_ids"
+        ],
+        "title": "RelationshipSummaryCandidate",
         "type": "object"
       },
       "ReorderRequest": {
@@ -3856,6 +4047,9 @@
             "title": "Owners",
             "type": "array"
           },
+          "provenance": {
+            "$ref": "#/components/schemas/CanonicalEditProvenance"
+          },
           "revealed": {
             "default": false,
             "title": "Revealed",
@@ -3881,6 +4075,37 @@
           "created_episode"
         ],
         "title": "Secret",
+        "type": "object"
+      },
+      "SecretMutationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "confirmed_by_user": {
+            "const": true,
+            "title": "Confirmed By User",
+            "type": "boolean"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          },
+          "secret": {
+            "$ref": "#/components/schemas/Secret"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "confirmed_by_user",
+          "secret"
+        ],
+        "title": "SecretMutationRequest",
         "type": "object"
       },
       "ShotBlueprint": {
@@ -4158,6 +4383,69 @@
           "stages"
         ],
         "title": "StudioJourneySnapshot",
+        "type": "object"
+      },
+      "SummaryCandidateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "locale": {
+            "default": "fr",
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "title": "Locale",
+            "type": "string"
+          },
+          "relationship_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Relationship Ids",
+            "type": "array"
+          },
+          "secret_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Secret Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "SummaryCandidateRequest",
+        "type": "object"
+      },
+      "SummaryProvenance": {
+        "additionalProperties": false,
+        "properties": {
+          "canonical": {
+            "const": false,
+            "default": false,
+            "title": "Canonical",
+            "type": "boolean"
+          },
+          "method": {
+            "const": "relationship-board-v1",
+            "default": "relationship-board-v1",
+            "title": "Method",
+            "type": "string"
+          },
+          "provider": {
+            "const": "deterministic",
+            "default": "deterministic",
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "title": "SummaryProvenance",
         "type": "object"
       },
       "ToneProfile": {
@@ -9903,6 +10191,292 @@
           }
         },
         "summary": "Remove Project"
+      }
+    },
+    "/api/relationship-board": {
+      "get": {
+        "operationId": "get_relationship_board_api_relationship_board_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipBoardSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Relationship Board",
+        "tags": [
+          "relationship-board"
+        ]
+      }
+    },
+    "/api/relationship-board/relationships/{relationship_id}": {
+      "delete": {
+        "operationId": "delete_relationship_api_relationship_board_relationships__relationship_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "relationship_id",
+            "required": true,
+            "schema": {
+              "title": "Relationship Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "confirmed_by_user",
+            "required": true,
+            "schema": {
+              "const": true,
+              "title": "Confirmed By User",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipBoardSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Relationship",
+        "tags": [
+          "relationship-board"
+        ]
+      },
+      "put": {
+        "operationId": "put_relationship_api_relationship_board_relationships__relationship_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "relationship_id",
+            "required": true,
+            "schema": {
+              "title": "Relationship Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RelationshipMutationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipBoardSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Relationship",
+        "tags": [
+          "relationship-board"
+        ]
+      }
+    },
+    "/api/relationship-board/secrets/{secret_id}": {
+      "delete": {
+        "operationId": "delete_secret_api_relationship_board_secrets__secret_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "secret_id",
+            "required": true,
+            "schema": {
+              "title": "Secret Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "confirmed_by_user",
+            "required": true,
+            "schema": {
+              "const": true,
+              "title": "Confirmed By User",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipBoardSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Secret",
+        "tags": [
+          "relationship-board"
+        ]
+      },
+      "put": {
+        "operationId": "put_secret_api_relationship_board_secrets__secret_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "secret_id",
+            "required": true,
+            "schema": {
+              "title": "Secret Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecretMutationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipBoardSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Secret",
+        "tags": [
+          "relationship-board"
+        ]
+      }
+    },
+    "/api/relationship-board/summary-candidates": {
+      "post": {
+        "operationId": "create_summary_candidate_api_relationship_board_summary_candidates_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SummaryCandidateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipSummaryCandidate"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Summary Candidate",
+        "tags": [
+          "relationship-board"
+        ]
       }
     },
     "/api/runtime-packs/current": {

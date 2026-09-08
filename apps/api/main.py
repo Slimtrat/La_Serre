@@ -28,6 +28,7 @@ from apps.api.production_queue import ProductionQueueManager
 from apps.api.production_queue_routes import create_production_queue_router
 from apps.api.project_storage_routes import create_project_storage_router
 from apps.api.projects import ProjectRegistry
+from apps.api.relationship_board_routes import create_relationship_board_router
 from apps.api.run_history import RUN_FILES, RunHistory
 from apps.api.runtime_pack_routes import create_runtime_pack_router
 from apps.api.schemas import (
@@ -167,6 +168,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 or stage_service.has_active_operations()
                 or production_queue.has_active_jobs()
             ),
+        )
+    )
+    app.include_router(
+        create_relationship_board_router(
+            lambda: BibleRegistry(current_settings().private_content_dir),
+            lambda: current_settings().output_dir,
         )
     )
     app.include_router(
