@@ -13,6 +13,8 @@ from fastapi.staticfiles import StaticFiles
 from apps.api.asset_catalog import ProjectAssetCatalog
 from apps.api.assets import AssetSlot, AssetStore
 from apps.api.bible_routes import create_bible_router
+from apps.api.casting_generator import ComfyCastingGenerator
+from apps.api.casting_routes import create_casting_router
 from apps.api.coherence_routes import create_coherence_router
 from apps.api.context_graph import create_context_graph_router
 from apps.api.demo_routes import create_demo_router
@@ -180,6 +182,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         create_bible_router(
             lambda: BibleRegistry(current_settings().private_content_dir),
             lambda: current_settings().output_dir,
+        )
+    )
+
+    app.include_router(
+        create_casting_router(
+            lambda: current_settings().private_content_dir,
+            lambda: current_settings().output_dir,
+            ComfyCastingGenerator(current_settings),
         )
     )
 

@@ -515,6 +515,61 @@ export interface BreakdownApplyRequest {
   task_version?: number | null;
 }
 
+export interface CastingGateRequest {
+  /** @minimum 0 */
+  expected_revision: number;
+}
+
+export type VisualVariantKind = typeof VisualVariantKind[keyof typeof VisualVariantKind];
+
+
+export const VisualVariantKind = {
+  portrait: 'portrait',
+  full_body: 'full_body',
+  expression: 'expression',
+} as const;
+
+export interface CastingGenerateRequest {
+  /** @minimum 0 */
+  expected_revision: number;
+  kind: VisualVariantKind;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  license: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  model: string;
+  /** @maxLength 2000 */
+  outfit?: string;
+  /**
+     * @minLength 10
+     * @maxLength 4000
+     */
+  permanent_identity: string;
+  /**
+     * @minLength 10
+     * @maxLength 8000
+     */
+  prompt: string;
+  revision?: string | null;
+  /**
+     * @minimum 0
+     * @maximum 9223372036854776000
+     */
+  seed: number;
+  /** @maxLength 2000 */
+  transient_state?: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  workflow: string;
+}
+
 export interface CoherenceApprovalRequest {
   override_reason?: string | null;
 }
@@ -1866,6 +1921,52 @@ export type DeleteEntityApiBibleCollectionEntityIdDelete200 = { [key: string]: u
 
 export type GetEntityApiBibleCollectionEntityIdGet200 = { [key: string]: unknown };
 
+export type ListCastingApiCastingGet200 = { [key: string]: unknown };
+
+export type GetCharacterApiCastingCharacterIdGet200 = { [key: string]: unknown };
+
+export type GenerateVariantApiCastingCharacterIdVariantsGeneratePost201 = { [key: string]: unknown };
+
+export type ImportVariantApiCastingCharacterIdVariantsImportPostParams = {
+/**
+ * @minimum 0
+ */
+expected_revision: number;
+kind: VisualVariantKind;
+/**
+ * @minLength 10
+ * @maxLength 4000
+ */
+permanent_identity: string;
+/**
+ * @minLength 1
+ * @maxLength 200
+ */
+license: string;
+/**
+ * @minLength 1
+ * @maxLength 200
+ */
+source_label: string;
+/**
+ * @maxLength 2000
+ */
+outfit?: string;
+/**
+ * @maxLength 2000
+ */
+transient_state?: string;
+revision?: string | null;
+};
+
+export type ImportVariantApiCastingCharacterIdVariantsImportPost201 = { [key: string]: unknown };
+
+export type ApproveVariantApiCastingCharacterIdVariantsVariantIdApprovePost200 = { [key: string]: unknown };
+
+export type RejectVariantApiCastingCharacterIdVariantsVariantIdRejectPost200 = { [key: string]: unknown };
+
+export type RestoreVariantApiCastingCharacterIdVariantsVariantIdRestorePost200 = { [key: string]: unknown };
+
 export type SaveConfigApiConfigPost200 = {[key: string]: string};
 
 export type ListingApiDemoGetParams = {
@@ -3090,6 +3191,275 @@ export const getEntityApiBibleCollectionEntityIdGet = async (collection: 'charac
     method: 'GET'
 
 
+  }
+);}
+
+
+
+export const getListCastingApiCastingGetUrl = () => {
+
+
+
+
+  return `/api/casting`
+}
+
+/**
+ * @summary List Casting
+ */
+export const listCastingApiCastingGet = async ( options?: Parameters<typeof orvalFetch>[1]): Promise<ListCastingApiCastingGet200> => {
+
+  return orvalFetch<ListCastingApiCastingGet200>(getListCastingApiCastingGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetCharacterApiCastingCharacterIdGetUrl = (characterId: string,) => {
+
+
+
+
+  return `/api/casting/${characterId}`
+}
+
+/**
+ * @summary Get Character
+ */
+export const getCharacterApiCastingCharacterIdGet = async (characterId: string, options?: Parameters<typeof orvalFetch>[1]): Promise<GetCharacterApiCastingCharacterIdGet200> => {
+
+  return orvalFetch<GetCharacterApiCastingCharacterIdGet200>(getGetCharacterApiCastingCharacterIdGetUrl(characterId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGenerateVariantApiCastingCharacterIdVariantsGeneratePostUrl = (characterId: string,) => {
+
+
+
+
+  return `/api/casting/${characterId}/variants/generate`
+}
+
+/**
+ * @summary Generate Variant
+ */
+export const generateVariantApiCastingCharacterIdVariantsGeneratePost = async (characterId: string,
+    castingGenerateRequest: CastingGenerateRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<GenerateVariantApiCastingCharacterIdVariantsGeneratePost201> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<GenerateVariantApiCastingCharacterIdVariantsGeneratePost201>(getGenerateVariantApiCastingCharacterIdVariantsGeneratePostUrl(characterId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(castingGenerateRequest)
+  }
+);}
+
+
+
+export const getImportVariantApiCastingCharacterIdVariantsImportPostUrl = (characterId: string,
+    params: ImportVariantApiCastingCharacterIdVariantsImportPostParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/casting/${characterId}/variants/import?${stringifiedParams}` : `/api/casting/${characterId}/variants/import`
+}
+
+/**
+ * @summary Import Variant
+ */
+export const importVariantApiCastingCharacterIdVariantsImportPost = async (characterId: string,
+    params: ImportVariantApiCastingCharacterIdVariantsImportPostParams, options?: Parameters<typeof orvalFetch>[1]): Promise<ImportVariantApiCastingCharacterIdVariantsImportPost201> => {
+
+  return orvalFetch<ImportVariantApiCastingCharacterIdVariantsImportPost201>(getImportVariantApiCastingCharacterIdVariantsImportPostUrl(characterId,params),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export const getApproveVariantApiCastingCharacterIdVariantsVariantIdApprovePostUrl = (characterId: string,
+    variantId: string,) => {
+
+
+
+
+  return `/api/casting/${characterId}/variants/${variantId}/approve`
+}
+
+/**
+ * @summary Approve Variant
+ */
+export const approveVariantApiCastingCharacterIdVariantsVariantIdApprovePost = async (characterId: string,
+    variantId: string,
+    castingGateRequest: CastingGateRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<ApproveVariantApiCastingCharacterIdVariantsVariantIdApprovePost200> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<ApproveVariantApiCastingCharacterIdVariantsVariantIdApprovePost200>(getApproveVariantApiCastingCharacterIdVariantsVariantIdApprovePostUrl(characterId,variantId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(castingGateRequest)
+  }
+);}
+
+
+
+export const getVariantContentApiCastingCharacterIdVariantsVariantIdContentGetUrl = (characterId: string,
+    variantId: string,) => {
+
+
+
+
+  return `/api/casting/${characterId}/variants/${variantId}/content`
+}
+
+/**
+ * @summary Variant Content
+ */
+export const variantContentApiCastingCharacterIdVariantsVariantIdContentGet = async (characterId: string,
+    variantId: string, options?: Parameters<typeof orvalFetch>[1]): Promise<unknown> => {
+
+  return orvalFetch<unknown>(getVariantContentApiCastingCharacterIdVariantsVariantIdContentGetUrl(characterId,variantId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getRejectVariantApiCastingCharacterIdVariantsVariantIdRejectPostUrl = (characterId: string,
+    variantId: string,) => {
+
+
+
+
+  return `/api/casting/${characterId}/variants/${variantId}/reject`
+}
+
+/**
+ * @summary Reject Variant
+ */
+export const rejectVariantApiCastingCharacterIdVariantsVariantIdRejectPost = async (characterId: string,
+    variantId: string,
+    castingGateRequest: CastingGateRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<RejectVariantApiCastingCharacterIdVariantsVariantIdRejectPost200> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<RejectVariantApiCastingCharacterIdVariantsVariantIdRejectPost200>(getRejectVariantApiCastingCharacterIdVariantsVariantIdRejectPostUrl(characterId,variantId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(castingGateRequest)
+  }
+);}
+
+
+
+export const getRestoreVariantApiCastingCharacterIdVariantsVariantIdRestorePostUrl = (characterId: string,
+    variantId: string,) => {
+
+
+
+
+  return `/api/casting/${characterId}/variants/${variantId}/restore`
+}
+
+/**
+ * @summary Restore Variant
+ */
+export const restoreVariantApiCastingCharacterIdVariantsVariantIdRestorePost = async (characterId: string,
+    variantId: string,
+    castingGateRequest: CastingGateRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<RestoreVariantApiCastingCharacterIdVariantsVariantIdRestorePost200> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<RestoreVariantApiCastingCharacterIdVariantsVariantIdRestorePost200>(getRestoreVariantApiCastingCharacterIdVariantsVariantIdRestorePostUrl(characterId,variantId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(castingGateRequest)
   }
 );}
 

@@ -344,7 +344,9 @@ def build_shots(
     episode: Episode,
     candidate: EpisodeBreakdownCandidate,
     bible: ProjectBible,
+    visual_references: dict[str, Path] | None = None,
 ) -> tuple[Episode, list[Shot]]:
+    visual_references = visual_references or {}
     characters = {item.id: item for item in bible.characters}
     locations = {item.id: item for item in bible.locations}
     shots: list[Shot] = []
@@ -373,7 +375,9 @@ def build_shots(
                 visual_description=profile.visual_description,
                 wardrobe=profile.wardrobe,
                 signature_details=profile.signature_details,
-                reference_images=[],
+                reference_images=(
+                    [visual_references[profile.id]] if profile.id in visual_references else []
+                ),
             )
             for profile in profiles
         ]

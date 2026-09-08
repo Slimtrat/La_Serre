@@ -452,6 +452,106 @@
         "title": "CanonicalReference",
         "type": "object"
       },
+      "CastingGateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "CastingGateRequest",
+        "type": "object"
+      },
+      "CastingGenerateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/VisualVariantKind"
+          },
+          "license": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "License",
+            "type": "string"
+          },
+          "model": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "outfit": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Outfit",
+            "type": "string"
+          },
+          "permanent_identity": {
+            "maxLength": 4000,
+            "minLength": 10,
+            "title": "Permanent Identity",
+            "type": "string"
+          },
+          "prompt": {
+            "maxLength": 8000,
+            "minLength": 10,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "seed": {
+            "maximum": 9.223372036854776e+18,
+            "minimum": 0.0,
+            "title": "Seed",
+            "type": "integer"
+          },
+          "transient_state": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Transient State",
+            "type": "string"
+          },
+          "workflow": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Workflow",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "kind",
+          "permanent_identity",
+          "prompt",
+          "model",
+          "workflow",
+          "seed",
+          "license"
+        ],
+        "title": "CastingGenerateRequest",
+        "type": "object"
+      },
       "CharacterProfile": {
         "additionalProperties": false,
         "properties": {
@@ -4604,6 +4704,15 @@
         "title": "ValidatorSaveRequest",
         "type": "object"
       },
+      "VisualVariantKind": {
+        "enum": [
+          "portrait",
+          "full_body",
+          "expression"
+        ],
+        "title": "VisualVariantKind",
+        "type": "string"
+      },
       "WorkflowImportRequest": {
         "additionalProperties": false,
         "properties": {
@@ -6085,6 +6194,499 @@
         "summary": "Get Entity",
         "tags": [
           "bible"
+        ]
+      }
+    },
+    "/api/casting": {
+      "get": {
+        "operationId": "list_casting_api_casting_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Casting Api Casting Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Casting",
+        "tags": [
+          "casting"
+        ]
+      }
+    },
+    "/api/casting/{character_id}": {
+      "get": {
+        "operationId": "get_character_api_casting__character_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Character Api Casting  Character Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Character",
+        "tags": [
+          "casting"
+        ]
+      }
+    },
+    "/api/casting/{character_id}/variants/generate": {
+      "post": {
+        "operationId": "generate_variant_api_casting__character_id__variants_generate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CastingGenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Generate Variant Api Casting  Character Id  Variants Generate Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generate Variant",
+        "tags": [
+          "casting"
+        ]
+      }
+    },
+    "/api/casting/{character_id}/variants/import": {
+      "post": {
+        "operationId": "import_variant_api_casting__character_id__variants_import_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/VisualVariantKind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "permanent_identity",
+            "required": true,
+            "schema": {
+              "maxLength": 4000,
+              "minLength": 10,
+              "title": "Permanent Identity",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "license",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "title": "License",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source_label",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "title": "Source Label",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outfit",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 2000,
+              "title": "Outfit",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "transient_state",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 2000,
+              "title": "Transient State",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "revision",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Revision"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Import Variant Api Casting  Character Id  Variants Import Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Variant",
+        "tags": [
+          "casting"
+        ]
+      }
+    },
+    "/api/casting/{character_id}/variants/{variant_id}/approve": {
+      "post": {
+        "operationId": "approve_variant_api_casting__character_id__variants__variant_id__approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "variant_id",
+            "required": true,
+            "schema": {
+              "title": "Variant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CastingGateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Approve Variant Api Casting  Character Id  Variants  Variant Id  Approve Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Approve Variant",
+        "tags": [
+          "casting"
+        ]
+      }
+    },
+    "/api/casting/{character_id}/variants/{variant_id}/content": {
+      "get": {
+        "operationId": "variant_content_api_casting__character_id__variants__variant_id__content_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "variant_id",
+            "required": true,
+            "schema": {
+              "title": "Variant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Variant Content",
+        "tags": [
+          "casting"
+        ]
+      }
+    },
+    "/api/casting/{character_id}/variants/{variant_id}/reject": {
+      "post": {
+        "operationId": "reject_variant_api_casting__character_id__variants__variant_id__reject_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "variant_id",
+            "required": true,
+            "schema": {
+              "title": "Variant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CastingGateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Reject Variant Api Casting  Character Id  Variants  Variant Id  Reject Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reject Variant",
+        "tags": [
+          "casting"
+        ]
+      }
+    },
+    "/api/casting/{character_id}/variants/{variant_id}/restore": {
+      "post": {
+        "operationId": "restore_variant_api_casting__character_id__variants__variant_id__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "variant_id",
+            "required": true,
+            "schema": {
+              "title": "Variant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CastingGateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Restore Variant Api Casting  Character Id  Variants  Variant Id  Restore Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restore Variant",
+        "tags": [
+          "casting"
         ]
       }
     },

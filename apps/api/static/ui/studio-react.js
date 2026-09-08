@@ -1909,10 +1909,10 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		var t = e && e.nodeName && e.nodeName.toLowerCase();
 		return t && (t === "input" && (e.type === "text" || e.type === "search" || e.type === "tel" || e.type === "url" || e.type === "password") || t === "textarea" || e.contentEditable === "true");
 	}
-	var Nr = mn && "documentMode" in document && 11 >= document.documentMode, F = null, Pr = null, Fr = null, Ir = !1;
-	function Lr(e, t, n) {
+	var Nr = mn && "documentMode" in document && 11 >= document.documentMode, Pr = null, Fr = null, Ir = null, Lr = !1;
+	function Rr(e, t, n) {
 		var r = n.window === n ? n.document : n.nodeType === 9 ? n : n.ownerDocument;
-		Ir || F == null || F !== Ht(r) || (r = F, "selectionStart" in r && Mr(r) ? r = {
+		Lr || Pr == null || Pr !== Ht(r) || (r = Pr, "selectionStart" in r && Mr(r) ? r = {
 			start: r.selectionStart,
 			end: r.selectionEnd
 		} : (r = (r.ownerDocument && r.ownerDocument.defaultView || window).getSelection(), r = {
@@ -1920,36 +1920,36 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			anchorOffset: r.anchorOffset,
 			focusNode: r.focusNode,
 			focusOffset: r.focusOffset
-		}), Fr && Dr(Fr, r) || (Fr = r, r = Ed(Pr, "onSelect"), 0 < r.length && (t = new En("onSelect", "select", null, t, n), e.push({
+		}), Ir && Dr(Ir, r) || (Ir = r, r = Ed(Fr, "onSelect"), 0 < r.length && (t = new En("onSelect", "select", null, t, n), e.push({
 			event: t,
 			listeners: r
-		}), t.target = F)));
+		}), t.target = Pr)));
 	}
-	function Rr(e, t) {
+	function zr(e, t) {
 		var n = {};
 		return n[e.toLowerCase()] = t.toLowerCase(), n["Webkit" + e] = "webkit" + t, n["Moz" + e] = "moz" + t, n;
 	}
-	var zr = {
-		animationend: Rr("Animation", "AnimationEnd"),
-		animationiteration: Rr("Animation", "AnimationIteration"),
-		animationstart: Rr("Animation", "AnimationStart"),
-		transitionrun: Rr("Transition", "TransitionRun"),
-		transitionstart: Rr("Transition", "TransitionStart"),
-		transitioncancel: Rr("Transition", "TransitionCancel"),
-		transitionend: Rr("Transition", "TransitionEnd")
-	}, Br = {}, Vr = {};
-	mn && (Vr = document.createElement("div").style, "AnimationEvent" in window || (delete zr.animationend.animation, delete zr.animationiteration.animation, delete zr.animationstart.animation), "TransitionEvent" in window || delete zr.transitionend.transition);
-	function I(e) {
-		if (Br[e]) return Br[e];
-		if (!zr[e]) return e;
-		var t = zr[e], n;
-		for (n in t) if (t.hasOwnProperty(n) && n in Vr) return Br[e] = t[n];
+	var Br = {
+		animationend: zr("Animation", "AnimationEnd"),
+		animationiteration: zr("Animation", "AnimationIteration"),
+		animationstart: zr("Animation", "AnimationStart"),
+		transitionrun: zr("Transition", "TransitionRun"),
+		transitionstart: zr("Transition", "TransitionStart"),
+		transitioncancel: zr("Transition", "TransitionCancel"),
+		transitionend: zr("Transition", "TransitionEnd")
+	}, Vr = {}, F = {};
+	mn && (F = document.createElement("div").style, "AnimationEvent" in window || (delete Br.animationend.animation, delete Br.animationiteration.animation, delete Br.animationstart.animation), "TransitionEvent" in window || delete Br.transitionend.transition);
+	function Hr(e) {
+		if (Vr[e]) return Vr[e];
+		if (!Br[e]) return e;
+		var t = Br[e], n;
+		for (n in t) if (t.hasOwnProperty(n) && n in F) return Vr[e] = t[n];
 		return e;
 	}
-	var Hr = I("animationend"), Ur = I("animationiteration"), Wr = I("animationstart"), Gr = I("transitionrun"), Kr = I("transitionstart"), qr = I("transitioncancel"), Jr = I("transitionend"), Yr = /* @__PURE__ */ new Map(), Xr = "abort auxClick beforeToggle cancel canPlay canPlayThrough click close contextMenu copy cut drag dragEnd dragEnter dragExit dragLeave dragOver dragStart drop durationChange emptied encrypted ended error gotPointerCapture input invalid keyDown keyPress keyUp load loadedData loadedMetadata loadStart lostPointerCapture mouseDown mouseMove mouseOut mouseOver mouseUp paste pause play playing pointerCancel pointerDown pointerMove pointerOut pointerOver pointerUp progress rateChange reset resize seeked seeking stalled submit suspend timeUpdate touchCancel touchEnd touchStart volumeChange scroll toggle touchMove waiting wheel".split(" ");
+	var Ur = Hr("animationend"), Wr = Hr("animationiteration"), Gr = Hr("animationstart"), Kr = Hr("transitionrun"), qr = Hr("transitionstart"), Jr = Hr("transitioncancel"), Yr = Hr("transitionend"), I = /* @__PURE__ */ new Map(), Xr = "abort auxClick beforeToggle cancel canPlay canPlayThrough click close contextMenu copy cut drag dragEnd dragEnter dragExit dragLeave dragOver dragStart drop durationChange emptied encrypted ended error gotPointerCapture input invalid keyDown keyPress keyUp load loadedData loadedMetadata loadStart lostPointerCapture mouseDown mouseMove mouseOut mouseOver mouseUp paste pause play playing pointerCancel pointerDown pointerMove pointerOut pointerOver pointerUp progress rateChange reset resize seeked seeking stalled submit suspend timeUpdate touchCancel touchEnd touchStart volumeChange scroll toggle touchMove waiting wheel".split(" ");
 	Xr.push("scrollEnd");
 	function Zr(e, t) {
-		Yr.set(e, t), Ot(t, [e]);
+		I.set(e, t), Ot(t, [e]);
 	}
 	var Qr = typeof reportError == "function" ? reportError : function(e) {
 		if (typeof window == "object" && typeof window.ErrorEvent == "function") {
@@ -2096,31 +2096,31 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			stack: De(t)
 		};
 	}
-	var xi = [], Si = 0, Ci = null, wi = 0, L = [], Ti = 0, Ei = null, Di = 1, Oi = "";
-	function ki(e, t) {
+	var xi = [], Si = 0, Ci = null, wi = 0, Ti = [], Ei = 0, Di = null, Oi = 1, ki = "";
+	function Ai(e, t) {
 		xi[Si++] = wi, xi[Si++] = Ci, Ci = e, wi = t;
 	}
-	function Ai(e, t, n) {
-		L[Ti++] = Di, L[Ti++] = Oi, L[Ti++] = Ei, Ei = e;
-		var r = Di;
-		e = Oi;
+	function ji(e, t, n) {
+		Ti[Ei++] = Oi, Ti[Ei++] = ki, Ti[Ei++] = Di, Di = e;
+		var r = Oi;
+		e = ki;
 		var i = 32 - Ge(r) - 1;
 		r &= ~(1 << i), n += 1;
 		var a = 32 - Ge(t) + i;
 		if (30 < a) {
 			var o = i - i % 5;
-			a = (r & (1 << o) - 1).toString(32), r >>= o, i -= o, Di = 1 << 32 - Ge(t) + i | n << i | r, Oi = a + e;
-		} else Di = 1 << a | n << i | r, Oi = e;
-	}
-	function ji(e) {
-		e.return !== null && (ki(e, 1), Ai(e, 1, 0));
+			a = (r & (1 << o) - 1).toString(32), r >>= o, i -= o, Oi = 1 << 32 - Ge(t) + i | n << i | r, ki = a + e;
+		} else Oi = 1 << a | n << i | r, ki = e;
 	}
 	function Mi(e) {
+		e.return !== null && (Ai(e, 1), ji(e, 1, 0));
+	}
+	function L(e) {
 		for (; e === Ci;) Ci = xi[--Si], xi[Si] = null, wi = xi[--Si], xi[Si] = null;
-		for (; e === Ei;) Ei = L[--Ti], L[Ti] = null, Oi = L[--Ti], L[Ti] = null, Di = L[--Ti], L[Ti] = null;
+		for (; e === Di;) Di = Ti[--Ei], Ti[Ei] = null, ki = Ti[--Ei], Ti[Ei] = null, Oi = Ti[--Ei], Ti[Ei] = null;
 	}
 	function Ni(e, t) {
-		L[Ti++] = Di, L[Ti++] = Oi, L[Ti++] = Ei, Di = t.id, Oi = t.overflow, Ei = e;
+		Ti[Ei++] = Oi, Ti[Ei++] = ki, Ti[Ei++] = Di, Oi = t.id, ki = t.overflow, Di = e;
 	}
 	var Pi = null, R = null, z = !1, Fi = null, Ii = !1, Li = Error(i(519));
 	function Ri(e) {
@@ -2543,15 +2543,15 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 				}
 				e && d && _.alternate === null && t(i, d), a = o(_, a, h), u === null ? l = _ : u.sibling = _, u = _, d = g;
 			}
-			if (h === s.length) return n(i, d), z && ki(i, h), l;
+			if (h === s.length) return n(i, d), z && Ai(i, h), l;
 			if (d === null) {
 				for (; h < s.length; h++) d = f(i, s[h], c), d !== null && (a = o(d, a, h), u === null ? l = d : u.sibling = d, u = d);
-				return z && ki(i, h), l;
+				return z && Ai(i, h), l;
 			}
 			for (d = r(d); h < s.length; h++) g = m(d, i, h, s[h], c), g !== null && (e && g.alternate !== null && d.delete(g.key === null ? h : g.key), a = o(g, a, h), u === null ? l = g : u.sibling = g, u = g);
 			return e && d.forEach(function(e) {
 				return t(i, e);
-			}), z && ki(i, h), l;
+			}), z && Ai(i, h), l;
 		}
 		function g(a, s, c, l) {
 			if (c == null) throw Error(i(151));
@@ -2564,15 +2564,15 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 				}
 				e && h && y.alternate === null && t(a, h), s = o(y, s, g), d === null ? u = y : d.sibling = y, d = y, h = _;
 			}
-			if (v.done) return n(a, h), z && ki(a, g), u;
+			if (v.done) return n(a, h), z && Ai(a, g), u;
 			if (h === null) {
 				for (; !v.done; g++, v = c.next()) v = f(a, v.value, l), v !== null && (s = o(v, s, g), d === null ? u = v : d.sibling = v, d = v);
-				return z && ki(a, g), u;
+				return z && Ai(a, g), u;
 			}
 			for (h = r(h); !v.done; g++, v = c.next()) v = m(h, a, g, v.value, l), v !== null && (e && v.alternate !== null && h.delete(v.key === null ? g : v.key), s = o(v, s, g), d === null ? u = v : d.sibling = v, d = v);
 			return e && h.forEach(function(e) {
 				return t(a, e);
-			}), z && ki(a, g), u;
+			}), z && Ai(a, g), u;
 		}
 		function b(e, r, o, c) {
 			if (typeof o == "object" && o && o.type === y && o.key === null && (o = o.props.children), typeof o == "object" && o) {
@@ -3604,7 +3604,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		useId: function() {
 			var e = Ao(), t = K.identifierPrefix;
 			if (z) {
-				var n = Oi, r = Di;
+				var n = ki, r = Oi;
 				n = (r & ~(1 << 32 - Ge(r) - 1)).toString(32) + n, t = "_" + t + "R_" + n, n = vo++, 0 < n && (t += "H" + n.toString(32)), t += "_";
 			} else n = xo++, t = "_" + t + "r_" + n.toString(32) + "_";
 			return e.memoizedState = t;
@@ -3836,7 +3836,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			var o = {};
 			for (var s in r) s !== "ref" && (o[s] = r[s]);
 		} else o = r;
-		return ea(t), r = Co(e, t, n, o, a, i), s = Do(), e !== null && !ic ? (Oo(e, t, i), Ac(e, t, i)) : (z && s && ji(t), t.flags |= 1, ac(e, t, r, i), t.child);
+		return ea(t), r = Co(e, t, n, o, a, i), s = Do(), e !== null && !ic ? (Oo(e, t, i), Ac(e, t, i)) : (z && s && Mi(t), t.flags |= 1, ac(e, t, r, i), t.child);
 	}
 	function sc(e, t, n, r, i) {
 		if (e === null) {
@@ -3916,9 +3916,9 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 				if (r.mode === "hidden") return e = fc(t, r), t.lanes = 536870912, uc(null, e);
 				if (oo(t), (e = R) ? (e = rf(e, Ii), e = e !== null && e.data === "&" ? e : null, e !== null && (t.memoizedState = {
 					dehydrated: e,
-					treeContext: Ei === null ? null : {
-						id: Di,
-						overflow: Oi
+					treeContext: Di === null ? null : {
+						id: Oi,
+						overflow: ki
 					},
 					retryLane: 536870912,
 					hydrationErrors: null
@@ -3954,10 +3954,10 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		}
 	}
 	function gc(e, t, n, r, i) {
-		return ea(t), n = Co(e, t, n, r, void 0, i), r = Do(), e !== null && !ic ? (Oo(e, t, i), Ac(e, t, i)) : (z && r && ji(t), t.flags |= 1, ac(e, t, n, i), t.child);
+		return ea(t), n = Co(e, t, n, r, void 0, i), r = Do(), e !== null && !ic ? (Oo(e, t, i), Ac(e, t, i)) : (z && r && Mi(t), t.flags |= 1, ac(e, t, n, i), t.child);
 	}
 	function _c(e, t, n, r, i, a) {
-		return ea(t), t.updateQueue = null, n = To(t, r, n, i), wo(e), r = Do(), e !== null && !ic ? (Oo(e, t, a), Ac(e, t, a)) : (z && r && ji(t), t.flags |= 1, ac(e, t, n, a), t.child);
+		return ea(t), t.updateQueue = null, n = To(t, r, n, i), wo(e), r = Do(), e !== null && !ic ? (Oo(e, t, a), Ac(e, t, a)) : (z && r && Mi(t), t.flags |= 1, ac(e, t, n, a), t.child);
 	}
 	function vc(e, t, n, r, i) {
 		if (ea(t), t.stateNode === null) {
@@ -4004,9 +4004,9 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			if (z) {
 				if (a ? ao(t) : co(t), (e = R) ? (e = rf(e, Ii), e = e !== null && e.data !== "&" ? e : null, e !== null && (t.memoizedState = {
 					dehydrated: e,
-					treeContext: Ei === null ? null : {
-						id: Di,
-						overflow: Oi
+					treeContext: Di === null ? null : {
+						id: Oi,
+						overflow: ki
 					},
 					retryLane: 536870912,
 					hydrationErrors: null
@@ -4181,7 +4181,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 				if (!jc(e, n) && !(t.flags & 128)) return ic = !1, Mc(e, t, n);
 				ic = !!(e.flags & 131072);
 			}
-		} else ic = !1, z && t.flags & 1048576 && Ai(t, wi, t.index);
+		} else ic = !1, z && t.flags & 1048576 && ji(t, wi, t.index);
 		switch (t.lanes = 0, t.tag) {
 			case 16:
 				a: {
@@ -4313,7 +4313,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 	}
 	function zc(e, t, n) {
 		var r = t.pendingProps;
-		switch (Mi(t), t.tag) {
+		switch (L(t), t.tag) {
 			case 16:
 			case 15:
 			case 0:
@@ -4452,7 +4452,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 						if (X !== 0 || e !== null && e.flags & 128) for (e = t.child; e !== null;) {
 							if (o = fo(e), o !== null) {
 								for (t.flags |= 128, Rc(r, !1), e = o.updateQueue, t.updateQueue = e, Lc(t, e), t.subtreeFlags = 0, e = n, n = t.child; n !== null;) pi(n, e), n = n.sibling;
-								return k(uo, uo.current & 1 | 2), z && ki(t, r.treeForkCount), t.child;
+								return k(uo, uo.current & 1 | 2), z && Ai(t, r.treeForkCount), t.child;
 							}
 							e = e.sibling;
 						}
@@ -4466,7 +4466,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 					}
 					r.isBackwards ? (o.sibling = t.child, t.child = o) : (e = r.last, e === null ? t.child = o : e.sibling = o, r.last = o);
 				}
-				return r.tail === null ? (U(t), null) : (e = r.tail, r.rendering = e, r.tail = e.sibling, r.renderingStartTime = Ne(), e.sibling = null, n = uo.current, k(uo, a ? n & 1 | 2 : n & 1), z && ki(t, r.treeForkCount), e);
+				return r.tail === null ? (U(t), null) : (e = r.tail, r.rendering = e, r.tail = e.sibling, r.renderingStartTime = Ne(), e.sibling = null, n = uo.current, k(uo, a ? n & 1 | 2 : n & 1), z && Ai(t, r.treeForkCount), e);
 			case 22:
 			case 23: return lo(t), no(), r = t.memoizedState !== null, e === null ? r && (t.flags |= 8192) : e.memoizedState !== null !== r && (t.flags |= 8192), r ? n & 536870912 && !(t.flags & 128) && (U(t), t.subtreeFlags & 6 && (t.flags |= 8192)) : U(t), n = t.updateQueue, n !== null && Lc(t, n.retryQueue), n = null, e !== null && e.memoizedState !== null && e.memoizedState.cachePool !== null && (n = e.memoizedState.cachePool.pool), r = null, t.memoizedState !== null && t.memoizedState.cachePool !== null && (r = t.memoizedState.cachePool.pool), r !== n && (t.flags |= 2048), e !== null && pe(va), null;
 			case 24: return n = null, e !== null && (n = e.memoizedState.cache), t.memoizedState.cache !== n && (t.flags |= 2048), Yi(sa), U(t), null;
@@ -4476,7 +4476,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		throw Error(i(156, t.tag));
 	}
 	function Bc(e, t) {
-		switch (Mi(t), t.tag) {
+		switch (L(t), t.tag) {
 			case 1: return e = t.flags, e & 65536 ? (t.flags = e & -65537 | 128, t) : null;
 			case 3: return Yi(sa), ye(), e = t.flags, e & 65536 && !(e & 128) ? (t.flags = e & -65537 | 128, t) : null;
 			case 26:
@@ -4505,7 +4505,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		}
 	}
 	function Vc(e, t) {
-		switch (Mi(t), t.tag) {
+		switch (L(t), t.tag) {
 			case 3:
 				Yi(sa), ye();
 				break;
@@ -6159,7 +6159,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		var gd = Xr[hd];
 		Zr(gd.toLowerCase(), "on" + (gd[0].toUpperCase() + gd.slice(1)));
 	}
-	Zr(Hr, "onAnimationEnd"), Zr(Ur, "onAnimationIteration"), Zr(Wr, "onAnimationStart"), Zr("dblclick", "onDoubleClick"), Zr("focusin", "onFocus"), Zr("focusout", "onBlur"), Zr(Gr, "onTransitionRun"), Zr(Kr, "onTransitionStart"), Zr(qr, "onTransitionCancel"), Zr(Jr, "onTransitionEnd"), kt("onMouseEnter", ["mouseout", "mouseover"]), kt("onMouseLeave", ["mouseout", "mouseover"]), kt("onPointerEnter", ["pointerout", "pointerover"]), kt("onPointerLeave", ["pointerout", "pointerover"]), Ot("onChange", "change click focusin focusout input keydown keyup selectionchange".split(" ")), Ot("onSelect", "focusout contextmenu dragend focusin keydown keyup mousedown mouseup selectionchange".split(" ")), Ot("onBeforeInput", [
+	Zr(Ur, "onAnimationEnd"), Zr(Wr, "onAnimationIteration"), Zr(Gr, "onAnimationStart"), Zr("dblclick", "onDoubleClick"), Zr("focusin", "onFocus"), Zr("focusout", "onBlur"), Zr(Kr, "onTransitionRun"), Zr(qr, "onTransitionStart"), Zr(Jr, "onTransitionCancel"), Zr(Yr, "onTransitionEnd"), kt("onMouseEnter", ["mouseout", "mouseover"]), kt("onMouseLeave", ["mouseout", "mouseover"]), kt("onPointerEnter", ["pointerout", "pointerover"]), kt("onPointerLeave", ["pointerout", "pointerover"]), Ot("onChange", "change click focusin focusout input keydown keyup selectionchange".split(" ")), Ot("onSelect", "focusout contextmenu dragend focusin keydown keyup mousedown mouseup selectionchange".split(" ")), Ot("onBeforeInput", [
 		"compositionend",
 		"keypress",
 		"textInput",
@@ -6259,7 +6259,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		fn(function() {
 			var r = a, i = sn(n), s = [];
 			a: {
-				var c = Yr.get(e);
+				var c = I.get(e);
 				if (c !== void 0) {
 					var l = En, u = e;
 					switch (e) {
@@ -6305,12 +6305,12 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 						case "touchstart":
 							l = Kn;
 							break;
-						case Hr:
 						case Ur:
 						case Wr:
+						case Gr:
 							l = In;
 							break;
-						case Jr:
+						case Yr:
 							l = qn;
 							break;
 						case "scroll":
@@ -6391,22 +6391,22 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 				}
 				switch (y = r ? Ct(r) : window, e) {
 					case "focusin":
-						(P(y) || y.contentEditable === "true") && (F = y, Pr = r, Fr = null);
+						(P(y) || y.contentEditable === "true") && (Pr = y, Fr = r, Ir = null);
 						break;
 					case "focusout":
-						Fr = Pr = F = null;
+						Ir = Fr = Pr = null;
 						break;
 					case "mousedown":
-						Ir = !0;
+						Lr = !0;
 						break;
 					case "contextmenu":
 					case "mouseup":
 					case "dragend":
-						Ir = !1, Lr(s, n, i);
+						Lr = !1, Rr(s, n, i);
 						break;
 					case "selectionchange": if (Nr) break;
 					case "keydown":
-					case "keyup": Lr(s, n, i);
+					case "keyup": Rr(s, n, i);
 				}
 				var b;
 				if (Zn) b: {
@@ -8775,7 +8775,7 @@ function mt(e) {
 	setTimeout(e, 0);
 }
 //#endregion
-//#region node_modules/@tanstack/query-core/build/modern/utils.js
+//#region ../../../../../../../workspace/plante/frontend/node_modules/@tanstack/query-core/build/modern/utils.js
 var ht = typeof window > "u" || "Deno" in globalThis;
 function gt() {}
 function _t(e, t) {
@@ -8904,7 +8904,7 @@ function Rt(e, t, n) {
 	}), e;
 }
 //#endregion
-//#region node_modules/@tanstack/query-core/build/modern/environmentManager.js
+//#region ../../../../../../../workspace/plante/frontend/node_modules/@tanstack/query-core/build/modern/environmentManager.js
 var zt = () => ht, Bt = () => zt(), Vt = class {
 	constructor() {
 		this.listeners = /* @__PURE__ */ new Set(), this.subscribe = this.subscribe.bind(this);
@@ -9037,7 +9037,7 @@ var N = Wt(), Gt = new class extends Vt {
 	}
 }();
 //#endregion
-//#region node_modules/@tanstack/query-core/build/modern/retryer.js
+//#region ../../../../../../../workspace/plante/frontend/node_modules/@tanstack/query-core/build/modern/retryer.js
 function Kt(e) {
 	return Math.min(1e3 * 2 ** e, 3e4);
 }
@@ -9105,7 +9105,7 @@ function Yt(e) {
 	};
 }
 //#endregion
-//#region node_modules/@tanstack/query-core/build/modern/removable.js
+//#region ../../../../../../../workspace/plante/frontend/node_modules/@tanstack/query-core/build/modern/removable.js
 var Xt = class {
 	#e;
 	destroy() {
@@ -9124,7 +9124,7 @@ var Xt = class {
 	}
 };
 //#endregion
-//#region node_modules/@tanstack/query-core/build/modern/infiniteQueryBehavior.js
+//#region ../../../../../../../workspace/plante/frontend/node_modules/@tanstack/query-core/build/modern/infiniteQueryBehavior.js
 function Zt(e) {
 	return { onFetch: (t, n) => {
 		let r = t.options, i = t.fetchOptions?.meta?.fetchMore?.direction, a = t.state.data?.pages || [], o = t.state.data?.pageParams || [], s = {
@@ -9183,7 +9183,7 @@ function $t(e, { pages: t, pageParams: n }) {
 	return t.length > 0 ? e.getPreviousPageParam?.(t[0], t, n[0], n) : void 0;
 }
 //#endregion
-//#region node_modules/@tanstack/query-core/build/modern/query.js
+//#region ../../../../../../../workspace/plante/frontend/node_modules/@tanstack/query-core/build/modern/query.js
 var en = class extends Xt {
 	#e;
 	#t;
@@ -9481,7 +9481,7 @@ function rn(e) {
 	};
 }
 //#endregion
-//#region node_modules/@tanstack/query-core/build/modern/queryObserver.js
+//#region ../../../../../../../workspace/plante/frontend/node_modules/@tanstack/query-core/build/modern/queryObserver.js
 var an = class extends Vt {
 	#e;
 	#t = void 0;
@@ -9710,7 +9710,7 @@ function un(e, t) {
 	return M(t.enabled, e) !== !1 && e.isStaleByTime(M(t.staleTime, e));
 }
 //#endregion
-//#region node_modules/@tanstack/query-core/build/modern/mutation.js
+//#region ../../../../../../../workspace/plante/frontend/node_modules/@tanstack/query-core/build/modern/mutation.js
 var dn = class extends Xt {
 	#e;
 	#t;
@@ -9893,7 +9893,7 @@ function fn() {
 	};
 }
 //#endregion
-//#region node_modules/@tanstack/query-core/build/modern/mutationCache.js
+//#region ../../../../../../../workspace/plante/frontend/node_modules/@tanstack/query-core/build/modern/mutationCache.js
 var pn = class extends Vt {
 	#e;
 	#t;
@@ -9992,7 +9992,7 @@ function mn(e) {
 	return e.options.scope?.id;
 }
 //#endregion
-//#region node_modules/@tanstack/query-core/build/modern/mutationObserver.js
+//#region ../../../../../../../workspace/plante/frontend/node_modules/@tanstack/query-core/build/modern/mutationObserver.js
 var hn = class extends Vt {
 	#e;
 	#t = void 0;
@@ -10347,7 +10347,7 @@ var hn = class extends Vt {
 }, vn = _.createContext(!1), yn = () => _.useContext(vn);
 vn.Provider;
 //#endregion
-//#region node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js
+//#region ../../../../../../../workspace/plante/frontend/node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js
 function bn() {
 	let e = !1;
 	return {
@@ -10376,7 +10376,7 @@ var xn = _.createContext(bn()), Sn = () => _.useContext(xn), Cn = (e, t, n) => {
 	n.clearReset();
 });
 //#endregion
-//#region node_modules/@tanstack/react-query/build/modern/useBaseQuery.js
+//#region ../../../../../../../workspace/plante/frontend/node_modules/@tanstack/react-query/build/modern/useBaseQuery.js
 function kn(e, t, n) {
 	let r = yn(), i = Sn(), a = dt(n), o = a.defaultQueryOptions(e), s = a.getQueryCache().get(o.queryHash), c = e.subscribed !== !1;
 	o._optimisticResults = r ? "isRestoring" : c ? "optimistic" : void 0, En(o), Cn(o, i, s), wn(i);
@@ -10397,17 +10397,17 @@ function kn(e, t, n) {
 	return o.notifyOnChangeProps ? u : l.trackResult(u);
 }
 //#endregion
-//#region node_modules/@tanstack/react-query/build/modern/useQuery.js
+//#region ../../../../../../../workspace/plante/frontend/node_modules/@tanstack/react-query/build/modern/useQuery.js
 function An(e, t) {
 	return kn(e, an, t);
 }
 //#endregion
-//#region node_modules/@tanstack/react-query/build/modern/queryOptions.js
+//#region ../../../../../../../workspace/plante/frontend/node_modules/@tanstack/react-query/build/modern/queryOptions.js
 function jn(e) {
 	return e;
 }
 //#endregion
-//#region node_modules/@tanstack/react-query/build/modern/useMutation.js
+//#region ../../../../../../../workspace/plante/frontend/node_modules/@tanstack/react-query/build/modern/useMutation.js
 function Mn(e, t) {
 	let n = dt(t), [r] = _.useState(() => new hn(n, e));
 	_.useEffect(() => {
@@ -11514,8 +11514,307 @@ function Dr({ proposal: e, busy: t, onAccept: n, onClose: r, onReject: i }) {
 	});
 }
 //#endregion
+//#region src/features/casting/castingApi.ts
+var Or = () => A("/api/casting", { method: "GET" });
+function kr(e, t, n) {
+	let r = new URLSearchParams({
+		expected_revision: String(t),
+		kind: n.kind,
+		permanent_identity: n.permanentIdentity,
+		outfit: n.outfit,
+		transient_state: n.transientState,
+		license: n.license,
+		source_label: n.file.name
+	});
+	return A(`/api/casting/${encodeURIComponent(e)}/variants/import?${r}`, {
+		method: "POST",
+		body: n.file,
+		headers: { "Content-Type": n.file.type }
+	});
+}
+function Ar(e, t) {
+	return A(`/api/casting/${encodeURIComponent(e)}/variants/generate`, {
+		method: "POST",
+		body: JSON.stringify(t),
+		headers: { "Content-Type": "application/json" }
+	});
+}
+function jr(e, t, n, r) {
+	return A(`/api/casting/${encodeURIComponent(t)}/variants/${encodeURIComponent(n)}/${e}`, {
+		method: "POST",
+		body: JSON.stringify({ expected_revision: r }),
+		headers: { "Content-Type": "application/json" }
+	});
+}
+var Mr = {
+	root: "_root_kneqk_1",
+	forms: "_forms_kneqk_7",
+	grid: "_grid_kneqk_11",
+	compared: "_compared_kneqk_13",
+	meta: "_meta_kneqk_14",
+	actions: "_actions_kneqk_14",
+	error: "_error_kneqk_18",
+	notice: "_notice_kneqk_19"
+}, Nr = {
+	fr: {
+		title: "Identités visuelles maîtres",
+		intro: "Compare plusieurs pistes. Rien ne devient canonique sans ton approbation.",
+		noCharacter: "Ajoute d’abord un personnage au casting.",
+		import: "Importer une apparence",
+		generate: "Générer une apparence",
+		approve: "Approuver comme maître",
+		restore: "Restaurer comme maître",
+		reject: "Rejeter",
+		compare: "Comparer",
+		empty: "Aucune apparence pour ce personnage.",
+		permanent: "Identité permanente",
+		outfit: "Tenue",
+		transient: "État transitoire",
+		source: "Provenance",
+		affected: "Le changement affecte"
+	},
+	en: {
+		title: "Master visual identities",
+		intro: "Compare several directions. Nothing becomes canonical without your approval.",
+		noCharacter: "Add a cast member first.",
+		import: "Import an appearance",
+		generate: "Generate an appearance",
+		approve: "Approve as master",
+		restore: "Restore as master",
+		reject: "Reject",
+		compare: "Compare",
+		empty: "No appearance for this character.",
+		permanent: "Permanent identity",
+		outfit: "Outfit",
+		transient: "Transient state",
+		source: "Provenance",
+		affected: "This change affects"
+	}
+};
+function Pr(e) {
+	return [
+		e.provenance.source_label,
+		e.provenance.model,
+		e.provenance.workflow,
+		e.provenance.seed === null ? null : `seed ${e.provenance.seed}`,
+		e.provenance.revision,
+		e.provenance.license
+	].filter(Boolean).join(" · ");
+}
+function Fr({ characters: e, locale: t }) {
+	let n = Nr[t], r = dt(), i = An({
+		queryKey: ["casting"],
+		queryFn: Or,
+		enabled: e.length > 0
+	}), [a, o] = (0, _.useState)(e[0]?.id ?? ""), [s, c] = (0, _.useState)([]), [l, u] = (0, _.useState)(""), [d, f] = (0, _.useState)(""), p = (0, _.useMemo)(() => i.data?.characters.find((e) => e.character_id === a), [a, i.data]), m = async () => r.invalidateQueries({ queryKey: ["casting"] }), h = Mn({
+		mutationFn: async (e) => e(),
+		onSuccess: async (e) => {
+			let t = e.affected;
+			u(t ? `${n.affected} ${t.shot_ids.length} plan(s), ${t.rendered_shot_ids.length} rendu(s). Aucune régénération lancée.` : ""), f(""), await m();
+		},
+		onError: (e) => f(e instanceof Error ? e.message : "Operation failed")
+	});
+	if (e.length === 0) return /* @__PURE__ */ (0, b.jsx)(ce, {
+		title: n.title,
+		description: n.noCharacter
+	});
+	if (i.isPending) return /* @__PURE__ */ (0, b.jsx)(k, {
+		"aria-label": n.title,
+		height: "28rem",
+		width: "100%"
+	});
+	if (i.error || !i.data) return /* @__PURE__ */ (0, b.jsx)(O, {
+		title: n.title,
+		description: i.error?.message ?? "Unavailable"
+	});
+	let g = (e) => c((t) => t.includes(e) ? t.filter((t) => t !== e) : [...t.slice(-1), e]), v = (e) => {
+		e.preventDefault();
+		let t = new FormData(e.currentTarget), n = t.get("file");
+		if (!(n instanceof File) || n.size === 0) {
+			f("Select an image");
+			return;
+		}
+		h.mutate(() => kr(a, i.data.revision, {
+			file: n,
+			kind: String(t.get("kind")),
+			permanentIdentity: String(t.get("permanent_identity")),
+			outfit: String(t.get("outfit")),
+			transientState: String(t.get("transient_state")),
+			license: String(t.get("license"))
+		}));
+	}, y = (e) => {
+		e.preventDefault();
+		let t = new FormData(e.currentTarget);
+		h.mutate(() => Ar(a, {
+			expected_revision: i.data.revision,
+			kind: String(t.get("kind")),
+			permanent_identity: String(t.get("permanent_identity")),
+			outfit: String(t.get("outfit")),
+			transient_state: String(t.get("transient_state")),
+			prompt: String(t.get("prompt")),
+			model: String(t.get("model")),
+			workflow: String(t.get("workflow")),
+			seed: Number(t.get("seed")),
+			license: String(t.get("license"))
+		}));
+	}, x = (e = !1) => /* @__PURE__ */ (0, b.jsxs)(b.Fragment, { children: [
+		/* @__PURE__ */ (0, b.jsxs)("label", { children: [n.permanent, /* @__PURE__ */ (0, b.jsx)("textarea", {
+			minLength: 10,
+			name: "permanent_identity",
+			required: !0
+		})] }),
+		/* @__PURE__ */ (0, b.jsxs)("label", { children: [n.outfit, /* @__PURE__ */ (0, b.jsx)("input", { name: "outfit" })] }),
+		/* @__PURE__ */ (0, b.jsxs)("label", { children: [n.transient, /* @__PURE__ */ (0, b.jsx)("input", { name: "transient_state" })] }),
+		/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Type", /* @__PURE__ */ (0, b.jsxs)("select", {
+			name: "kind",
+			children: [
+				/* @__PURE__ */ (0, b.jsx)("option", {
+					value: "portrait",
+					children: "Portrait"
+				}),
+				/* @__PURE__ */ (0, b.jsx)("option", {
+					value: "full_body",
+					children: "Full body"
+				}),
+				/* @__PURE__ */ (0, b.jsx)("option", {
+					value: "expression",
+					children: "Expression"
+				})
+			]
+		})] }),
+		e ? /* @__PURE__ */ (0, b.jsxs)(b.Fragment, { children: [
+			/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Prompt", /* @__PURE__ */ (0, b.jsx)("textarea", {
+				minLength: 10,
+				name: "prompt",
+				required: !0
+			})] }),
+			/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Model", /* @__PURE__ */ (0, b.jsx)("input", {
+				name: "model",
+				required: !0
+			})] }),
+			/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Workflow", /* @__PURE__ */ (0, b.jsx)("input", {
+				name: "workflow",
+				required: !0
+			})] }),
+			/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Seed", /* @__PURE__ */ (0, b.jsx)("input", {
+				min: "0",
+				name: "seed",
+				required: !0,
+				type: "number"
+			})] })
+		] }) : /* @__PURE__ */ (0, b.jsxs)("label", { children: ["Image", /* @__PURE__ */ (0, b.jsx)("input", {
+			accept: "image/png,image/jpeg,image/webp",
+			name: "file",
+			required: !0,
+			type: "file"
+		})] }),
+		/* @__PURE__ */ (0, b.jsxs)("label", { children: ["License", /* @__PURE__ */ (0, b.jsx)("input", {
+			name: "license",
+			required: !0
+		})] })
+	] });
+	return /* @__PURE__ */ (0, b.jsxs)("section", {
+		className: Mr.root,
+		"data-casting-board": !0,
+		children: [
+			/* @__PURE__ */ (0, b.jsxs)("header", { children: [/* @__PURE__ */ (0, b.jsxs)("div", { children: [/* @__PURE__ */ (0, b.jsx)("h2", { children: n.title }), /* @__PURE__ */ (0, b.jsx)("p", { children: n.intro })] }), /* @__PURE__ */ (0, b.jsxs)("label", { children: ["Character", /* @__PURE__ */ (0, b.jsx)("select", {
+				"aria-label": "Character",
+				onChange: (e) => {
+					o(e.currentTarget.value), c([]);
+				},
+				value: a,
+				children: e.map((e) => /* @__PURE__ */ (0, b.jsx)("option", {
+					value: e.id,
+					children: e.name
+				}, e.id))
+			})] })] }),
+			d ? /* @__PURE__ */ (0, b.jsx)("p", {
+				className: Mr.error,
+				role: "alert",
+				children: d
+			}) : null,
+			l ? /* @__PURE__ */ (0, b.jsx)("p", {
+				className: Mr.notice,
+				role: "status",
+				children: l
+			}) : null,
+			/* @__PURE__ */ (0, b.jsxs)("div", {
+				className: Mr.forms,
+				children: [/* @__PURE__ */ (0, b.jsxs)("details", { children: [/* @__PURE__ */ (0, b.jsx)("summary", { children: n.import }), /* @__PURE__ */ (0, b.jsxs)("form", {
+					onSubmit: v,
+					children: [x(), /* @__PURE__ */ (0, b.jsx)(T, {
+						loading: h.isPending,
+						type: "submit",
+						children: n.import
+					})]
+				})] }), /* @__PURE__ */ (0, b.jsxs)("details", { children: [/* @__PURE__ */ (0, b.jsx)("summary", { children: n.generate }), /* @__PURE__ */ (0, b.jsxs)("form", {
+					onSubmit: y,
+					children: [x(!0), /* @__PURE__ */ (0, b.jsx)(T, {
+						loading: h.isPending,
+						type: "submit",
+						children: n.generate
+					})]
+				})] })]
+			}),
+			!p || p.variants.length === 0 ? /* @__PURE__ */ (0, b.jsx)(ce, { title: n.empty }) : /* @__PURE__ */ (0, b.jsx)("div", {
+				className: Mr.grid,
+				children: p.variants.map((e) => {
+					let t = p.active_master_id === e.id;
+					return /* @__PURE__ */ (0, b.jsxs)(te, {
+						className: s.includes(e.id) ? Mr.compared : "",
+						children: [
+							/* @__PURE__ */ (0, b.jsx)(ue, {
+								aspectRatio: e.kind === "portrait" ? "4 / 5" : "2 / 3",
+								children: /* @__PURE__ */ (0, b.jsx)("img", {
+									alt: `${e.kind} ${e.status}`,
+									src: e.media_url
+								})
+							}),
+							/* @__PURE__ */ (0, b.jsxs)("div", {
+								className: Mr.meta,
+								children: [/* @__PURE__ */ (0, b.jsx)(C, {
+									tone: t ? "success" : e.status === "rejected" ? "danger" : "neutral",
+									children: t ? "MASTER" : e.status
+								}), /* @__PURE__ */ (0, b.jsx)("strong", { children: e.kind })]
+							}),
+							/* @__PURE__ */ (0, b.jsxs)("dl", { children: [
+								/* @__PURE__ */ (0, b.jsx)("dt", { children: n.permanent }),
+								/* @__PURE__ */ (0, b.jsx)("dd", { children: e.permanent_identity }),
+								e.outfit ? /* @__PURE__ */ (0, b.jsxs)(b.Fragment, { children: [/* @__PURE__ */ (0, b.jsx)("dt", { children: n.outfit }), /* @__PURE__ */ (0, b.jsx)("dd", { children: e.outfit })] }) : null,
+								e.transient_state ? /* @__PURE__ */ (0, b.jsxs)(b.Fragment, { children: [/* @__PURE__ */ (0, b.jsx)("dt", { children: n.transient }), /* @__PURE__ */ (0, b.jsx)("dd", { children: e.transient_state })] }) : null,
+								/* @__PURE__ */ (0, b.jsx)("dt", { children: n.source }),
+								/* @__PURE__ */ (0, b.jsx)("dd", { children: Pr(e) })
+							] }),
+							/* @__PURE__ */ (0, b.jsxs)("div", {
+								className: Mr.actions,
+								children: [
+									/* @__PURE__ */ (0, b.jsx)(T, {
+										"aria-pressed": s.includes(e.id),
+										onClick: () => g(e.id),
+										variant: "ghost",
+										children: n.compare
+									}),
+									!t && e.status !== "rejected" ? /* @__PURE__ */ (0, b.jsx)(T, {
+										onClick: () => h.mutate(() => jr(e.status === "approved" ? "restore" : "approve", a, e.id, i.data.revision)),
+										children: e.status === "approved" ? n.restore : n.approve
+									}) : null,
+									!t && e.status === "candidate" ? /* @__PURE__ */ (0, b.jsx)(T, {
+										onClick: () => h.mutate(() => jr("reject", a, e.id, i.data.revision)),
+										variant: "danger",
+										children: n.reject
+									}) : null
+								]
+							})
+						]
+					}, e.id);
+				})
+			})
+		]
+	});
+}
+//#endregion
 //#region src/features/guided-journey/StageHost.tsx
-var Or = {
+var Ir = {
 	fr: {
 		idea: "Commence par l’envie",
 		casting: "Qui porte l’histoire ?",
@@ -11537,7 +11836,7 @@ var Or = {
 		release: "Watch, compare, iterate"
 	}
 };
-function kr({ stage: e, guided: t, busy: n, locale: r, onAddCharacter: i, onCreateEpisode: a, onPropose: o, onSaveBrief: s, slots: c }) {
+function Lr({ stage: e, guided: t, busy: n, locale: r, onAddCharacter: i, onCreateEpisode: a, onPropose: o, onSaveBrief: s, slots: c }) {
 	let l = yr(), u = (e) => {
 		e.preventDefault();
 		let t = new FormData(e.currentTarget), n = [...t.getAll("locked_fields")].map(String);
@@ -11608,22 +11907,19 @@ function kr({ stage: e, guided: t, busy: n, locale: r, onAddCharacter: i, onCrea
 			onClick: a,
 			children: "Créer et lier l’épisode"
 		})]
-	})), !d && e.id === "casting" && (d = /* @__PURE__ */ (0, b.jsxs)("div", { children: [/* @__PURE__ */ (0, b.jsx)("div", {
-		className: br.cards,
-		children: t.characters.map((e) => /* @__PURE__ */ (0, b.jsxs)("article", { children: [
-			/* @__PURE__ */ (0, b.jsx)("strong", { children: e.name || "Nouveau personnage" }),
-			/* @__PURE__ */ (0, b.jsx)("p", { children: e.role || "Rôle à préciser" }),
-			/* @__PURE__ */ (0, b.jsx)("small", { children: e.promoted_revision ? "Dans la Bible" : "Brouillon" }),
-			/* @__PURE__ */ (0, b.jsx)(T, {
-				onClick: () => o(`character:${e.id}`),
-				variant: "ghost",
-				children: "Améliorer"
-			})
-		] }, e.id))
-	}), /* @__PURE__ */ (0, b.jsx)(T, {
-		disabled: n,
-		onClick: i,
-		children: "Ajouter un personnage"
+	})), !d && e.id === "casting" && (d = /* @__PURE__ */ (0, b.jsxs)("div", { children: [/* @__PURE__ */ (0, b.jsx)(Fr, {
+		characters: t.characters.map(({ id: e, name: t }) => ({
+			id: e,
+			name: t || e
+		})),
+		locale: r
+	}), /* @__PURE__ */ (0, b.jsx)("div", {
+		className: br.actions,
+		children: /* @__PURE__ */ (0, b.jsx)(T, {
+			disabled: n,
+			onClick: i,
+			children: "Ajouter un personnage"
+		})
 	})] })), d ||= /* @__PURE__ */ (0, b.jsxs)("div", {
 		className: br.statusCard,
 		children: [/* @__PURE__ */ (0, b.jsx)("p", { children: e.blockers?.[0]?.message ?? `État : ${e.status}` }), /* @__PURE__ */ (0, b.jsx)(T, {
@@ -11635,7 +11931,7 @@ function kr({ stage: e, guided: t, busy: n, locale: r, onAddCharacter: i, onCrea
 		className: br.stage,
 		children: [/* @__PURE__ */ (0, b.jsxs)("header", { children: [/* @__PURE__ */ (0, b.jsxs)("div", { children: [/* @__PURE__ */ (0, b.jsxs)("small", { children: ["ÉTAPE · ", e.status] }), /* @__PURE__ */ (0, b.jsx)("h1", {
 			id: `journey-${e.id}`,
-			children: Or[r][e.id]
+			children: Ir[r][e.id]
 		})] }), /* @__PURE__ */ (0, b.jsx)("span", {
 			"data-status": e.status,
 			children: e.status
@@ -11644,7 +11940,7 @@ function kr({ stage: e, guided: t, busy: n, locale: r, onAddCharacter: i, onCrea
 }
 //#endregion
 //#region src/features/guided-journey/GuidedJourney.tsx
-var Ar = {
+var Rr = {
 	fr: {
 		idea: "Idée",
 		casting: "Casting",
@@ -11666,7 +11962,7 @@ var Ar = {
 		release: "Release"
 	}
 };
-function jr({ locale: e, onNavigate: t, slots: n }) {
+function zr({ locale: e, onNavigate: t, slots: n }) {
 	let r = dt(), i = An({
 		queryKey: ["studio-journey"],
 		queryFn: st
@@ -11720,7 +12016,7 @@ function jr({ locale: e, onNavigate: t, slots: n }) {
 					})]
 				}),
 				/* @__PURE__ */ (0, b.jsx)(xr, {
-					labels: Ar[e],
+					labels: Rr[e],
 					navigationLabel: e === "fr" ? "Parcours de création" : "Creation journey",
 					stages: i.data.stages
 				}),
@@ -11729,7 +12025,7 @@ function jr({ locale: e, onNavigate: t, slots: n }) {
 					role: "alert",
 					children: f
 				}) : null,
-				/* @__PURE__ */ (0, b.jsx)(kr, {
+				/* @__PURE__ */ (0, b.jsx)(Lr, {
 					busy: h.isPending,
 					guided: g,
 					locale: e,
@@ -11782,7 +12078,7 @@ function jr({ locale: e, onNavigate: t, slots: n }) {
 }
 //#endregion
 //#region src/features/setup/model.ts
-var Mr = /* @__PURE__ */ new Set([
+var Br = /* @__PURE__ */ new Set([
 	"queued",
 	"running",
 	"paused",
@@ -11792,18 +12088,18 @@ var Mr = /* @__PURE__ */ new Set([
 	"failed",
 	"cancelled"
 ]);
-function Nr(e) {
+function Vr(e) {
 	if (typeof e != "object" || !e || Array.isArray(e)) throw Error("Réponse de préparation invalide");
 	return e;
 }
 function F(e, t = "") {
 	return typeof e == "string" ? e : t;
 }
-function Pr(e) {
+function Hr(e) {
 	return typeof e == "number" && Number.isFinite(e) ? e : 0;
 }
-function Fr(e) {
-	let t = Nr(e), n = Nr(t.hardware), r = F(t.status);
+function Ur(e) {
+	let t = Vr(e), n = Vr(t.hardware), r = F(t.status);
 	if (![
 		"ready",
 		"incomplete",
@@ -11814,20 +12110,20 @@ function Fr(e) {
 		packId: F(t.pack_id),
 		status: r,
 		summary: F(t.summary),
-		requiredDownloadBytes: Pr(t.required_download_bytes),
+		requiredDownloadBytes: Hr(t.required_download_bytes),
 		hardware: {
 			vramGb: typeof n.vram_gb == "number" ? n.vram_gb : null,
-			diskFreeBytes: Pr(n.disk_free_bytes),
+			diskFreeBytes: Hr(n.disk_free_bytes),
 			gpuName: typeof n.gpu_name == "string" ? n.gpu_name : null
 		},
 		components: i.map((e) => {
-			let t = Nr(e), n = Nr(t.license), r = F(n.commercial_use, "review_required");
+			let t = Vr(e), n = Vr(t.license), r = F(n.commercial_use, "review_required");
 			return {
 				id: F(t.id),
 				role: F(t.role),
 				state: F(t.state, "unknown"),
 				required: t.required !== !1,
-				sizeBytes: Pr(t.size_bytes),
+				sizeBytes: Hr(t.size_bytes),
 				reason: F(t.reason),
 				action: F(t.action),
 				license: {
@@ -11845,11 +12141,11 @@ function Fr(e) {
 		})
 	};
 }
-function Ir(e) {
-	let t = Nr(e);
+function Wr(e) {
+	let t = Vr(e);
 	if (t.job === null || t.job === void 0) return null;
-	let n = Nr(t.job), r = F(n.status);
-	if (!Mr.has(r)) throw Error("État du job inconnu");
+	let n = Vr(t.job), r = F(n.status);
+	if (!Br.has(r)) throw Error("État du job inconnu");
 	let i = Array.isArray(n.steps) ? n.steps : [], a = Array.isArray(n.smoke_checks) ? n.smoke_checks : [];
 	return {
 		id: F(n.id),
@@ -11859,7 +12155,7 @@ function Ir(e) {
 		recovered: n.recovered === !0,
 		acceptedLicenseIds: Array.isArray(n.accepted_license_ids) ? n.accepted_license_ids.map(String) : [],
 		steps: i.map((e) => {
-			let t = Nr(e);
+			let t = Vr(e);
 			return {
 				componentId: F(t.component_id),
 				status: F(t.status),
@@ -11867,7 +12163,7 @@ function Ir(e) {
 			};
 		}),
 		smokeChecks: a.map((e) => {
-			let t = Nr(e);
+			let t = Vr(e);
 			return {
 				checkId: F(t.check_id),
 				status: t.status === "passed" ? "passed" : "failed",
@@ -11877,7 +12173,7 @@ function Ir(e) {
 		})
 	};
 }
-function Lr(e, t) {
+function Gr(e, t) {
 	if (e <= 0) return t === "fr" ? "Aucun téléchargement" : "No download";
 	let n = [
 		"o",
@@ -11894,17 +12190,17 @@ function Lr(e, t) {
 }
 //#endregion
 //#region src/features/setup/api.ts
-function Rr(e) {
-	let t = Ir(e);
+function Kr(e) {
+	let t = Wr(e);
 	if (!t) throw Error("Préparation introuvable");
 	return t;
 }
-var zr = {
+var qr = {
 	async diagnose() {
-		return Fr(await Ve());
+		return Ur(await Ve());
 	},
 	async latest() {
-		let [e, t] = await Promise.all([Ue(), Ue({ use_personal_comfy_models: !0 })]), n = [Ir(e), Ir(t)].filter((e) => e !== null), r = /* @__PURE__ */ new Set([
+		let [e, t] = await Promise.all([Ue(), Ue({ use_personal_comfy_models: !0 })]), n = [Wr(e), Wr(t)].filter((e) => e !== null), r = /* @__PURE__ */ new Set([
 			"queued",
 			"running",
 			"paused",
@@ -11914,31 +12210,31 @@ var zr = {
 		return n.find((e) => r.has(e.status)) ?? n[0] ?? null;
 	},
 	async getJob(e) {
-		return Rr(await Ge(e));
+		return Kr(await Ge(e));
 	},
 	async start(e) {
-		return Rr(await rt(e.packId, {
+		return Kr(await rt(e.packId, {
 			mode: e.mode,
 			accepted_license_ids: [...e.acceptedLicenseIds],
 			use_personal_comfy_models: e.usePersonalComfyModels
 		}));
 	},
 	async pause(e) {
-		return Rr(await Ze(e));
+		return Kr(await Ze(e));
 	},
 	async resume(e, t) {
-		return Rr(await tt(e, { accepted_license_ids: [...t] }));
+		return Kr(await tt(e, { accepted_license_ids: [...t] }));
 	},
 	async repair(e, t) {
-		return Rr(await $e(e, { accepted_license_ids: [...t] }));
+		return Kr(await $e(e, { accepted_license_ids: [...t] }));
 	},
 	async cancel(e) {
-		return Rr(await qe(e));
+		return Kr(await qe(e));
 	},
 	async logs(e) {
 		return ((await Ye(e)).logs ?? []).map((e) => typeof e.message == "string" ? e.message : "");
 	}
-}, Br = {
+}, Jr = {
 	fr: {
 		title: "Préparer mon studio",
 		intro: "La Serre vérifie cette machine et installe seulement ce qui manque pour créer en local.",
@@ -12112,8 +12408,8 @@ var zr = {
 		continue: "Start creating"
 	}
 };
-function Vr(e) {
-	return Br[e];
+function Yr(e) {
+	return Jr[e];
 }
 var I = {
 	root: "_root_k7f7p_1",
@@ -12135,7 +12431,7 @@ var I = {
 };
 //#endregion
 //#region src/features/setup/SetupStepper.tsx
-function Hr({ current: e, messages: t }) {
+function Xr({ current: e, messages: t }) {
 	return /* @__PURE__ */ (0, b.jsx)("nav", {
 		"aria-label": t.title,
 		className: I.stepper,
@@ -12151,10 +12447,10 @@ function Hr({ current: e, messages: t }) {
 }
 //#endregion
 //#region src/features/setup/SetupWizard.tsx
-function Ur(e) {
+function Zr(e) {
 	return [...new Map(e.components.filter((e) => e.required && e.state !== "installed").map((e) => [e.license.id, e.license])).values()];
 }
-function Wr(e, t) {
+function Qr(e, t) {
 	let n = {
 		write: ["ollama", "narrative"],
 		characters: ["comfy", "keyframe"],
@@ -12168,15 +12464,15 @@ function Wr(e, t) {
 	}, r = t.components.filter((t) => n[e].some((e) => `${t.id} ${t.role}`.toLowerCase().includes(e)));
 	return r.length === 0 || r.every((e) => e.state === "installed");
 }
-function Gr(e) {
+function $r(e) {
 	return e.steps.filter((e) => [
 		"installed",
 		"skipped",
 		"completed"
 	].includes(e.status)).length;
 }
-function Kr({ locale: e, api: t = zr, readyContent: n, onReady: r }) {
-	let i = Vr(e), a = dt(), [o, s] = (0, _.useState)(!1), [c, l] = (0, _.useState)(/* @__PURE__ */ new Set()), [u, d] = (0, _.useState)(!1), [f, p] = (0, _.useState)(!1), [m, h] = (0, _.useState)(null), [g, v] = (0, _.useState)(!1), [y, x] = (0, _.useState)(!1), S = An({
+function ei({ locale: e, api: t = qr, readyContent: n, onReady: r }) {
+	let i = Yr(e), a = dt(), [o, s] = (0, _.useState)(!1), [c, l] = (0, _.useState)(/* @__PURE__ */ new Set()), [u, d] = (0, _.useState)(!1), [f, p] = (0, _.useState)(!1), [m, h] = (0, _.useState)(null), [g, v] = (0, _.useState)(!1), [y, x] = (0, _.useState)(!1), S = An({
 		queryKey: ["runtime-pack", "diagnosis"],
 		queryFn: () => t.diagnose()
 	}), w = An({
@@ -12191,7 +12487,7 @@ function Kr({ locale: e, api: t = zr, readyContent: n, onReady: r }) {
 		queryFn: () => t.getJob(ee),
 		enabled: ee !== null,
 		refetchInterval: (e) => ["queued", "running"].includes(e.state.data?.status ?? "") ? 750 : !1
-	}).data ?? (w.data?.id === ee ? w.data : null), ne = (0, _.useMemo)(() => S.data ? Ur(S.data) : [], [S.data]), re = An({
+	}).data ?? (w.data?.id === ee ? w.data : null), ne = (0, _.useMemo)(() => S.data ? Zr(S.data) : [], [S.data]), re = An({
 		queryKey: [
 			"runtime-pack",
 			"logs",
@@ -12238,7 +12534,7 @@ function Kr({ locale: e, api: t = zr, readyContent: n, onReady: r }) {
 		let e = E?.smokeChecks ?? [];
 		return /* @__PURE__ */ (0, b.jsxs)("main", {
 			className: I.root,
-			children: [/* @__PURE__ */ (0, b.jsx)(Hr, {
+			children: [/* @__PURE__ */ (0, b.jsx)(Xr, {
 				current: 4,
 				messages: i
 			}), /* @__PURE__ */ (0, b.jsxs)("section", {
@@ -12299,7 +12595,7 @@ function Kr({ locale: e, api: t = zr, readyContent: n, onReady: r }) {
 		].includes(E.status);
 		return /* @__PURE__ */ (0, b.jsxs)("main", {
 			className: I.root,
-			children: [/* @__PURE__ */ (0, b.jsx)(Hr, {
+			children: [/* @__PURE__ */ (0, b.jsx)(Xr, {
 				current: se,
 				messages: i
 			}), /* @__PURE__ */ (0, b.jsxs)("section", {
@@ -12328,7 +12624,7 @@ function Kr({ locale: e, api: t = zr, readyContent: n, onReady: r }) {
 						id: "setup-progress",
 						label: i.progress,
 						max: n,
-						value: Gr(E),
+						value: $r(E),
 						showValue: !0
 					}),
 					/* @__PURE__ */ (0, b.jsx)("ol", {
@@ -12430,7 +12726,7 @@ function Kr({ locale: e, api: t = zr, readyContent: n, onReady: r }) {
 	}
 	return o ? /* @__PURE__ */ (0, b.jsxs)("main", {
 		className: I.root,
-		children: [/* @__PURE__ */ (0, b.jsx)(Hr, {
+		children: [/* @__PURE__ */ (0, b.jsx)(Xr, {
 			current: 1,
 			messages: i
 		}), /* @__PURE__ */ (0, b.jsxs)("section", {
@@ -12446,7 +12742,7 @@ function Kr({ locale: e, api: t = zr, readyContent: n, onReady: r }) {
 					children: [/* @__PURE__ */ (0, b.jsxs)("h2", { children: [
 						i.download,
 						": ",
-						Lr(S.data.requiredDownloadBytes, e)
+						Gr(S.data.requiredDownloadBytes, e)
 					] }), /* @__PURE__ */ (0, b.jsx)("p", { children: i.variableTime })]
 				}),
 				/* @__PURE__ */ (0, b.jsxs)("fieldset", {
@@ -12536,7 +12832,7 @@ function Kr({ locale: e, api: t = zr, readyContent: n, onReady: r }) {
 	}) : /* @__PURE__ */ (0, b.jsxs)("main", {
 		className: I.root,
 		children: [
-			/* @__PURE__ */ (0, b.jsx)(Hr, {
+			/* @__PURE__ */ (0, b.jsx)(Xr, {
 				current: 0,
 				messages: i
 			}),
@@ -12562,8 +12858,8 @@ function Kr({ locale: e, api: t = zr, readyContent: n, onReady: r }) {
 					children: [
 						/* @__PURE__ */ (0, b.jsxs)("div", { children: [/* @__PURE__ */ (0, b.jsx)("dt", { children: i.graphics }), /* @__PURE__ */ (0, b.jsx)("dd", { children: S.data.hardware.gpuName ?? i.unknown })] }),
 						/* @__PURE__ */ (0, b.jsxs)("div", { children: [/* @__PURE__ */ (0, b.jsx)("dt", { children: i.memory }), /* @__PURE__ */ (0, b.jsx)("dd", { children: S.data.hardware.vramGb === null ? i.unknown : `${S.data.hardware.vramGb} GB` })] }),
-						/* @__PURE__ */ (0, b.jsxs)("div", { children: [/* @__PURE__ */ (0, b.jsx)("dt", { children: i.disk }), /* @__PURE__ */ (0, b.jsx)("dd", { children: Lr(S.data.hardware.diskFreeBytes, e) })] }),
-						/* @__PURE__ */ (0, b.jsxs)("div", { children: [/* @__PURE__ */ (0, b.jsx)("dt", { children: i.download }), /* @__PURE__ */ (0, b.jsx)("dd", { children: Lr(S.data.requiredDownloadBytes, e) })] })
+						/* @__PURE__ */ (0, b.jsxs)("div", { children: [/* @__PURE__ */ (0, b.jsx)("dt", { children: i.disk }), /* @__PURE__ */ (0, b.jsx)("dd", { children: Gr(S.data.hardware.diskFreeBytes, e) })] }),
+						/* @__PURE__ */ (0, b.jsxs)("div", { children: [/* @__PURE__ */ (0, b.jsx)("dt", { children: i.download }), /* @__PURE__ */ (0, b.jsx)("dd", { children: Gr(S.data.requiredDownloadBytes, e) })] })
 					]
 				})]
 			}),
@@ -12575,7 +12871,7 @@ function Kr({ locale: e, api: t = zr, readyContent: n, onReady: r }) {
 				}), /* @__PURE__ */ (0, b.jsx)("div", {
 					className: I.capabilities,
 					children: i.capabilities.map(([e, t, n]) => {
-						let r = Wr(e, S.data);
+						let r = Qr(e, S.data);
 						return /* @__PURE__ */ (0, b.jsxs)(te, { children: [
 							/* @__PURE__ */ (0, b.jsx)(C, {
 								tone: r ? "success" : S.data.status === "incompatible" ? "warning" : "neutral",
@@ -12601,34 +12897,34 @@ function Kr({ locale: e, api: t = zr, readyContent: n, onReady: r }) {
 }
 //#endregion
 //#region src/app/kernel/AppKernelProvider.tsx
-var qr = (0, _.createContext)(null);
-function Jr({ children: e, kernel: t }) {
-	return /* @__PURE__ */ (0, b.jsx)(qr.Provider, {
+var ti = (0, _.createContext)(null);
+function ni({ children: e, kernel: t }) {
+	return /* @__PURE__ */ (0, b.jsx)(ti.Provider, {
 		value: t,
 		children: e
 	});
 }
-function Yr() {
-	let e = (0, _.useContext)(qr);
+function ri() {
+	let e = (0, _.useContext)(ti);
 	if (e === null) throw Error("AppKernelProvider is missing from the React tree.");
 	return e;
 }
-function Xr() {
-	return Yr().activeContext;
+function ii() {
+	return ri().activeContext;
 }
-function Zr() {
-	let e = Xr();
+function ai() {
+	let e = ii();
 	return (0, _.useSyncExternalStore)(e.subscribe, e.getSnapshot, e.getSnapshot);
 }
 //#endregion
 //#region src/app/kernel/LegacyAppKernel.ts
-var Qr = {
+var oi = {
 	projectId: null,
 	seriesId: null,
 	episodeId: null,
 	shotId: null
 };
-function $r(e, t) {
+function si(e, t) {
 	let n = e, r = /* @__PURE__ */ new Set();
 	return {
 		getSnapshot: () => n,
@@ -12640,13 +12936,13 @@ function $r(e, t) {
 		subscribe: (e) => (r.add(e), () => r.delete(e))
 	};
 }
-function ei(e, t) {
+function ci(e, t) {
 	return e.projectId === t.projectId && e.seriesId === t.seriesId && e.episodeId === t.episodeId && e.shotId === t.shotId;
 }
-function ti(e) {
+function li(e) {
 	return e.message ? e.title + " · " + e.message : e.title;
 }
-function ni(e) {
+function ui(e) {
 	return {
 		running: "GENERATING",
 		succeeded: "COMPLETED",
@@ -12654,8 +12950,8 @@ function ni(e) {
 		cancelled: "CANCELLED"
 	}[e] ?? e;
 }
-function ri(e = {}) {
-	let t = e.bridge ?? new Wn({ host: e.host }), n = $r(Qr, ei), r = !1, i = 0, a = 0, o = [], s = (e) => {
+function di(e = {}) {
+	let t = e.bridge ?? new Wn({ host: e.host }), n = si(oi, ci), r = !1, i = 0, a = 0, o = [], s = (e) => {
 		n.setSnapshot({
 			...n.getSnapshot(),
 			...e
@@ -12666,7 +12962,7 @@ function ri(e = {}) {
 			subscribe: n.subscribe,
 			selectProject: (e) => {
 				if (e === null) {
-					n.setSnapshot(Qr);
+					n.setSnapshot(oi);
 					return;
 				}
 				t.dispatch({
@@ -12702,7 +12998,7 @@ function ri(e = {}) {
 		} },
 		notifications: { notify: (e) => (t.dispatch({
 			type: "studio.notify",
-			message: ti(e),
+			message: li(e),
 			level: e.level
 		}), c()) },
 		runtime: {
@@ -12732,7 +13028,7 @@ function ri(e = {}) {
 						title: e.label,
 						context: e.context,
 						...r,
-						status: ni(r.status)
+						status: ui(r.status)
 					}
 				});
 			};
@@ -12806,7 +13102,7 @@ function ri(e = {}) {
 }
 //#endregion
 //#region src/app/router/routes.ts
-var ii = [
+var fi = [
 	{
 		kind: "primary",
 		name: "create",
@@ -12837,31 +13133,31 @@ var ii = [
 		name: "graph",
 		path: "/advanced/graph"
 	}
-], ai = new Map(ii.map((e) => [e.path, e])), oi = new Map(ii.map((e) => [e.name, e])), si = [
+], pi = new Map(fi.map((e) => [e.path, e])), mi = new Map(fi.map((e) => [e.name, e])), hi = [
 	["project", "projectId"],
 	["series", "seriesId"],
 	["episode", "episodeId"],
 	["shot", "shotId"]
 ];
-function ci(e) {
+function gi(e) {
 	return e?.trim() || void 0;
 }
-function li(e) {
+function _i(e) {
 	let t = {};
-	for (let [n, r] of si) {
-		let i = ci(e.get(n));
+	for (let [n, r] of hi) {
+		let i = gi(e.get(n));
 		i !== void 0 && (t[r] = i);
 	}
 	return t;
 }
-function ui(e) {
+function vi(e) {
 	let t = e.trim();
 	if (t.startsWith("#")) return t.slice(1);
 	let n = new URL(t || "/", "http://studio.local");
 	return n.hash.startsWith("#/") ? n.hash.slice(1) : `${n.pathname}${n.search}`;
 }
-function di(e) {
-	let t = ui(e), n = new URL(t, "http://studio.local"), r = ai.get(n.pathname), i = li(n.searchParams);
+function yi(e) {
+	let t = vi(e), n = new URL(t, "http://studio.local"), r = pi.get(n.pathname), i = _i(n.searchParams);
 	return r === void 0 ? {
 		kind: "not-found",
 		attemptedHref: t,
@@ -12872,19 +13168,19 @@ function di(e) {
 		context: i
 	};
 }
-function fi(e) {
-	let t = oi.get(e.name);
+function bi(e) {
+	let t = mi.get(e.name);
 	if (t === void 0 || t.kind !== e.kind) throw Error(`Invalid Studio route: ${e.kind}/${e.name}`);
 	let n = new URLSearchParams();
-	for (let [t, r] of si) {
-		let i = ci(e.context[r] ?? null);
+	for (let [t, r] of hi) {
+		let i = gi(e.context[r] ?? null);
 		i !== void 0 && n.set(t, i);
 	}
 	let r = n.toString();
 	return `#${t.path}${r ? `?${r}` : ""}`;
 }
-function pi(e, t = {}) {
-	let n = oi.get(e);
+function xi(e, t = {}) {
+	let n = mi.get(e);
 	if (n === void 0) throw Error(`Unknown Studio route: ${e}`);
 	return {
 		kind: n.kind,
@@ -12894,10 +13190,10 @@ function pi(e, t = {}) {
 }
 //#endregion
 //#region src/app/router/router.ts
-function mi(e) {
+function Si(e) {
 	let t = /* @__PURE__ */ new Set(), n, r, i = () => {
 		let t = e.location.hash;
-		return (r === void 0 || t !== n) && (n = t, r = di(t || "#/create")), r;
+		return (r === void 0 || t !== n) && (n = t, r = yi(t || "#/create")), r;
 	}, a = () => {
 		n = void 0, t.forEach((e) => {
 			e();
@@ -12906,8 +13202,8 @@ function mi(e) {
 	return e.addEventListener("hashchange", a), e.addEventListener("popstate", a), {
 		getSnapshot: i,
 		navigate(t, n = {}) {
-			let r = fi(t), o = i();
-			r !== (o.kind === "not-found" ? void 0 : fi(o)) && (n.replace ? e.history.replaceState(null, "", r) : e.history.pushState(null, "", r), a());
+			let r = bi(t), o = i();
+			r !== (o.kind === "not-found" ? void 0 : bi(o)) && (n.replace ? e.history.replaceState(null, "", r) : e.history.pushState(null, "", r), a());
 		},
 		subscribe(e) {
 			return t.add(e), () => t.delete(e);
@@ -12916,7 +13212,7 @@ function mi(e) {
 }
 //#endregion
 //#region src/app/router/messages.ts
-var hi = {
+var Ci = {
 	fr: {
 		navigation: {
 			primaryName: "Navigation principale",
@@ -12958,54 +13254,54 @@ var hi = {
 		}
 	}
 };
-function gi(e) {
+function wi(e) {
 	return e?.toLowerCase().startsWith("en") ? "en" : "fr";
 }
-function _i(e) {
-	return hi[gi(e)];
+function Ti(e) {
+	return Ci[wi(e)];
 }
 //#endregion
 //#region src/app/shell/studioCatalog.ts
-function vi(e) {
+function Ei(e) {
 	return typeof e == "object" && e && !Array.isArray(e) ? e : {};
 }
-function yi(e) {
+function Di(e) {
 	return typeof e == "string" && e.trim() ? e : null;
 }
-function bi(e) {
-	let t = vi(e).projects;
+function Oi(e) {
+	let t = Ei(e).projects;
 	return Array.isArray(t) ? t.flatMap((e) => {
-		let t = vi(e), n = yi(t.id);
+		let t = Ei(e), n = Di(t.id);
 		return n ? [{
 			id: n,
-			name: yi(t.name) ?? n
+			name: Di(t.name) ?? n
 		}] : [];
 	}) : [];
 }
-function xi(e) {
-	let t = vi(e).episodes;
+function ki(e) {
+	let t = Ei(e).episodes;
 	return Array.isArray(t) ? t.flatMap((e) => {
-		let t = vi(e), n = yi(t.id);
+		let t = Ei(e), n = Di(t.id);
 		return n ? [{
 			id: n,
-			title: yi(t.title) ?? n,
-			seriesId: yi(t.series_id)
+			title: Di(t.title) ?? n,
+			seriesId: Di(t.series_id)
 		}] : [];
 	}) : [];
 }
-function Si(e) {
-	let t = vi(e);
+function Ai(e) {
+	let t = Ei(e);
 	return {
 		enabled: typeof t.enabled == "boolean" ? t.enabled : null,
 		serviceCount: Array.isArray(t.services) ? t.services.length : 0
 	};
 }
-function Ci(e) {
+function ji(e) {
 	return {
 		projects: An({
 			queryKey: ["studio-shell", "projects"],
 			queryFn: ze,
-			select: bi
+			select: Oi
 		}),
 		episodes: An({
 			enabled: e !== null,
@@ -13015,16 +13311,16 @@ function Ci(e) {
 				e
 			],
 			queryFn: xe,
-			select: xi
+			select: ki
 		})
 	};
 }
-function wi() {
+function Mi() {
 	return An({
 		queryKey: ["studio-shell", "runtime"],
 		queryFn: at,
 		refetchInterval: 3e4,
-		select: Si
+		select: Ai
 	});
 }
 var L = {
@@ -13046,8 +13342,8 @@ var L = {
 };
 //#endregion
 //#region src/app/shell/ContextBar.tsx
-function Ti({ labels: e, onOpenShot: t }) {
-	let n = Zr(), r = Xr(), { projects: i, episodes: a } = Ci(n.projectId);
+function Ni({ labels: e, onOpenShot: t }) {
+	let n = ai(), r = ii(), { projects: i, episodes: a } = ji(n.projectId);
 	return /* @__PURE__ */ (0, b.jsxs)("nav", {
 		"aria-label": e.context,
 		className: L.contextBar,
@@ -13102,7 +13398,7 @@ function Ti({ labels: e, onOpenShot: t }) {
 }
 //#endregion
 //#region src/app/shell/messages.ts
-var Ei = {
+var Pi = {
 	fr: {
 		brand: "La Serre",
 		studio: "Studio local",
@@ -13180,22 +13476,22 @@ var Ei = {
 		language: "Interface language"
 	}
 };
-function Di(e) {
-	return Ei[gi(e)];
+function R(e) {
+	return Pi[wi(e)];
 }
 //#endregion
 //#region src/app/shell/PrimaryNavigation.tsx
-var Oi = [
+var z = [
 	"create",
 	"produce",
 	"results"
 ];
-function ki({ messages: e, route: t, onNavigate: n }) {
+function Fi({ messages: e, route: t, onNavigate: n }) {
 	return /* @__PURE__ */ (0, b.jsx)("nav", {
 		"aria-label": e.navigation.primaryName,
 		className: L.primaryNavigation,
 		"data-primary-navigation": !0,
-		children: Oi.map((r) => /* @__PURE__ */ (0, b.jsx)("button", {
+		children: z.map((r) => /* @__PURE__ */ (0, b.jsx)("button", {
 			"aria-current": t.kind !== "not-found" && t.name === r ? "page" : void 0,
 			onClick: () => n(r),
 			type: "button",
@@ -13205,8 +13501,8 @@ function ki({ messages: e, route: t, onNavigate: n }) {
 }
 //#endregion
 //#region src/app/shell/RuntimeStatus.tsx
-function Ai({ labels: e }) {
-	let t = wi(), n = t.isPending ? "checking" : t.isError || t.data?.enabled === !1 ? "unavailable" : "ready", r = e[n];
+function Ii({ labels: e }) {
+	let t = Mi(), n = t.isPending ? "checking" : t.isError || t.data?.enabled === !1 ? "unavailable" : "ready", r = e[n];
 	return /* @__PURE__ */ (0, b.jsxs)("output", {
 		"aria-label": `${e.runtime}: ${r}`,
 		className: L.runtimeStatus,
@@ -13216,7 +13512,7 @@ function Ai({ labels: e }) {
 }
 //#endregion
 //#region src/app/shell/ToolsMenu.tsx
-var ji = [
+var Li = [
 	"assets",
 	"journal",
 	"guide",
@@ -13224,7 +13520,7 @@ var ji = [
 	"writing",
 	"services"
 ];
-function Mi({ labels: e, onNavigate: t }) {
+function Ri({ labels: e, onNavigate: t }) {
 	return /* @__PURE__ */ (0, b.jsxs)("details", {
 		className: L.toolsMenu,
 		"data-tools-menu": !0,
@@ -13249,7 +13545,7 @@ function Mi({ labels: e, onNavigate: t }) {
 					type: "button",
 					children: e.graph
 				}),
-				ji.map((t) => /* @__PURE__ */ (0, b.jsx)("button", {
+				Li.map((t) => /* @__PURE__ */ (0, b.jsx)("button", {
 					onClick: () => Fn(t),
 					role: "menuitem",
 					type: "button",
@@ -13261,15 +13557,15 @@ function Mi({ labels: e, onNavigate: t }) {
 }
 //#endregion
 //#region src/app/shell/useStudioLocale.ts
-function Ni() {
-	return gi(typeof document > "u" ? void 0 : document.documentElement.lang);
+function zi() {
+	return wi(typeof document > "u" ? void 0 : document.documentElement.lang);
 }
-function Pi() {
-	let [e, t] = (0, _.useState)(Ni);
+function Bi() {
+	let [e, t] = (0, _.useState)(zi);
 	return (0, _.useEffect)(() => {
 		let e = (e) => {
 			let n = e.detail;
-			t(gi(n?.locale ?? n?.language ?? Ni()));
+			t(wi(n?.locale ?? n?.language ?? zi()));
 		};
 		return window.addEventListener("studio:language-changed", e), () => window.removeEventListener("studio:language-changed", e);
 	}, []), [e, (e) => {
@@ -13278,14 +13574,14 @@ function Pi() {
 }
 //#endregion
 //#region src/app/StudioShell.tsx
-var R = {
+var Vi = {
 	create: "guided",
 	produce: "plan",
 	results: "outputs",
 	bible: "bible",
 	settings: "settings",
 	graph: "graph"
-}, z = {
+}, Hi = {
 	guided: "#guided-workspace",
 	graph: "[data-desktop-panel=\"graph\"]",
 	plan: "[data-desktop-panel=\"plan\"]",
@@ -13293,10 +13589,10 @@ var R = {
 	bible: "#bible-workspace",
 	settings: "[data-desktop-panel=\"settings\"]"
 };
-function Fi() {
-	return mi(window);
+function Ui() {
+	return Si(window);
 }
-function Ii(e) {
+function Wi(e) {
 	return {
 		projectId: e.projectId ?? void 0,
 		seriesId: e.seriesId ?? void 0,
@@ -13304,8 +13600,8 @@ function Ii(e) {
 		shotId: e.shotId ?? void 0
 	};
 }
-function Li({ router: e, resolveLegacyRoot: t = (e) => document.querySelector(e) }) {
-	let [n] = (0, _.useState)(Fi), r = e ?? n, i = (0, _.useSyncExternalStore)(r.subscribe, r.getSnapshot, r.getSnapshot), a = Yr(), o = Zr(), s = (0, _.useRef)(i), [c, l] = (0, _.useState)(!1), [u, d] = Pi(), f = _i(u), p = Di(u), m = Ci(o.projectId);
+function Gi({ router: e, resolveLegacyRoot: t = (e) => document.querySelector(e) }) {
+	let [n] = (0, _.useState)(Ui), r = e ?? n, i = (0, _.useSyncExternalStore)(r.subscribe, r.getSnapshot, r.getSnapshot), a = ri(), o = ai(), s = (0, _.useRef)(i), [c, l] = (0, _.useState)(!1), [u, d] = Bi(), f = Ti(u), p = R(u), m = ji(o.projectId);
 	(0, _.useEffect)(() => {
 		let e = document.getElementById("studio-react-root");
 		if (e) return e.dataset.shellOwner = "react", window.dispatchEvent(new Event("studio:shell-owner-changed")), () => {
@@ -13339,7 +13635,7 @@ function Li({ router: e, resolveLegacyRoot: t = (e) => document.querySelector(e)
 		c,
 		a
 	]), (0, _.useEffect)(() => {
-		c && i.kind !== "not-found" && r.navigate(pi(i.name, Ii(o)), { replace: !0 });
+		c && i.kind !== "not-found" && r.navigate(xi(i.name, Wi(o)), { replace: !0 });
 	}, [
 		o,
 		c,
@@ -13347,7 +13643,7 @@ function Li({ router: e, resolveLegacyRoot: t = (e) => document.querySelector(e)
 		r
 	]);
 	let h = (e) => {
-		r.navigate(pi(e, Ii(o)));
+		r.navigate(xi(e, Wi(o)));
 	}, g = (e) => Fn(e), v = (() => {
 		if (i.kind === "not-found") return /* @__PURE__ */ (0, b.jsx)(O, {
 			action: /* @__PURE__ */ (0, b.jsx)(T, {
@@ -13367,9 +13663,9 @@ function Li({ router: e, resolveLegacyRoot: t = (e) => document.querySelector(e)
 			description: p.noProjectDescription,
 			title: p.noProjectTitle
 		});
-		if (i.name === "create") return /* @__PURE__ */ (0, b.jsx)(Kr, {
+		if (i.name === "create") return /* @__PURE__ */ (0, b.jsx)(ei, {
 			locale: u,
-			readyContent: /* @__PURE__ */ (0, b.jsx)(jr, {
+			readyContent: /* @__PURE__ */ (0, b.jsx)(zr, {
 				locale: u,
 				onNavigate: h
 			})
@@ -13379,7 +13675,7 @@ function Li({ router: e, resolveLegacyRoot: t = (e) => document.querySelector(e)
 				"aria-label": f.routes.bible,
 				className: L.workspaceSlot,
 				kernel: a,
-				resolveLegacyRoot: () => t(z.bible),
+				resolveLegacyRoot: () => t(Hi.bible),
 				unavailable: /* @__PURE__ */ (0, b.jsx)(O, {
 					description: f.notFound.description,
 					title: f.routes.bible
@@ -13388,7 +13684,7 @@ function Li({ router: e, resolveLegacyRoot: t = (e) => document.querySelector(e)
 			}),
 			locale: u
 		});
-		let e = R[i.name], n = z[e];
+		let e = Vi[i.name], n = Hi[e];
 		return /* @__PURE__ */ (0, b.jsx)(qn, {
 			"aria-label": f.routes[i.name],
 			className: L.workspaceSlot,
@@ -13419,7 +13715,7 @@ function Li({ router: e, resolveLegacyRoot: t = (e) => document.querySelector(e)
 						children: [/* @__PURE__ */ (0, b.jsx)("strong", { children: p.brand }), /* @__PURE__ */ (0, b.jsx)("small", { children: p.studio })]
 					})]
 				}),
-				/* @__PURE__ */ (0, b.jsx)(ki, {
+				/* @__PURE__ */ (0, b.jsx)(Fi, {
 					messages: f,
 					onNavigate: h,
 					route: i
@@ -13427,8 +13723,8 @@ function Li({ router: e, resolveLegacyRoot: t = (e) => document.querySelector(e)
 				/* @__PURE__ */ (0, b.jsxs)("div", {
 					className: L.actions,
 					children: [
-						/* @__PURE__ */ (0, b.jsx)(Ai, { labels: p.runtime }),
-						/* @__PURE__ */ (0, b.jsx)(Mi, {
+						/* @__PURE__ */ (0, b.jsx)(Ii, { labels: p.runtime }),
+						/* @__PURE__ */ (0, b.jsx)(Ri, {
 							labels: p.tools,
 							onNavigate: h
 						}),
@@ -13450,7 +13746,7 @@ function Li({ router: e, resolveLegacyRoot: t = (e) => document.querySelector(e)
 						})] })
 					]
 				}),
-				/* @__PURE__ */ (0, b.jsx)(Ti, {
+				/* @__PURE__ */ (0, b.jsx)(Ni, {
 					labels: p.context,
 					onOpenShot: () => h("produce")
 				})
@@ -13460,8 +13756,8 @@ function Li({ router: e, resolveLegacyRoot: t = (e) => document.querySelector(e)
 }
 //#endregion
 //#region src/app/StudioReactRoot.tsx
-function Ri() {
-	let e = Zr();
+function Ki() {
+	let e = ai();
 	return /* @__PURE__ */ (0, b.jsx)(x, {
 		"data-episode-id": e.episodeId ?? "",
 		"data-project-id": e.projectId ?? "",
@@ -13472,25 +13768,25 @@ function Ri() {
 		children: e.projectId ? "Contexte Studio synchronisé" : "Contexte Studio en attente"
 	});
 }
-function zi() {
-	let [e] = (0, _.useState)(ri);
-	return (0, _.useEffect)(() => (e.start(), () => e.dispose()), [e]), /* @__PURE__ */ (0, b.jsx)(Jr, {
+function qi() {
+	let [e] = (0, _.useState)(di);
+	return (0, _.useEffect)(() => (e.start(), () => e.dispose()), [e]), /* @__PURE__ */ (0, b.jsx)(ni, {
 		kernel: e.kernel,
 		children: /* @__PURE__ */ (0, b.jsxs)(ft, {
 			client: Nn,
 			children: [
-				/* @__PURE__ */ (0, b.jsx)(Ri, {}),
-				/* @__PURE__ */ (0, b.jsx)(Li, {}),
+				/* @__PURE__ */ (0, b.jsx)(Ki, {}),
+				/* @__PURE__ */ (0, b.jsx)(Gi, {}),
 				gr.map(({ Component: e, id: t }) => /* @__PURE__ */ (0, b.jsx)(e, {}, t))
 			]
 		})
 	});
 }
-function Bi() {
-	return /* @__PURE__ */ (0, b.jsx)(zi, {});
+function Ji() {
+	return /* @__PURE__ */ (0, b.jsx)(qi, {});
 }
 //#endregion
 //#region src/main.tsx
-var Vi = document.getElementById("studio-react-root");
-Vi && (Vi.dataset.reactMounted = "true", (0, v.createRoot)(Vi).render(/* @__PURE__ */ (0, b.jsx)(_.StrictMode, { children: /* @__PURE__ */ (0, b.jsx)(Bi, {}) })));
+var Yi = document.getElementById("studio-react-root");
+Yi && (Yi.dataset.reactMounted = "true", (0, v.createRoot)(Yi).render(/* @__PURE__ */ (0, b.jsx)(_.StrictMode, { children: /* @__PURE__ */ (0, b.jsx)(Ji, {}) })));
 //#endregion

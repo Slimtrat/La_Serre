@@ -1,0 +1,20 @@
+.root { display: grid; gap: var(--ui-space-5); }
+.root > header { align-items: end; display: flex; justify-content: space-between; gap: var(--ui-space-4); }
+.root h2, .root p { margin: 0; }
+.root label, .root form { display: grid; gap: var(--ui-space-2); }
+.root input, .root select, .root textarea { background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-sm); color: var(--ui-color-text); padding: var(--ui-space-2); }
+.root textarea { min-height: 5rem; resize: vertical; }
+.forms { display: grid; gap: var(--ui-space-3); grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); }
+.forms details { border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-md); padding: var(--ui-space-3); }
+.forms summary { cursor: pointer; font-weight: 700; }
+.forms form { margin-top: var(--ui-space-3); }
+.grid { display: grid; gap: var(--ui-space-4); grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+.grid img { height: 100%; object-fit: cover; width: 100%; }
+.compared { outline: 2px solid var(--ui-color-accent); }
+.meta, .actions { align-items: center; display: flex; flex-wrap: wrap; gap: var(--ui-space-2); margin-top: var(--ui-space-3); }
+.root dl { display: grid; gap: var(--ui-space-1); }
+.root dt { color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); font-weight: 700; }
+.root dd { margin: 0 0 var(--ui-space-2); overflow-wrap: anywhere; }
+.error { color: var(--ui-color-danger); }
+.notice { background: var(--ui-color-surface-raised); border-left: 3px solid var(--ui-color-warning); padding: var(--ui-space-3); }
+@media (max-width: 42rem) { .root > header { align-items: stretch; flex-direction: column; } }

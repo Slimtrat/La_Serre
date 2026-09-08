@@ -48,8 +48,7 @@ def _voice_over_candidate() -> EpisodeBreakdownCandidate:
             "shots": [
                 {
                     "source_text": (
-                        "Le grille-pain n’avait rien demandé. "
-                        "Le grille-pain n’avait rien demandé."
+                        "Le grille-pain n’avait rien demandé. Le grille-pain n’avait rien demandé."
                     ),
                     "duration": 4,
                     "location_id": "kitchen",
@@ -121,3 +120,25 @@ def test_coherence_accepts_canonical_voice_over_without_visible_speaker() -> Non
     )
 
     assert "speaker_not_visible" not in {finding.code for finding in findings}
+
+
+def test_build_shots_injects_approved_visual_master_into_new_shots(tmp_path: Path) -> None:
+    candidate = _voice_over_candidate()
+    visible = candidate.shots[0].model_copy(update={"character_ids": ["narrator"]})
+    reference = tmp_path / "narrator-master.png"
+    reference.write_bytes(b"image")
+
+    _updated, shots = build_shots(
+        Episode(
+            id="S01E001",
+            season=1,
+            episode=1,
+            title="Reference propagation",
+            narrative_source="A sufficiently detailed narrative source for the episode.",
+        ),
+        candidate.model_copy(update={"shots": [visible]}),
+        _bible(),
+        {"narrator": reference},
+    )
+
+    assert shots[0].characters[0].reference_images == [reference]
