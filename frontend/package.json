@@ -8,17 +8,18 @@
     "build:gallery": "tsc --noEmit && vite build --mode development",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run test:boundaries && npm run test:unit && npm run check:boundaries && vite build",
+    "check": "npm run lint && npm run typecheck && npm run test:boundaries && npm run test:unit && npm run check:boundaries && vite build",
     "smoke": "node ../tests/browser/react_island_smoke.mjs",
     "smoke:gallery": "node ../tests/browser/component_gallery_smoke.mjs",
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "test:boundaries": "node --test tests/boundaries/check-boundaries.test.mjs",
     "test:api": "vitest run tests/api",
     "generate:api": "orval --config orval.config.ts",
-    "test:unit": "vitest run tests/api tests/kernel tests/legacy tests/ui",
+    "test:unit": "vitest run tests/api tests/kernel tests/legacy tests/ui tests/integration",
     "test:ui": "vitest run tests/ui",
     "test:kernel": "vitest run tests/kernel",
-    "test:legacy": "vitest run tests/legacy"
+    "test:legacy": "vitest run tests/legacy",
+    "lint": "biome lint src tests scripts vite.config.ts orval.config.ts vitest.config.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "5.102.8",
@@ -26,6 +27,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.12",
     "@testing-library/react": "16.3.3",
     "@types/node": "26.5.0",
     "@types/react": "19.2.18",

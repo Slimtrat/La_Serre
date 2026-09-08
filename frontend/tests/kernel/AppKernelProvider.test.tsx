@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   AppKernelProvider,
+  type ActiveContext,
   type AppKernel,
   useActiveContext,
   useActivity,
@@ -134,7 +135,7 @@ describe("AppKernelProvider", () => {
     const unsubscribe = vi.fn((listener: () => void) =>
       listeners.delete(listener),
     );
-    let snapshot = {
+    let snapshot: ActiveContext = {
       projectId: "project-1",
       seriesId: "series-1",
       episodeId: "episode-1",
@@ -152,7 +153,9 @@ describe("AppKernelProvider", () => {
         selectSeries: vi.fn(),
         selectEpisode: (episodeId) => {
           snapshot = { ...snapshot, episodeId };
-          listeners.forEach((listener) => listener());
+          listeners.forEach((listener) => {
+            listener();
+          });
         },
         selectShot: vi.fn(),
       },

@@ -32,11 +32,40 @@ def test_quality_gate_runs_the_complete_automated_contract() -> None:
     assert "actions/upload-artifact@v4" in source
 
 
+def test_frontend_has_an_independent_cached_quality_gate_and_report() -> None:
+    source = workflow_text()
+    frontend = source.split("\n  frontend:\n", maxsplit=1)[1].split(
+        "\n  quality:\n", maxsplit=1
+    )[0]
+
+    assert "cache: npm" in frontend
+    assert "cache-dependency-path: frontend/package-lock.json" in frontend
+    assert "npm --prefix frontend ci" in frontend
+    assert "npm --prefix frontend run check" in frontend
+    assert "npm --prefix frontend run build" in frontend
+    assert "--reporter=junit" in frontend
+    assert "artifacts/frontend-test-results.xml" in frontend
+    assert frontend.count("if: always()") >= 2
+
+
+def test_python_and_frontend_evidence_is_published_even_after_failures() -> None:
+    source = workflow_text()
+    quality = source.split("\n  quality:\n", maxsplit=1)[1].split(
+        "\n  build:\n", maxsplit=1
+    )[0]
+
+    assert "Run full suite including mocked generation E2E\n        if: always()" in quality
+    assert "Publish Python test evidence\n        if: always()" in quality
+    assert "Publish frontend test evidence\n        if: always()" in source
+
+
 def test_packaging_waits_for_quality_and_skips_pull_requests() -> None:
     source = workflow_text()
 
     build = source.split("\n  build:\n", maxsplit=1)[1]
-    assert "needs: quality" in build
+    assert "needs: [frontend, quality]" in build
+    assert "needs.frontend.result == 'success'" in build
+    assert "needs.quality.result == 'success'" in build
     assert "github.event_name == 'pull_request'" not in build
     assert "github.ref == 'refs/heads/main'" in build
     assert "python -m tools.build_desktop" in build

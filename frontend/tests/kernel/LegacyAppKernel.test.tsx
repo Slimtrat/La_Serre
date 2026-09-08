@@ -94,6 +94,7 @@ describe("createLegacyAppKernel", () => {
       return (
         <>
           <button
+            type="button"
             onClick={() =>
               navigation.navigate({ kind: "workspace", view: "bible" })
             }
@@ -101,6 +102,7 @@ describe("createLegacyAppKernel", () => {
             Naviguer
           </button>
           <button
+            type="button"
             onClick={() =>
               notifications.notify({
                 level: "success",
@@ -111,7 +113,10 @@ describe("createLegacyAppKernel", () => {
           >
             Notifier
           </button>
-          <button onClick={() => context.selectEpisode("episode-next")}>
+          <button
+            type="button"
+            onClick={() => context.selectEpisode("episode-next")}
+          >
             Sélectionner
           </button>
         </>

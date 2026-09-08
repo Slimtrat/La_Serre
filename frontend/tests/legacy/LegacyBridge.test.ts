@@ -13,7 +13,10 @@ const bridges: LegacyBridge[] = [];
 function setup() {
   const logger: LegacyBridgeLogger = { warn: vi.fn() };
   const host = new EventTarget() as LegacyHost;
-  host.SerreWorkspace = { show: vi.fn(), current: vi.fn(() => "guided") };
+  host.SerreWorkspace = {
+    show: vi.fn(),
+    current: vi.fn(() => "guided" as const),
+  };
   host.SerreStudio = { notify: vi.fn() };
   host.SerreProjects = {
     ready: Promise.resolve(),
