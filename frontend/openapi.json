@@ -3305,14 +3305,34 @@
         "additionalProperties": false,
         "properties": {
           "clone_content": {
-            "default": true,
-            "title": "Clone Content",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clone Content"
+          },
+          "include_example_content": {
+            "default": false,
+            "title": "Include Example Content",
             "type": "boolean"
           },
           "name": {
             "maxLength": 80,
             "minLength": 1,
             "title": "Name",
+            "type": "string"
+          },
+          "template_id": {
+            "default": "custom",
+            "enum": [
+              "custom",
+              "tentafruit-dark-romance-v1"
+            ],
+            "title": "Template Id",
             "type": "string"
           }
         },
@@ -9517,6 +9537,26 @@
         "tags": [
           "production-queue"
         ]
+      }
+    },
+    "/api/project-templates": {
+      "get": {
+        "operationId": "list_project_templates_api_project_templates_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Project Templates Api Project Templates Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Project Templates"
       }
     },
     "/api/projects": {

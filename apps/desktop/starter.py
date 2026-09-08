@@ -58,6 +58,8 @@ def _has_episode(catalogue: Path) -> bool:
 
 def _copy_missing(source: Path, destination: Path) -> None:
     for bundled in source.rglob("*"):
+        if "project-templates" in bundled.relative_to(source).parts:
+            continue
         target = destination / bundled.relative_to(source)
         if bundled.is_dir():
             target.mkdir(parents=True, exist_ok=True)

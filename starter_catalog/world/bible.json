@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "revision": 0,
-  "updated_at": "2026-09-04T12:51:40.632119Z",
-  "title": "Bible du projet",
+  "revision": 1,
+  "updated_at": "2026-09-08T00:00:00Z",
+  "title": "Bible Tentafruit — Héritage interdit",
   "characters": [
     {
       "id": "aconit",
@@ -149,24 +149,158 @@
       "canonical_prompt_id": null
     }
   ],
-  "relationships": [],
+  "relationships": [
+    {
+      "id": "belladone-aconit",
+      "source": "belladone",
+      "target": "aconit",
+      "label": "Désir nié sous surveillance",
+      "summary": "Belladone provoque Aconit pour obtenir un aveu; Aconit protège Belladone tout en refusant de nommer son attachement.",
+      "desire": 72,
+      "trust": 46,
+      "anger": 24,
+      "fear": 58,
+      "attachment": 68,
+      "toxicity": 18
+    },
+    {
+      "id": "graine-emprise-belladone",
+      "source": "graine-noire",
+      "target": "belladone",
+      "label": "Emprise antagoniste",
+      "summary": "La Graine Noire exploite les dénis de Belladone sans que cette contrainte soit présentée comme romantique.",
+      "desire": -40,
+      "trust": -90,
+      "anger": 66,
+      "fear": 74,
+      "attachment": -55,
+      "toxicity": 92
+    }
+  ],
   "art_direction": {
-    "summary": "",
-    "visual_style": [],
-    "palette": [],
-    "rendering_rules": [],
-    "banned_elements": []
+    "summary": "Fantaisie botanique gothique stylisée, lisible sur écran vertical, où les silhouettes végétales et la lumière racontent avant le dialogue.",
+    "visual_style": [
+      "animation cinématique botanique stylisée",
+      "formes végétales majoritaires et visages légèrement humanisés",
+      "composition verticale avec sujet lisible au centre"
+    ],
+    "palette": [
+      "violet nocturne",
+      "bleu aconit",
+      "vert olive toxique",
+      "lavande lunaire",
+      "noir obsidienne"
+    ],
+    "rendering_rules": [
+      "Conserver les marqueurs botaniques et détails signatures entre les plans.",
+      "Réserver le premier plan et les contrastes forts au beat narratif actif.",
+      "Éviter tout texte généré dans image et toute marque visible."
+    ],
+    "banned_elements": [
+      "photorealisme humain",
+      "gore explicite",
+      "sexualisation non consentie",
+      "logos et propriétés tierces",
+      "changement silencieux de silhouette ou de palette"
+    ]
   },
   "tone": {
-    "summary": "",
-    "keywords": [],
-    "dialogue_rules": [],
-    "content_boundaries": []
+    "summary": "Romance sombre comique: désir contrarié, menace réelle et reparties sèches, sans confondre danger et consentement.",
+    "keywords": [
+      "intime",
+      "vénéneux",
+      "joueur",
+      "tendu",
+      "mélancolique"
+    ],
+    "dialogue_rules": [
+      "Une réplique courte doit modifier le rapport de force ou révéler un déni.",
+      "Belladone masque sa vulnérabilité par la provocation; Aconit par la précision sèche.",
+      "Laisser des silences et réactions visuelles; ne pas expliquer ce que le plan montre."
+    ],
+    "content_boundaries": [
+      "Ne jamais romantiser la coercition, emprise ou violence.",
+      "Aucun contenu sexuel explicite.",
+      "Aucune référence, imitation ou continuité issue de propriété tierce."
+    ]
   },
-  "world_rules": [],
-  "narrative_arcs": [],
-  "secrets": [],
+  "world_rules": [
+    {
+      "id": "poison-has-consequence",
+      "statement": "Tout usage de poison a un coût visible, une limite ou une conséquence narrative.",
+      "applies_to": [
+        "characters",
+        "episodes"
+      ],
+      "immutable": true
+    },
+    {
+      "id": "greenhouse-reacts-to-truth",
+      "statement": "La serre réagit aux mensonges et vérités émotionnelles sans révéler seule un secret canonique.",
+      "applies_to": [
+        "locations",
+        "relationships",
+        "secrets"
+      ],
+      "immutable": true
+    },
+    {
+      "id": "human-validation-remains-explicit",
+      "statement": "Aucun changement de relation ou de canon généré ne devient définitif sans validation humaine.",
+      "applies_to": [
+        "relationships",
+        "narrative_arcs"
+      ],
+      "immutable": true
+    }
+  ],
+  "narrative_arcs": [
+    {
+      "id": "heritage-interdit",
+      "title": "Héritage interdit",
+      "summary": "Belladone et Aconit doivent comprendre pourquoi la Graine Noire les a choisies tandis que leurs dénis la nourrissent.",
+      "character_ids": [
+        "belladone",
+        "aconit",
+        "graine-noire"
+      ],
+      "status": "active",
+      "start_episode": "S01E001",
+      "end_episode": null,
+      "beats": [
+        "La graine les lie.",
+        "Leurs mensonges renforcent son emprise.",
+        "Une vérité librement dite peut interrompre sa germination."
+      ]
+    }
+  ],
+  "secrets": [
+    {
+      "id": "aconit-recognized-seed",
+      "owners": [
+        "aconit"
+      ],
+      "known_by": [
+        "aconit"
+      ],
+      "hidden_from": [
+        "belladone"
+      ],
+      "summary": "Aconit reconnaît un symbole ancien sur la Graine Noire mais cache encore ce souvenir à Belladone.",
+      "severity": 0.72,
+      "created_episode": 1,
+      "revealed": false
+    }
+  ],
   "references": [],
   "prompts": [],
-  "changes": []
+  "changes": [
+    {
+      "revision": 1,
+      "changed_at": "2026-09-08T00:00:00Z",
+      "entity_type": "project_bible",
+      "entity_id": "tentafruit-starter",
+      "operation": "replace"
+    }
+  ]
 }

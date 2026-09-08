@@ -13,6 +13,13 @@ from typing import Any, Literal, cast
 
 from engine.config import Settings
 from engine.production.artifacts import write_text_atomic
+from engine.templates import (
+    TENTAFRUIT_TEMPLATE_ID,
+    ProjectTemplateCatalog,
+    SeriesFormatProfile,
+    load_format_profile,
+)
+from engine.templates.catalog import FORMAT_PROFILE_FILENAME
 
 PROJECT_ID = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 ProjectKind = Literal["discovery", "user"]
@@ -30,6 +37,7 @@ class StudioProject:
     kind: ProjectKind = "user"
     storage_managed: bool = False
     storage_layout: StorageLayout = "legacy"
+    template_id: str = "custom"
 
     @classmethod
     def from_payload(cls, payload: dict[str, Any]) -> StudioProject:
@@ -52,16 +60,25 @@ class StudioProject:
             storage_layout=cast(
                 StorageLayout,
                 str(payload["storage_layout"])
-                if payload.get("storage_layout")
-                in {"legacy", "shared-root", "split-roots"}
+                if payload.get("storage_layout") in {"legacy", "shared-root", "split-roots"}
                 else "legacy",
+            ),
+            template_id=str(
+                payload.get("template_id")
+                or (TENTAFRUIT_TEMPLATE_ID if kind == "discovery" else "custom")
             ),
         )
         if not PROJECT_ID.fullmatch(project.id):
             raise ValueError(f"Identifiant de projet invalide : {project.id}")
         return project
 
-    def public(self, *, active: bool, deletable: bool) -> dict[str, object]:
+    def public(
+        self,
+        *,
+        active: bool,
+        deletable: bool,
+        format_profile: SeriesFormatProfile,
+    ) -> dict[str, object]:
         work_dir = Path(self.private_content_dir).resolve()
         output_dir = Path(self.output_dir).resolve()
         return {
@@ -73,6 +90,7 @@ class StudioProject:
             "output_exists": output_dir.is_dir(),
             "active": active,
             "deletable": deletable,
+            "format_profile": format_profile.model_dump(mode="json"),
         }
 
 
@@ -85,12 +103,14 @@ class ProjectRegistry:
         *,
         config_path: Path,
         projects_root: Path,
+        template_catalog: ProjectTemplateCatalog | None = None,
     ) -> None:
         self._lock = threading.RLock()
         self.config_path = config_path.resolve()
         self.projects_root = projects_root.resolve()
         self.work_root = self.projects_root
         self.output_root = self.projects_root
+        self.template_catalog = template_catalog or ProjectTemplateCatalog()
         fallback = StudioProject(
             id="default",
             name="Découverte — L’Héritage interdit",
@@ -98,6 +118,7 @@ class ProjectRegistry:
             output_dir=str(base_settings.output_dir.resolve()),
             created_at=datetime.now(UTC).isoformat(),
             kind="discovery",
+            template_id=TENTAFRUIT_TEMPLATE_ID,
         )
         self.projects: dict[str, StudioProject] = {fallback.id: fallback}
         self.active_id = fallback.id
@@ -126,10 +147,8 @@ class ProjectRegistry:
                     project.public(
                         active=project.id == self.active_id,
                         deletable=len(self.projects) > 1
-                        and (
-                            project.id != self.active_id
-                            or project.kind == "discovery"
-                        ),
+                        and (project.id != self.active_id or project.kind == "discovery"),
+                        format_profile=self.format_profile(project.id),
                     )
                     for project in self.projects.values()
                 ],
@@ -139,16 +158,10 @@ class ProjectRegistry:
         return {
             "work_root": str(self.work_root),
             "output_root": str(self.output_root),
-            "layout": (
-                "shared-root"
-                if self.work_root == self.output_root
-                else "split-roots"
-            ),
+            "layout": ("shared-root" if self.work_root == self.output_root else "split-roots"),
         }
 
-    def configure_storage(
-        self, work_root: Path, output_root: Path
-    ) -> dict[str, object]:
+    def configure_storage(self, work_root: Path, output_root: Path) -> dict[str, object]:
         """Set roots used by future projects without moving existing data."""
         with self._lock:
             work = self._validate_storage_root(work_root)
@@ -160,11 +173,28 @@ class ProjectRegistry:
             self._save()
             return self.storage_listing()
 
-    def create(self, name: str, *, clone_content: bool = True) -> StudioProject:
+    def create(
+        self,
+        name: str,
+        *,
+        clone_content: bool | None = None,
+        template_id: str = "custom",
+        include_example_content: bool = False,
+    ) -> StudioProject:
         clean_name = " ".join(name.split()).strip()
         if not clean_name:
             raise ValueError("Le nom du projet est vide")
+        try:
+            template = self.template_catalog.get(template_id)
+        except KeyError as exc:
+            raise ValueError(f"Template de projet inconnu : {template_id}") from exc
+        should_clone = clone_content if clone_content is not None else template_id == "custom"
+        if template_id != "custom" and should_clone:
+            raise ValueError("clone_content ne peut pas être combiné avec un template de projet")
         with self._lock:
+            project_template_id = (
+                self.active.template_id if should_clone and template_id == "custom" else template.id
+            )
             base_id = self._slug(clean_name)
             project_id = base_id
             suffix = 2
@@ -186,23 +216,25 @@ class ProjectRegistry:
                 else private_root.exists() or output_root.exists()
             )
             if namespace_exists:
-                raise ValueError(
-                    "Un dossier existe déjà pour cet identifiant de projet"
-                )
+                raise ValueError("Un dossier existe déjà pour cet identifiant de projet")
             cleanup_targets = (
-                [private_root.parent]
-                if layout == "shared-root"
-                else [private_root, output_root]
+                [private_root.parent] if layout == "shared-root" else [private_root, output_root]
             )
             try:
-                if clone_content and Path(self.active.private_content_dir).is_dir():
+                if include_example_content:
+                    if not template.example_catalog:
+                        raise ValueError("Ce template ne fournit aucun contenu exemple")
+                    self._copy_example_catalog(template.example_catalog, private_root)
+                elif should_clone and Path(self.active.private_content_dir).is_dir():
                     shutil.copytree(self.active.private_content_dir, private_root)
                 else:
                     (private_root / "episodes").mkdir(parents=True, exist_ok=True)
                 output_root.mkdir(parents=True, exist_ok=True)
                 self._write_marker(private_root, project_id, "work")
                 self._write_marker(output_root, project_id, "output")
-            except OSError:
+                profile = self.template_catalog.get(project_template_id).format_profile
+                self._write_format_profile(private_root, profile)
+            except (OSError, ValueError):
                 for target in cleanup_targets:
                     if target.exists() and not target.is_symlink():
                         shutil.rmtree(target)
@@ -216,11 +248,24 @@ class ProjectRegistry:
                 kind="user",
                 storage_managed=True,
                 storage_layout=layout,
+                template_id=project_template_id,
             )
             self.projects[project.id] = project
             self.active_id = project.id
             self._save()
             return project
+
+    def format_profile(self, project_id: str | None = None) -> SeriesFormatProfile:
+        with self._lock:
+            selected_id = project_id or self.active_id
+            if selected_id not in self.projects:
+                raise KeyError(selected_id)
+            project = self.projects[selected_id]
+            return load_format_profile(
+                Path(project.private_content_dir),
+                fallback_template_id=project.template_id,
+                catalog=self.template_catalog,
+            )
 
     def remove(
         self,
@@ -272,14 +317,10 @@ class ProjectRegistry:
             path.mkdir(parents=True, exist_ok=True)
             return path
 
-    def open_folder(
-        self, project_id: str, role: Literal["work", "output"]
-    ) -> Path:
+    def open_folder(self, project_id: str, role: Literal["work", "output"]) -> Path:
         path = self.folder(project_id, role)
         if os.name != "nt":
-            raise OSError(
-                "L’ouverture de dossier est disponible dans l’application Windows"
-            )
+            raise OSError("L’ouverture de dossier est disponible dans l’application Windows")
         os.startfile(str(path))
         return path
 
@@ -293,9 +334,7 @@ class ProjectRegistry:
                 raise ValueError("Seul le projet Découverte peut être supprimé ici")
             remaining = [item for item in self.projects.values() if item.id != project_id]
             if not remaining:
-                raise ValueError(
-                    "Crée d’abord ton projet avant de supprimer le projet Découverte"
-                )
+                raise ValueError("Crée d’abord ton projet avant de supprimer le projet Découverte")
             del self.projects[project_id]
             if self.active_id == project_id:
                 self.active_id = remaining[0].id
@@ -337,7 +376,7 @@ class ProjectRegistry:
 
     def _save(self) -> None:
         payload = {
-            "version": 3,
+            "version": 4,
             "active_id": self.active_id,
             "storage": self.storage_listing(),
             "projects": [asdict(project) for project in self.projects.values()],
@@ -346,6 +385,27 @@ class ProjectRegistry:
             self.config_path,
             json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
         )
+
+    def _copy_example_catalog(self, relative_source: str, destination: Path) -> None:
+        bundle_root = self.template_catalog.root.parent.parent.resolve()
+        source = (bundle_root / relative_source).resolve()
+        if not source.is_relative_to(bundle_root) or not source.is_dir():
+            raise ValueError("Le catalogue exemple du template est indisponible")
+        destination.mkdir(parents=True, exist_ok=False)
+        for name in ("episodes", "world", "README.md"):
+            bundled = source / name
+            target = destination / name
+            if bundled.is_dir():
+                shutil.copytree(bundled, target)
+            elif bundled.is_file():
+                shutil.copy2(bundled, target)
+
+    @staticmethod
+    def _write_format_profile(private_root: Path, profile: SeriesFormatProfile) -> None:
+        path = private_root / FORMAT_PROFILE_FILENAME
+        if path.exists():
+            return
+        write_text_atomic(path, profile.model_dump_json(indent=2) + "\n")
 
     @staticmethod
     def _slug(value: str) -> str:
@@ -360,9 +420,7 @@ class ProjectRegistry:
             raise ValueError("Le dossier racine doit être un chemin absolu")
         root = expanded.resolve()
         if root == Path(root.anchor):
-            raise ValueError(
-                "Choisis un dossier racine précis, pas la racine d’un disque"
-            )
+            raise ValueError("Choisis un dossier racine précis, pas la racine d’un disque")
         return root
 
     @staticmethod
@@ -373,9 +431,7 @@ class ProjectRegistry:
         return target
 
     @staticmethod
-    def _write_marker(
-        path: Path, project_id: str, role: Literal["work", "output"]
-    ) -> None:
+    def _write_marker(path: Path, project_id: str, role: Literal["work", "output"]) -> None:
         write_text_atomic(
             path / PROJECT_MARKER,
             json.dumps(
@@ -403,9 +459,7 @@ class ProjectRegistry:
                 or container.name != project.id
                 or container.parent == Path(container.anchor)
             ):
-                raise ValueError(
-                    "Les chemins du projet ne correspondent plus à son manifeste"
-                )
+                raise ValueError("Les chemins du projet ne correspondent plus à son manifeste")
             targets = [container]
         else:
             if (
@@ -415,9 +469,7 @@ class ProjectRegistry:
                 or work.parent == Path(work.anchor)
                 or output.parent == Path(output.anchor)
             ):
-                raise ValueError(
-                    "Les chemins du projet ne correspondent plus à son manifeste"
-                )
+                raise ValueError("Les chemins du projet ne correspondent plus à son manifeste")
             targets = [work, output]
 
         self._validate_marker(work, project.id, "work")
@@ -428,9 +480,7 @@ class ProjectRegistry:
         return targets
 
     @staticmethod
-    def _validate_marker(
-        path: Path, project_id: str, role: Literal["work", "output"]
-    ) -> None:
+    def _validate_marker(path: Path, project_id: str, role: Literal["work", "output"]) -> None:
         marker = path / PROJECT_MARKER
         try:
             payload: Any = json.loads(marker.read_text(encoding="utf-8"))
