@@ -1392,6 +1392,26 @@ export interface NotificationReadRequest {
   ids?: string[] | null;
 }
 
+export interface PackRepairRequest {
+  /** @maxItems 100 */
+  accepted_license_ids?: string[];
+}
+
+export type PackStartRequestMode = typeof PackStartRequestMode[keyof typeof PackStartRequestMode];
+
+
+export const PackStartRequestMode = {
+  automatic: 'automatic',
+  manual: 'manual',
+} as const;
+
+export interface PackStartRequest {
+  /** @maxItems 100 */
+  accepted_license_ids?: string[];
+  mode?: PackStartRequestMode;
+  use_personal_comfy_models?: boolean;
+}
+
 export interface PriorityRequest {
   /**
      * @minimum -100
@@ -1998,7 +2018,27 @@ pack_id?: string;
 
 export type DiagnosePackApiRuntimePacksCurrentGet200 = { [key: string]: unknown };
 
+export type LatestJobApiRuntimePacksJobsLatestGetParams = {
+use_personal_comfy_models?: boolean;
+};
+
+export type LatestJobApiRuntimePacksJobsLatestGet200 = { [key: string]: unknown };
+
+export type GetJobApiRuntimePacksJobsJobIdGet200 = { [key: string]: unknown };
+
+export type CancelJobApiRuntimePacksJobsJobIdCancelPost200 = { [key: string]: unknown };
+
+export type GetLogsApiRuntimePacksJobsJobIdLogsGet200 = { [key: string]: unknown };
+
+export type PauseJobApiRuntimePacksJobsJobIdPausePost200 = { [key: string]: unknown };
+
+export type RepairJobApiRuntimePacksJobsJobIdRepairPost202 = { [key: string]: unknown };
+
+export type ResumeJobApiRuntimePacksJobsJobIdResumePost202 = { [key: string]: unknown };
+
 export type DiagnosePackApiRuntimePacksPackIdGet200 = { [key: string]: unknown };
+
+export type StartJobApiRuntimePacksPackIdJobsPost202 = { [key: string]: unknown };
 
 export type RuntimeServicesApiRuntimeServicesGet200 = { [key: string]: unknown };
 
@@ -6065,6 +6105,211 @@ export const diagnosePackApiRuntimePacksCurrentGet = async (params?: DiagnosePac
 
 
 
+export const getLatestJobApiRuntimePacksJobsLatestGetUrl = (params?: LatestJobApiRuntimePacksJobsLatestGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/runtime-packs/jobs/latest?${stringifiedParams}` : `/api/runtime-packs/jobs/latest`
+}
+
+/**
+ * @summary Latest Job
+ */
+export const latestJobApiRuntimePacksJobsLatestGet = async (params?: LatestJobApiRuntimePacksJobsLatestGetParams, options?: Parameters<typeof orvalFetch>[1]): Promise<LatestJobApiRuntimePacksJobsLatestGet200> => {
+
+  return orvalFetch<LatestJobApiRuntimePacksJobsLatestGet200>(getLatestJobApiRuntimePacksJobsLatestGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetJobApiRuntimePacksJobsJobIdGetUrl = (jobId: string,) => {
+
+
+
+
+  return `/api/runtime-packs/jobs/${jobId}`
+}
+
+/**
+ * @summary Get Job
+ */
+export const getJobApiRuntimePacksJobsJobIdGet = async (jobId: string, options?: Parameters<typeof orvalFetch>[1]): Promise<GetJobApiRuntimePacksJobsJobIdGet200> => {
+
+  return orvalFetch<GetJobApiRuntimePacksJobsJobIdGet200>(getGetJobApiRuntimePacksJobsJobIdGetUrl(jobId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getCancelJobApiRuntimePacksJobsJobIdCancelPostUrl = (jobId: string,) => {
+
+
+
+
+  return `/api/runtime-packs/jobs/${jobId}/cancel`
+}
+
+/**
+ * @summary Cancel Job
+ */
+export const cancelJobApiRuntimePacksJobsJobIdCancelPost = async (jobId: string, options?: Parameters<typeof orvalFetch>[1]): Promise<CancelJobApiRuntimePacksJobsJobIdCancelPost200> => {
+
+  return orvalFetch<CancelJobApiRuntimePacksJobsJobIdCancelPost200>(getCancelJobApiRuntimePacksJobsJobIdCancelPostUrl(jobId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export const getGetLogsApiRuntimePacksJobsJobIdLogsGetUrl = (jobId: string,) => {
+
+
+
+
+  return `/api/runtime-packs/jobs/${jobId}/logs`
+}
+
+/**
+ * @summary Get Logs
+ */
+export const getLogsApiRuntimePacksJobsJobIdLogsGet = async (jobId: string, options?: Parameters<typeof orvalFetch>[1]): Promise<GetLogsApiRuntimePacksJobsJobIdLogsGet200> => {
+
+  return orvalFetch<GetLogsApiRuntimePacksJobsJobIdLogsGet200>(getGetLogsApiRuntimePacksJobsJobIdLogsGetUrl(jobId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getPauseJobApiRuntimePacksJobsJobIdPausePostUrl = (jobId: string,) => {
+
+
+
+
+  return `/api/runtime-packs/jobs/${jobId}/pause`
+}
+
+/**
+ * @summary Pause Job
+ */
+export const pauseJobApiRuntimePacksJobsJobIdPausePost = async (jobId: string, options?: Parameters<typeof orvalFetch>[1]): Promise<PauseJobApiRuntimePacksJobsJobIdPausePost200> => {
+
+  return orvalFetch<PauseJobApiRuntimePacksJobsJobIdPausePost200>(getPauseJobApiRuntimePacksJobsJobIdPausePostUrl(jobId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export const getRepairJobApiRuntimePacksJobsJobIdRepairPostUrl = (jobId: string,) => {
+
+
+
+
+  return `/api/runtime-packs/jobs/${jobId}/repair`
+}
+
+/**
+ * @summary Repair Job
+ */
+export const repairJobApiRuntimePacksJobsJobIdRepairPost = async (jobId: string,
+    packRepairRequest: PackRepairRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<RepairJobApiRuntimePacksJobsJobIdRepairPost202> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<RepairJobApiRuntimePacksJobsJobIdRepairPost202>(getRepairJobApiRuntimePacksJobsJobIdRepairPostUrl(jobId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(packRepairRequest)
+  }
+);}
+
+
+
+export const getResumeJobApiRuntimePacksJobsJobIdResumePostUrl = (jobId: string,) => {
+
+
+
+
+  return `/api/runtime-packs/jobs/${jobId}/resume`
+}
+
+/**
+ * @summary Resume Job
+ */
+export const resumeJobApiRuntimePacksJobsJobIdResumePost = async (jobId: string,
+    packRepairRequest: PackRepairRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<ResumeJobApiRuntimePacksJobsJobIdResumePost202> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<ResumeJobApiRuntimePacksJobsJobIdResumePost202>(getResumeJobApiRuntimePacksJobsJobIdResumePostUrl(jobId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(packRepairRequest)
+  }
+);}
+
+
+
 export const getDiagnosePackApiRuntimePacksPackIdGetUrl = (packId: string,) => {
 
 
@@ -6084,6 +6329,45 @@ export const diagnosePackApiRuntimePacksPackIdGet = async (packId: string, optio
     method: 'GET'
 
 
+  }
+);}
+
+
+
+export const getStartJobApiRuntimePacksPackIdJobsPostUrl = (packId: string,) => {
+
+
+
+
+  return `/api/runtime-packs/${packId}/jobs`
+}
+
+/**
+ * @summary Start Job
+ */
+export const startJobApiRuntimePacksPackIdJobsPost = async (packId: string,
+    packStartRequest: PackStartRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<StartJobApiRuntimePacksPackIdJobsPost202> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<StartJobApiRuntimePacksPackIdJobsPost202>(getStartJobApiRuntimePacksPackIdJobsPostUrl(packId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(packStartRequest)
   }
 );}
 
