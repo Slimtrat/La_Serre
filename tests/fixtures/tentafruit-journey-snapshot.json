@@ -1,0 +1,18 @@
+{
+  "project_id": "tentafruit",
+  "active_episode_id": "S01E001",
+  "counts": {
+    "episodes": 1,
+    "shots": 10
+  },
+  "stages": {
+    "idea": "empty",
+    "casting": "approved",
+    "relationships": "empty",
+    "season": "empty",
+    "episode": "draft",
+    "storyboard": "approved",
+    "production": "blocked",
+    "release": "blocked"
+  }
+}

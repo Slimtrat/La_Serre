@@ -224,6 +224,29 @@
         "title": "BibleExchangeDocument",
         "type": "object"
       },
+      "Blocker": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "resolution": {
+            "$ref": "#/components/schemas/PrimaryAction"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "resolution"
+        ],
+        "title": "Blocker",
+        "type": "object"
+      },
       "BreakdownApplyRequest": {
         "additionalProperties": false,
         "properties": {
@@ -2495,6 +2518,108 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "JourneyCounts": {
+        "additionalProperties": false,
+        "properties": {
+          "active_jobs": {
+            "default": 0,
+            "title": "Active Jobs",
+            "type": "integer"
+          },
+          "awaiting_approval": {
+            "default": 0,
+            "title": "Awaiting Approval",
+            "type": "integer"
+          },
+          "episodes": {
+            "default": 0,
+            "title": "Episodes",
+            "type": "integer"
+          },
+          "failed_jobs": {
+            "default": 0,
+            "title": "Failed Jobs",
+            "type": "integer"
+          },
+          "generated_media": {
+            "default": 0,
+            "title": "Generated Media",
+            "type": "integer"
+          },
+          "shots": {
+            "default": 0,
+            "title": "Shots",
+            "type": "integer"
+          },
+          "stale_artifacts": {
+            "default": 0,
+            "title": "Stale Artifacts",
+            "type": "integer"
+          }
+        },
+        "title": "JourneyCounts",
+        "type": "object"
+      },
+      "JourneyStageSnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "blockers": {
+            "items": {
+              "$ref": "#/components/schemas/Blocker"
+            },
+            "title": "Blockers",
+            "type": "array"
+          },
+          "count": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "id": {
+            "enum": [
+              "idea",
+              "casting",
+              "relationships",
+              "season",
+              "episode",
+              "storyboard",
+              "production",
+              "release"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "primary_action": {
+            "$ref": "#/components/schemas/PrimaryAction"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JourneyStatus"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "primary_action"
+        ],
+        "title": "JourneyStageSnapshot",
+        "type": "object"
+      },
+      "JourneyStatus": {
+        "enum": [
+          "empty",
+          "draft",
+          "ready",
+          "approved",
+          "running",
+          "blocked",
+          "failed",
+          "stale",
+          "completed"
+        ],
+        "title": "JourneyStatus",
+        "type": "string"
+      },
       "LocationProfile": {
         "additionalProperties": false,
         "properties": {
@@ -2915,6 +3040,41 @@
           }
         },
         "title": "PortableProjectBible",
+        "type": "object"
+      },
+      "PrimaryAction": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "mode": {
+            "default": "manual",
+            "enum": [
+              "manual",
+              "review",
+              "generate",
+              "settings"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label",
+          "target"
+        ],
+        "title": "PrimaryAction",
         "type": "object"
       },
       "PriorityRequest": {
@@ -3729,6 +3889,63 @@
           "comfyui_url"
         ],
         "title": "StudioConfigRequest",
+        "type": "object"
+      },
+      "StudioJourneySnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "active_episode_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Episode Id"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/JourneyCounts"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "string"
+          },
+          "schema_version": {
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/JourneyStageSnapshot"
+            },
+            "title": "Stages",
+            "type": "array"
+          },
+          "stale_artifacts": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Stale Artifacts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "project_id",
+          "active_episode_id",
+          "revision",
+          "counts",
+          "stale_artifacts",
+          "stages"
+        ],
+        "title": "StudioJourneySnapshot",
         "type": "object"
       },
       "ToneProfile": {
@@ -9614,6 +9831,27 @@
           }
         },
         "summary": "Ready"
+      }
+    },
+    "/api/studio/journey": {
+      "get": {
+        "operationId": "journey_api_studio_journey_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudioJourneySnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Journey",
+        "tags": [
+          "studio"
+        ]
       }
     },
     "/api/workflow-graphs/{kind}": {

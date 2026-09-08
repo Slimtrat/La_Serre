@@ -10563,21 +10563,21 @@ function Mn() {
 	});
 }
 var A = {
-	shell: "_shell_6bahj_1",
-	header: "_header_6bahj_11",
-	brand: "_brand_6bahj_21",
-	brandMark: "_brandMark_6bahj_29",
-	brandText: "_brandText_6bahj_40",
-	primaryNavigation: "_primaryNavigation_6bahj_50",
-	toolsMenu: "_toolsMenu_6bahj_60",
-	languageSelect: "_languageSelect_6bahj_62",
-	contextLink: "_contextLink_6bahj_63",
-	actions: "_actions_6bahj_83",
-	runtimeStatus: "_runtimeStatus_6bahj_90",
-	contextBar: "_contextBar_6bahj_166",
-	contextControl: "_contextControl_6bahj_176",
-	contextValue: "_contextValue_6bahj_177",
-	routeState: "_routeState_6bahj_228"
+	shell: "_shell_1vme5_1",
+	header: "_header_1vme5_11",
+	brand: "_brand_1vme5_21",
+	brandMark: "_brandMark_1vme5_29",
+	brandText: "_brandText_1vme5_40",
+	primaryNavigation: "_primaryNavigation_1vme5_50",
+	toolsMenu: "_toolsMenu_1vme5_60",
+	languageSelect: "_languageSelect_1vme5_62",
+	contextLink: "_contextLink_1vme5_63",
+	actions: "_actions_1vme5_83",
+	runtimeStatus: "_runtimeStatus_1vme5_90",
+	contextBar: "_contextBar_1vme5_166",
+	contextControl: "_contextControl_1vme5_176",
+	contextValue: "_contextValue_1vme5_177",
+	routeState: "_routeState_1vme5_226"
 };
 //#endregion
 //#region src/app/shell/ContextBar.tsx
