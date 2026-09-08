@@ -55,6 +55,17 @@ export function findBoundaryViolations(sourceFile, sourceText) {
       violations.push({ sourceFile, line, specifier, reason });
     }
   }
+  if (source.layer === "feature") {
+    for (const match of sourceText.matchAll(/(?<![\w.])fetch\s*\(/g)) {
+      const line = sourceText.slice(0, match.index).split("\n").length;
+      violations.push({
+        sourceFile,
+        line,
+        specifier: "fetch",
+        reason: "une feature doit passer par le client partagé @shared/api",
+      });
+    }
+  }
   return violations;
 }
 

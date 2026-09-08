@@ -63,6 +63,12 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev,desktop]"
 
+      - name: Verify generated OpenAPI contract and client
+        run: |
+          python -m tools.export_openapi
+          npm --prefix frontend run generate:api
+          git diff --exit-code -- frontend/openapi.json frontend/src/generated
+
       - name: Lint and type-check the complete product
         run: |
           ruff check .

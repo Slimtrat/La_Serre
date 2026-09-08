@@ -7,12 +7,15 @@
     "dev": "vite build --watch",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run test:boundaries && npm run check:boundaries && vite build",
+    "check": "npm run typecheck && npm run test:boundaries && npm run test:api && npm run check:boundaries && vite build",
     "smoke": "node ../tests/browser/react_island_smoke.mjs",
     "check:boundaries": "node scripts/check-boundaries.mjs",
-    "test:boundaries": "node --test tests/boundaries/check-boundaries.test.mjs"
+    "test:boundaries": "node --test tests/boundaries/check-boundaries.test.mjs",
+    "test:api": "vitest run tests/api",
+    "generate:api": "orval --config orval.config.ts"
   },
   "dependencies": {
+    "@tanstack/react-query": "5.102.8",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
@@ -20,8 +23,10 @@
     "@types/node": "26.5.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
+    "orval": "8.30.0",
     "playwright": "1.63.0",
     "typescript": "7.0.2",
-    "vite": "8.2.2"
+    "vite": "8.2.2",
+    "vitest": "5.0.0"
   }
 }
