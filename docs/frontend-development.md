@@ -5,6 +5,10 @@ reste le serveur de l’application et continue de charger l’interface histori
 Vite dépose des fichiers statiques à noms stables dans `apps/api/static/ui/` ; aucun runtime
 Node.js n’est nécessaire pour lancer l’application livrée.
 
+Les nouvelles capacités suivent l’architecture décrite dans
+[`docs/adr/frontend-feature-first.md`](adr/frontend-feature-first.md) : `features/` contient les
+capacités métier, `app/` les compose et `shared/` fournit uniquement des briques agnostiques.
+
 ## Prérequis
 
 - Python 3.12 ou supérieur avec les dépendances de développement du projet ;
@@ -43,8 +47,7 @@ le shell historique, tandis que Vite fournit la compilation et le diagnostic Typ
 Avant une pull request qui touche au frontend :
 
 ```powershell
-npm --prefix frontend run typecheck
-npm --prefix frontend run build
+npm --prefix frontend run check
 pytest tests/test_frontend_assets.py
 ```
 

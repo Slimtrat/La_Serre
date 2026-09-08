@@ -56,8 +56,7 @@ jobs:
       - name: Install and verify frontend dependencies
         run: |
           npm --prefix frontend ci
-          npm --prefix frontend run typecheck
-          npm --prefix frontend run build
+          npm --prefix frontend run check
 
       - name: Install application and test dependencies
         run: |

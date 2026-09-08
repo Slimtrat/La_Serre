@@ -1,15 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import "./studio-react-root.css";
-
-export function StudioReactRoot() {
-  return (
-    <span className="studio-react-root__status" role="status">
-      Interface React initialisée
-    </span>
-  );
-}
+import { StudioReactRoot } from "@app";
 
 const container = document.getElementById("studio-react-root");
 
