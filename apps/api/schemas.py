@@ -56,7 +56,9 @@ class AssetReuseRequest(StrictRequest):
 
 class ProjectCreateRequest(StrictRequest):
     name: str = Field(min_length=1, max_length=80)
-    clone_content: bool = True
+    template_id: Literal["custom", "tentafruit-dark-romance-v1"] = "custom"
+    include_example_content: bool = False
+    clone_content: bool | None = None
 
 
 class ProjectStorageRequest(StrictRequest):
@@ -116,9 +118,7 @@ class EditorialVersionRequest(StrictRequest):
     shots: list[dict[str, Any]] | None = None
     shot: dict[str, Any] | None = None
     shot_source: str | None = Field(default=None, max_length=50_000)
-    provenance: EditorialProvenanceRequest = Field(
-        default_factory=EditorialProvenanceRequest
-    )
+    provenance: EditorialProvenanceRequest = Field(default_factory=EditorialProvenanceRequest)
 
 
 class EditorialExplanationRequest(StrictRequest):

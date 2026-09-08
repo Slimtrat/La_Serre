@@ -1419,13 +1419,23 @@ export interface ProjectBible {
   world_rules?: WorldRule[];
 }
 
+export type ProjectCreateRequestTemplateId = typeof ProjectCreateRequestTemplateId[keyof typeof ProjectCreateRequestTemplateId];
+
+
+export const ProjectCreateRequestTemplateId = {
+  custom: 'custom',
+  'tentafruit-dark-romance-v1': 'tentafruit-dark-romance-v1',
+} as const;
+
 export interface ProjectCreateRequest {
-  clone_content?: boolean;
+  clone_content?: boolean | null;
+  include_example_content?: boolean;
   /**
      * @minLength 1
      * @maxLength 80
      */
   name: string;
+  template_id?: ProjectCreateRequestTemplateId;
 }
 
 export type ProjectFolderRequestRole = typeof ProjectFolderRequestRole[keyof typeof ProjectFolderRequestRole];
@@ -1963,6 +1973,8 @@ export type PauseApiProductionQueuePausePost200 = { [key: string]: unknown };
 export type ResumeApiProductionQueueResumePost200 = { [key: string]: unknown };
 
 export type ApproveKeyframeApiProductionQueueShotsShotIdApprovePost200 = { [key: string]: unknown };
+
+export type ListProjectTemplatesApiProjectTemplatesGet200 = { [key: string]: unknown };
 
 export type ListProjectsApiProjectsGet200 = { [key: string]: unknown };
 
@@ -5741,6 +5753,30 @@ export const approveKeyframeApiProductionQueueShotsShotIdApprovePost = async (sh
   {
     ...options,
     method: 'POST'
+
+
+  }
+);}
+
+
+
+export const getListProjectTemplatesApiProjectTemplatesGetUrl = () => {
+
+
+
+
+  return `/api/project-templates`
+}
+
+/**
+ * @summary List Project Templates
+ */
+export const listProjectTemplatesApiProjectTemplatesGet = async ( options?: Parameters<typeof orvalFetch>[1]): Promise<ListProjectTemplatesApiProjectTemplatesGet200> => {
+
+  return orvalFetch<ListProjectTemplatesApiProjectTemplatesGet200>(getListProjectTemplatesApiProjectTemplatesGetUrl(),
+  {
+    ...options,
+    method: 'GET'
 
 
   }

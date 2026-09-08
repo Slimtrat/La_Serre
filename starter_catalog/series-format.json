@@ -1,0 +1,30 @@
+{
+  "id": "tentafruit-dark-romance-v1",
+  "version": 1,
+  "name": "Tentafruit — romance sombre verticale",
+  "language": "fr",
+  "output": {"aspect_ratio": "9:16", "width": 1080, "height": 1920, "duration_seconds_min": 30, "duration_seconds_max": 60, "shot_count_min": 6, "shot_count_max": 10},
+  "required_beats": ["hook immédiat", "conflit relationnel", "bascule dramatique ou comique", "cliffhanger"],
+  "narrative_constraints": [
+    "Le hook devient lisible dans les trois premières secondes.",
+    "Chaque épisode fait évoluer au moins un axe relationnel observable.",
+    "Le danger et le désir produisent une tension sans romantiser la coercition.",
+    "L’humour vient des caractères, du rythme ou de la situation, jamais d’une référence tierce.",
+    "La proposition reste modifiable et soumise à validation humaine explicite."
+  ],
+  "relationship_axes": [
+    {"id": "desire", "label": "Désir", "description": "Attraction reconnue ou niée entre les personnages.", "minimum": -100, "maximum": 100},
+    {"id": "trust", "label": "Confiance", "description": "Capacité à se rendre vulnérable et à croire l’autre.", "minimum": -100, "maximum": 100},
+    {"id": "anger", "label": "Colère", "description": "Ressentiment actif créé par les choix et les secrets.", "minimum": -100, "maximum": 100},
+    {"id": "fear", "label": "Peur", "description": "Crainte du danger, de la perte ou de l’intimité.", "minimum": -100, "maximum": 100},
+    {"id": "attachment", "label": "Attachement", "description": "Lien durable prouvé par les décisions et les actes.", "minimum": -100, "maximum": 100},
+    {"id": "toxicity", "label": "Toxicité", "description": "Intensité des dynamiques nocives que le récit doit rendre explicites.", "minimum": 0, "maximum": 100}
+  ],
+  "acceptance_criteria": [
+    "La durée cible est comprise entre 30 et 60 secondes.",
+    "Le découpage contient entre 6 et 10 plans.",
+    "Le rendu final est vertical 9:16 en 1080 × 1920.",
+    "Hook, conflit relationnel, bascule et cliffhanger sont identifiables.",
+    "Les personnages et lieux utilisent uniquement les identifiants de la Bible."
+  ]
+}

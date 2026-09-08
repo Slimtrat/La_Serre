@@ -196,6 +196,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def list_projects() -> dict[str, object]:
         return project_registry.listing()
 
+    @app.get("/api/project-templates")
+    def list_project_templates() -> dict[str, object]:
+        return {
+            "templates": [
+                template.model_dump(mode="json")
+                for template in project_registry.template_catalog.list()
+            ]
+        }
+
     @app.post("/api/projects", status_code=201)
     def create_project(payload: ProjectCreateRequest) -> dict[str, object]:
         if (
@@ -212,6 +221,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             project = project_registry.create(
                 payload.name,
                 clone_content=payload.clone_content,
+                template_id=payload.template_id,
+                include_example_content=payload.include_example_content,
             )
         except (OSError, ValueError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
