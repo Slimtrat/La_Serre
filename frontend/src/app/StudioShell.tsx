@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { GuidedJourney } from "@features/guided-journey";
+import { RelationshipBoard } from "@features/relationships";
 import { SetupWizard } from "@features/setup";
 
 import {
@@ -171,6 +172,31 @@ export function StudioShell({
         <SetupWizard
           locale={locale}
           readyContent={<GuidedJourney locale={locale} onNavigate={navigate} />}
+        />
+      );
+    }
+
+    if (route.name === "bible") {
+      return (
+        <RelationshipBoard
+          advancedView={
+            <LegacyWorkspaceSlot
+              aria-label={messages.routes.bible}
+              className={styles.workspaceSlot}
+              kernel={kernel}
+              resolveLegacyRoot={() =>
+                resolveLegacyRoot(LEGACY_ROOT_BY_WORKSPACE.bible)
+              }
+              unavailable={
+                <ErrorState
+                  description={messages.notFound.description}
+                  title={messages.routes.bible}
+                />
+              }
+              view="bible"
+            />
+          }
+          locale={locale}
         />
       );
     }

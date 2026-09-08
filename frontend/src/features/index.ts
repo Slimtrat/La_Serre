@@ -10,3 +10,4 @@ export const studioExtensions: readonly StudioExtension[] = [
   studioStatusExtension,
   apiStatusExtension,
 ];
+export * from "./relationships";

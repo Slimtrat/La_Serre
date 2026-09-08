@@ -260,6 +260,22 @@ export interface CanonicalReference {
   uri: string;
 }
 
+export type CanonicalEditProvenanceSource = typeof CanonicalEditProvenanceSource[keyof typeof CanonicalEditProvenanceSource];
+
+
+export const CanonicalEditProvenanceSource = {
+  legacy: 'legacy',
+  template: 'template',
+  manual: 'manual',
+  import: 'import',
+} as const;
+
+export interface CanonicalEditProvenance {
+  /** @maxLength 500 */
+  note?: string;
+  source?: CanonicalEditProvenanceSource;
+}
+
 export interface RelationshipState {
   /**
      * @minimum -100
@@ -283,8 +299,14 @@ export interface RelationshipState {
   fear: number;
   /** @pattern ^[a-z0-9][a-z0-9_-]*$ */
   id: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  jealousy?: number;
   /** @minLength 1 */
   label: string;
+  provenance?: CanonicalEditProvenance;
   /** @pattern ^[a-z0-9][a-z0-9_-]*$ */
   source: string;
   /** @minLength 1 */
@@ -312,6 +334,7 @@ export interface Secret {
   known_by?: string[];
   /** @minItems 1 */
   owners: string[];
+  provenance?: CanonicalEditProvenance;
   revealed?: boolean;
   /**
      * @minimum 0
@@ -1554,6 +1577,49 @@ export interface QueueRequest {
   tts?: QueueRequestTts;
 }
 
+export interface RelationshipBoardCharacter {
+  id: string;
+  name: string;
+}
+
+export type RelationshipBoardSnapshotImpact = { [key: string]: unknown };
+
+export interface RelationshipBoardSnapshot {
+  bible_revision: number;
+  characters: RelationshipBoardCharacter[];
+  history: BibleChange[];
+  impact: RelationshipBoardSnapshotImpact;
+  relationships: RelationshipState[];
+  secrets: Secret[];
+  updated_at: string;
+}
+
+export interface RelationshipMutationRequest {
+  confirmed_by_user: true;
+  /** @minimum 0 */
+  expected_revision: number;
+  /** @maxLength 500 */
+  note?: string;
+  relationship: RelationshipState;
+}
+
+export const SummaryProvenanceValue = {
+  canonical: false,
+  method: 'relationship-board-v1',
+  provider: 'deterministic',
+} as const;
+export type SummaryProvenance = typeof SummaryProvenanceValue;
+
+export interface RelationshipSummaryCandidate {
+  base_revision: number;
+  id: string;
+  provenance?: SummaryProvenance;
+  relationship_ids: string[];
+  secret_ids: string[];
+  status?: 'candidate';
+  summary: string;
+}
+
 export interface ReorderRequest {
   item_ids: string[];
 }
@@ -1595,6 +1661,15 @@ export interface ScreenwriterSaveRequest {
   source_label?: string;
   task_id?: string | null;
   task_version?: number | null;
+}
+
+export interface SecretMutationRequest {
+  confirmed_by_user: true;
+  /** @minimum 0 */
+  expected_revision: number;
+  /** @maxLength 500 */
+  note?: string;
+  secret: Secret;
 }
 
 export interface ShotDraftRequest {
@@ -1645,6 +1720,22 @@ export interface StudioJourneySnapshot {
   schema_version?: number;
   stages: JourneyStageSnapshot[];
   stale_artifacts: StudioJourneySnapshotStaleArtifactsItem[];
+}
+
+export type SummaryCandidateRequestLocale = typeof SummaryCandidateRequestLocale[keyof typeof SummaryCandidateRequestLocale];
+
+
+export const SummaryCandidateRequestLocale = {
+  fr: 'fr',
+  en: 'en',
+} as const;
+
+export interface SummaryCandidateRequest {
+  /** @minimum 0 */
+  expected_revision: number;
+  locale?: SummaryCandidateRequestLocale;
+  relationship_ids?: string[];
+  secret_ids?: string[];
 }
 
 export type ValidatorSaveRequestMode = typeof ValidatorSaveRequestMode[keyof typeof ValidatorSaveRequestMode];
@@ -2011,6 +2102,22 @@ export type ActivateProjectApiProjectsProjectIdActivatePost200 = { [key: string]
 export type OpenProjectFolderApiProjectsProjectIdOpenFolderPost200 = {[key: string]: string};
 
 export type RemoveProjectApiProjectsProjectIdRemoveDelete200 = { [key: string]: unknown };
+
+export type DeleteRelationshipApiRelationshipBoardRelationshipsRelationshipIdDeleteParams = {
+/**
+ * @minimum 0
+ */
+expected_revision: number;
+confirmed_by_user: true;
+};
+
+export type DeleteSecretApiRelationshipBoardSecretsSecretIdDeleteParams = {
+/**
+ * @minimum 0
+ */
+expected_revision: number;
+confirmed_by_user: true;
+};
 
 export type DiagnosePackApiRuntimePacksCurrentGetParams = {
 pack_id?: string;
@@ -6069,6 +6176,212 @@ return orvalFetch<RemoveProjectApiProjectsProjectIdRemoveDelete200>(getRemovePro
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(projectRemovalRequest)
+  }
+);}
+
+
+
+export const getGetRelationshipBoardApiRelationshipBoardGetUrl = () => {
+
+
+
+
+  return `/api/relationship-board`
+}
+
+/**
+ * @summary Get Relationship Board
+ */
+export const getRelationshipBoardApiRelationshipBoardGet = async ( options?: Parameters<typeof orvalFetch>[1]): Promise<RelationshipBoardSnapshot> => {
+
+  return orvalFetch<RelationshipBoardSnapshot>(getGetRelationshipBoardApiRelationshipBoardGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getDeleteRelationshipApiRelationshipBoardRelationshipsRelationshipIdDeleteUrl = (relationshipId: string,
+    params: DeleteRelationshipApiRelationshipBoardRelationshipsRelationshipIdDeleteParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/relationship-board/relationships/${relationshipId}?${stringifiedParams}` : `/api/relationship-board/relationships/${relationshipId}`
+}
+
+/**
+ * @summary Delete Relationship
+ */
+export const deleteRelationshipApiRelationshipBoardRelationshipsRelationshipIdDelete = async (relationshipId: string,
+    params: DeleteRelationshipApiRelationshipBoardRelationshipsRelationshipIdDeleteParams, options?: Parameters<typeof orvalFetch>[1]): Promise<RelationshipBoardSnapshot> => {
+
+  return orvalFetch<RelationshipBoardSnapshot>(getDeleteRelationshipApiRelationshipBoardRelationshipsRelationshipIdDeleteUrl(relationshipId,params),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export const getPutRelationshipApiRelationshipBoardRelationshipsRelationshipIdPutUrl = (relationshipId: string,) => {
+
+
+
+
+  return `/api/relationship-board/relationships/${relationshipId}`
+}
+
+/**
+ * @summary Put Relationship
+ */
+export const putRelationshipApiRelationshipBoardRelationshipsRelationshipIdPut = async (relationshipId: string,
+    relationshipMutationRequest: RelationshipMutationRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<RelationshipBoardSnapshot> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<RelationshipBoardSnapshot>(getPutRelationshipApiRelationshipBoardRelationshipsRelationshipIdPutUrl(relationshipId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(relationshipMutationRequest)
+  }
+);}
+
+
+
+export const getDeleteSecretApiRelationshipBoardSecretsSecretIdDeleteUrl = (secretId: string,
+    params: DeleteSecretApiRelationshipBoardSecretsSecretIdDeleteParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/relationship-board/secrets/${secretId}?${stringifiedParams}` : `/api/relationship-board/secrets/${secretId}`
+}
+
+/**
+ * @summary Delete Secret
+ */
+export const deleteSecretApiRelationshipBoardSecretsSecretIdDelete = async (secretId: string,
+    params: DeleteSecretApiRelationshipBoardSecretsSecretIdDeleteParams, options?: Parameters<typeof orvalFetch>[1]): Promise<RelationshipBoardSnapshot> => {
+
+  return orvalFetch<RelationshipBoardSnapshot>(getDeleteSecretApiRelationshipBoardSecretsSecretIdDeleteUrl(secretId,params),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export const getPutSecretApiRelationshipBoardSecretsSecretIdPutUrl = (secretId: string,) => {
+
+
+
+
+  return `/api/relationship-board/secrets/${secretId}`
+}
+
+/**
+ * @summary Put Secret
+ */
+export const putSecretApiRelationshipBoardSecretsSecretIdPut = async (secretId: string,
+    secretMutationRequest: SecretMutationRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<RelationshipBoardSnapshot> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<RelationshipBoardSnapshot>(getPutSecretApiRelationshipBoardSecretsSecretIdPutUrl(secretId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(secretMutationRequest)
+  }
+);}
+
+
+
+export const getCreateSummaryCandidateApiRelationshipBoardSummaryCandidatesPostUrl = () => {
+
+
+
+
+  return `/api/relationship-board/summary-candidates`
+}
+
+/**
+ * @summary Create Summary Candidate
+ */
+export const createSummaryCandidateApiRelationshipBoardSummaryCandidatesPost = async (summaryCandidateRequest: SummaryCandidateRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<RelationshipSummaryCandidate> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<RelationshipSummaryCandidate>(getCreateSummaryCandidateApiRelationshipBoardSummaryCandidatesPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(summaryCandidateRequest)
   }
 );}
 

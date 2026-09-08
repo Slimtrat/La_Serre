@@ -161,7 +161,9 @@
       "anger": 24,
       "fear": 58,
       "attachment": 68,
-      "toxicity": 18
+      "jealousy": 64,
+      "toxicity": 18,
+      "provenance": {"source": "template", "note": "Dynamique Tentafruit de référence"}
     },
     {
       "id": "graine-emprise-belladone",
@@ -174,7 +176,9 @@
       "anger": 66,
       "fear": 74,
       "attachment": -55,
-      "toxicity": 92
+      "jealousy": 22,
+      "toxicity": 92,
+      "provenance": {"source": "template", "note": "Dynamique antagoniste de référence"}
     }
   ],
   "art_direction": {
@@ -289,7 +293,8 @@
       "summary": "Aconit reconnaît un symbole ancien sur la Graine Noire mais cache encore ce souvenir à Belladone.",
       "severity": 0.72,
       "created_episode": 1,
-      "revealed": false
+      "revealed": false,
+      "provenance": {"source": "template", "note": "Secret Tentafruit de référence"}
     }
   ],
   "references": [],
