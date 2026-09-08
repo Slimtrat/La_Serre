@@ -1980,6 +1980,14 @@ export type OpenProjectFolderApiProjectsProjectIdOpenFolderPost200 = {[key: stri
 
 export type RemoveProjectApiProjectsProjectIdRemoveDelete200 = { [key: string]: unknown };
 
+export type DiagnosePackApiRuntimePacksCurrentGetParams = {
+pack_id?: string;
+};
+
+export type DiagnosePackApiRuntimePacksCurrentGet200 = { [key: string]: unknown };
+
+export type DiagnosePackApiRuntimePacksPackIdGet200 = { [key: string]: unknown };
+
 export type RuntimeServicesApiRuntimeServicesGet200 = { [key: string]: unknown };
 
 export type RuntimeServiceLogsApiRuntimeServicesServiceNameLogsGetParams = {
@@ -5985,6 +5993,61 @@ return orvalFetch<RemoveProjectApiProjectsProjectIdRemoveDelete200>(getRemovePro
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(projectRemovalRequest)
+  }
+);}
+
+
+
+export const getDiagnosePackApiRuntimePacksCurrentGetUrl = (params?: DiagnosePackApiRuntimePacksCurrentGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/runtime-packs/current?${stringifiedParams}` : `/api/runtime-packs/current`
+}
+
+/**
+ * @summary Diagnose Pack
+ */
+export const diagnosePackApiRuntimePacksCurrentGet = async (params?: DiagnosePackApiRuntimePacksCurrentGetParams, options?: Parameters<typeof orvalFetch>[1]): Promise<DiagnosePackApiRuntimePacksCurrentGet200> => {
+
+  return orvalFetch<DiagnosePackApiRuntimePacksCurrentGet200>(getDiagnosePackApiRuntimePacksCurrentGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getDiagnosePackApiRuntimePacksPackIdGetUrl = (packId: string,) => {
+
+
+
+
+  return `/api/runtime-packs/${packId}`
+}
+
+/**
+ * @summary Diagnose Pack
+ */
+export const diagnosePackApiRuntimePacksPackIdGet = async (packId: string, options?: Parameters<typeof orvalFetch>[1]): Promise<DiagnosePackApiRuntimePacksPackIdGet200> => {
+
+  return orvalFetch<DiagnosePackApiRuntimePacksPackIdGet200>(getDiagnosePackApiRuntimePacksPackIdGetUrl(packId),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 

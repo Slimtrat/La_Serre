@@ -19,6 +19,10 @@ partiels et les placeholders vides sont ignorés.
 
 Le preset `rtx-5070-12gb` crée deux graphes API-format :
 
+Les modèles, nodes, licences et tailles associés à ce preset sont désormais
+définis par le manifeste `packs/tentafruit-local-12gb-v1.json`; le
+`WorkflowFactory` conserve son contrat historique mais ne porte plus les URLs.
+
 - keyframe SDXL, 576×1024, KSampler DPM++ 2M SDE/Karras ;
 - LTX-Video 2B image-to-video, rendu court plan par plan avec T5 FP8.
 
