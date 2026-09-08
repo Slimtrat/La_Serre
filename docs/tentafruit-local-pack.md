@@ -67,3 +67,43 @@ python -m tools.evaluate_narrative_tasks --provider fake
 Les smoke checks du manifeste sont déclaratifs et ne sont jamais lancés par la
 route de diagnostic. Leur exécution reste une action explicite de développement
 ou de validation.
+
+## Préparation gérée du pack
+
+`POST /api/runtime-packs/tentafruit-local-12gb-v1/jobs` démarre une préparation
+explicite. Le corps accepte `mode` (`automatic` ou `manual`),
+`accepted_license_ids` et `use_personal_comfy_models`. Par défaut, ComfyUI et ses
+modèles sont installés sous le dossier global `.la-serre-runtime` voisin du dossier
+de sortie. Une installation personnelle n'est utilisée que si son dossier est déjà
+configuré **et** si `use_personal_comfy_models` vaut `true`.
+
+L'état et le journal JSONL sont écrits atomiquement dans
+`<output>/.studio/runtime-pack-jobs`. Une étape qui était `running` lors d'un arrêt
+du Studio revient en `paused` avec `recovered: true`; aucun fichier partiel n'est
+promu. Les opérations disponibles sont :
+
+- `GET /api/runtime-packs/jobs/latest` et `GET /api/runtime-packs/jobs/{id}`;
+- `POST /api/runtime-packs/jobs/{id}/pause` puis `/resume`;
+- `POST /api/runtime-packs/jobs/{id}/cancel`;
+- `POST /api/runtime-packs/jobs/{id}/repair` pour refaire le diagnostic et ne
+  réinstaller que ce qui manque ou est invalide;
+- `GET /api/runtime-packs/jobs/{id}/logs` pour le journal expurgé.
+
+Les adaptateurs n'utilisent jamais de shell : `ollama pull` et `comfy --workspace=<path> --skip-prompt`
+reçoivent une liste d'arguments. Le workspace comfy-cli est séparé d'une
+installation personnelle. Les téléchargements directs sont écrits en `.part`,
+vérifiés lorsqu'un SHA-256 est publié, puis renommés atomiquement. Une divergence
+supprime le partiel et met le job en échec. Les composants dont la source ne publie
+pas de SHA-256 restent explicitement non vérifiés au lieu d'obtenir un faux niveau
+de confiance.
+
+Toute licence `restricted` ou `review_required` place le job en
+`awaiting_license` avant téléchargement. Le mode manuel place le composant en
+`awaiting_manual` avec l'action du manifeste; après l'installation/import par
+l'utilisateur, `repair` reprend le diagnostic. L'espace disque inclut les octets
+manquants et la réserve de travail du pack.
+
+Après installation, chaque smoke check du manifeste est lancé localement. Un échec
+retourne son identifiant et la liste exacte des composants impliqués. Les arguments,
+erreurs et journaux expurgent Bearer tokens, secrets et paramètres d'URL signée.
+Les tests utilisent exclusivement des processus et téléchargements factices.

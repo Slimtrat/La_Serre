@@ -3071,6 +3071,50 @@
         "title": "NotificationReadRequest",
         "type": "object"
       },
+      "PackRepairRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "accepted_license_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Accepted License Ids",
+            "type": "array"
+          }
+        },
+        "title": "PackRepairRequest",
+        "type": "object"
+      },
+      "PackStartRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "accepted_license_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Accepted License Ids",
+            "type": "array"
+          },
+          "mode": {
+            "default": "automatic",
+            "enum": [
+              "automatic",
+              "manual"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "use_personal_comfy_models": {
+            "default": false,
+            "title": "Use Personal Comfy Models",
+            "type": "boolean"
+          }
+        },
+        "title": "PackStartRequest",
+        "type": "object"
+      },
       "PortableProjectBible": {
         "additionalProperties": false,
         "description": "Canonical bible content without local revision and audit metadata.",
@@ -9866,6 +9910,335 @@
         ]
       }
     },
+    "/api/runtime-packs/jobs/latest": {
+      "get": {
+        "operationId": "latest_job_api_runtime_packs_jobs_latest_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "use_personal_comfy_models",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Use Personal Comfy Models",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Latest Job Api Runtime Packs Jobs Latest Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Latest Job",
+        "tags": [
+          "runtime-packs"
+        ]
+      }
+    },
+    "/api/runtime-packs/jobs/{job_id}": {
+      "get": {
+        "operationId": "get_job_api_runtime_packs_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Job Api Runtime Packs Jobs  Job Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Job",
+        "tags": [
+          "runtime-packs"
+        ]
+      }
+    },
+    "/api/runtime-packs/jobs/{job_id}/cancel": {
+      "post": {
+        "operationId": "cancel_job_api_runtime_packs_jobs__job_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Cancel Job Api Runtime Packs Jobs  Job Id  Cancel Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Job",
+        "tags": [
+          "runtime-packs"
+        ]
+      }
+    },
+    "/api/runtime-packs/jobs/{job_id}/logs": {
+      "get": {
+        "operationId": "get_logs_api_runtime_packs_jobs__job_id__logs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Logs Api Runtime Packs Jobs  Job Id  Logs Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Logs",
+        "tags": [
+          "runtime-packs"
+        ]
+      }
+    },
+    "/api/runtime-packs/jobs/{job_id}/pause": {
+      "post": {
+        "operationId": "pause_job_api_runtime_packs_jobs__job_id__pause_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Pause Job Api Runtime Packs Jobs  Job Id  Pause Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Pause Job",
+        "tags": [
+          "runtime-packs"
+        ]
+      }
+    },
+    "/api/runtime-packs/jobs/{job_id}/repair": {
+      "post": {
+        "operationId": "repair_job_api_runtime_packs_jobs__job_id__repair_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PackRepairRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Repair Job Api Runtime Packs Jobs  Job Id  Repair Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Repair Job",
+        "tags": [
+          "runtime-packs"
+        ]
+      }
+    },
+    "/api/runtime-packs/jobs/{job_id}/resume": {
+      "post": {
+        "operationId": "resume_job_api_runtime_packs_jobs__job_id__resume_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PackRepairRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Resume Job Api Runtime Packs Jobs  Job Id  Resume Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resume Job",
+        "tags": [
+          "runtime-packs"
+        ]
+      }
+    },
     "/api/runtime-packs/{pack_id}": {
       "get": {
         "operationId": "diagnose_pack_api_runtime_packs__pack_id__get",
@@ -9905,6 +10278,60 @@
           }
         },
         "summary": "Diagnose Pack",
+        "tags": [
+          "runtime-packs"
+        ]
+      }
+    },
+    "/api/runtime-packs/{pack_id}/jobs": {
+      "post": {
+        "operationId": "start_job_api_runtime_packs__pack_id__jobs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pack_id",
+            "required": true,
+            "schema": {
+              "title": "Pack Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PackStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Start Job Api Runtime Packs  Pack Id  Jobs Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Job",
         "tags": [
           "runtime-packs"
         ]
