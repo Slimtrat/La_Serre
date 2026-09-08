@@ -359,6 +359,29 @@ export interface BibleExchangeDocument {
   format_version: 1;
 }
 
+export type PrimaryActionMode = typeof PrimaryActionMode[keyof typeof PrimaryActionMode];
+
+
+export const PrimaryActionMode = {
+  manual: 'manual',
+  review: 'review',
+  generate: 'generate',
+  settings: 'settings',
+} as const;
+
+export interface PrimaryAction {
+  code: string;
+  label: string;
+  mode?: PrimaryActionMode;
+  target: string;
+}
+
+export interface Blocker {
+  code: string;
+  message: string;
+  resolution: PrimaryAction;
+}
+
 export type BreakdownApplyRequestMode = typeof BreakdownApplyRequestMode[keyof typeof BreakdownApplyRequestMode];
 
 
@@ -1239,6 +1262,54 @@ export interface HTTPValidationError {
   detail?: ValidationError[];
 }
 
+export interface JourneyCounts {
+  active_jobs?: number;
+  awaiting_approval?: number;
+  episodes?: number;
+  failed_jobs?: number;
+  generated_media?: number;
+  shots?: number;
+  stale_artifacts?: number;
+}
+
+export type JourneyStageSnapshotId = typeof JourneyStageSnapshotId[keyof typeof JourneyStageSnapshotId];
+
+
+export const JourneyStageSnapshotId = {
+  idea: 'idea',
+  casting: 'casting',
+  relationships: 'relationships',
+  season: 'season',
+  episode: 'episode',
+  storyboard: 'storyboard',
+  production: 'production',
+  release: 'release',
+} as const;
+
+export type JourneyStatus = typeof JourneyStatus[keyof typeof JourneyStatus];
+
+
+export const JourneyStatus = {
+  empty: 'empty',
+  draft: 'draft',
+  ready: 'ready',
+  approved: 'approved',
+  running: 'running',
+  blocked: 'blocked',
+  failed: 'failed',
+  stale: 'stale',
+  completed: 'completed',
+} as const;
+
+export interface JourneyStageSnapshot {
+  blockers?: Blocker[];
+  /** @minimum 0 */
+  count?: number;
+  id: JourneyStageSnapshotId;
+  primary_action: PrimaryAction;
+  status: JourneyStatus;
+}
+
 export interface NarrativeApprovalRequest {
   /** @maxLength 2000 */
   override_reason?: string;
@@ -1520,6 +1591,18 @@ export interface StageGenerationRequest {
 export interface StudioConfigRequest {
   /** @minLength 1 */
   comfyui_url: string;
+}
+
+export type StudioJourneySnapshotStaleArtifactsItem = { [key: string]: unknown };
+
+export interface StudioJourneySnapshot {
+  active_episode_id: string | null;
+  counts: JourneyCounts;
+  project_id: string;
+  revision: string;
+  schema_version?: number;
+  stages: JourneyStageSnapshot[];
+  stale_artifacts: StudioJourneySnapshotStaleArtifactsItem[];
 }
 
 export type ValidatorSaveRequestMode = typeof ValidatorSaveRequestMode[keyof typeof ValidatorSaveRequestMode];
@@ -6028,6 +6111,30 @@ export const getReadyApiStatusGetUrl = () => {
 export const readyApiStatusGet = async ( options?: Parameters<typeof orvalFetch>[1]): Promise<ReadyApiStatusGet200> => {
 
   return orvalFetch<ReadyApiStatusGet200>(getReadyApiStatusGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getJourneyApiStudioJourneyGetUrl = () => {
+
+
+
+
+  return `/api/studio/journey`
+}
+
+/**
+ * @summary Journey
+ */
+export const journeyApiStudioJourneyGet = async ( options?: Parameters<typeof orvalFetch>[1]): Promise<StudioJourneySnapshot> => {
+
+  return orvalFetch<StudioJourneySnapshot>(getJourneyApiStudioJourneyGetUrl(),
   {
     ...options,
     method: 'GET'

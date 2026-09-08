@@ -43,6 +43,8 @@ from apps.api.schemas import (
     WorkflowProfileRequest,
 )
 from apps.api.stage_actions import ShotStageService, StageKind
+from apps.api.studio_routes import create_studio_router
+from apps.api.studio_snapshot import StudioJourneyService
 from apps.api.workflow_graph import WORKFLOW_GRAPH_KINDS, build_workflow_graph
 from apps.api.workflow_setup import WorkflowSetup
 from apps.api.workflow_template_routes import create_workflow_template_router
@@ -169,6 +171,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         create_bible_router(
             lambda: BibleRegistry(current_settings().private_content_dir),
             lambda: current_settings().output_dir,
+        )
+    )
+
+    app.include_router(
+        create_studio_router(
+            lambda: StudioJourneyService(
+                project_id=project_registry.active_id,
+                private_root=current_settings().private_content_dir,
+                output_root=current_settings().output_dir,
+                runtime_provider=service_supervisor_listing,
+                queue_provider=production_queue.listing,
+                jobs_provider=lambda: (
+                    *[job.public() for job in manager.jobs.values()],
+                    *[job.public() for job in episode_manager.jobs.values()],
+                ),
+            ).build()
         )
     )
 
