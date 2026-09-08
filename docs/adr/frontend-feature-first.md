@@ -138,9 +138,10 @@ Pour chaque tranche :
 6. vérifier les parcours adjacents et le packaging desktop.
 
 On évite une réécriture globale, ainsi que la duplication durable d'une même règle métier dans les
-deux interfaces. Pendant une transition, le contrat avec le legacy est explicite, minimal et placé
-dans `app/`; le code nouveau ne dépend jamais directement des détails DOM ou des variables globales
-historiques.
+deux interfaces. Pendant une transition, le contrat avec le legacy est explicite et minimal. Les accès historiques
+sont isolés dans `shared/legacy/`, puis composés avec AppKernel dans `app/`. Le code nouveau ne
+dépend jamais directement des détails DOM ou des variables globales historiques. La décision
+détaillée est consignée dans [AppKernel et pont legacy typé](frontend-app-kernel-legacy-bridge.md).
 
 ## CSS et framework
 
