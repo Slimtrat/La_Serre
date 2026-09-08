@@ -8052,14 +8052,34 @@ var e = (e, t) => () => (t || (e((t = { exports: {} }).exports, t), e = null), t
 })), f = (/* @__PURE__ */ e(((e, t) => {
 	t.exports = d();
 })))();
-function p() {
+function p({ children: e, ...t }) {
 	return /* @__PURE__ */ (0, f.jsx)("span", {
-		className: "studio-react-root__status",
+		className: "visually-hidden",
+		...t,
+		children: e
+	});
+}
+//#endregion
+//#region src/features/studio-status/StudioStatus.tsx
+function m() {
+	return /* @__PURE__ */ (0, f.jsx)(p, {
 		role: "status",
 		children: "Interface React initialisée"
 	});
 }
-var m = document.getElementById("studio-react-root");
-m && (m.dataset.reactMounted = "true", (0, u.createRoot)(m).render(/* @__PURE__ */ (0, f.jsx)(l.StrictMode, { children: /* @__PURE__ */ (0, f.jsx)(p, {}) })));
 //#endregion
-export { p as StudioReactRoot };
+//#region src/features/index.ts
+var h = [{
+	id: "studio-status",
+	Component: m
+}];
+//#endregion
+//#region src/app/StudioReactRoot.tsx
+function g() {
+	return h.map(({ Component: e, id: t }) => /* @__PURE__ */ (0, f.jsx)(e, {}, t));
+}
+//#endregion
+//#region src/main.tsx
+var _ = document.getElementById("studio-react-root");
+_ && (_.dataset.reactMounted = "true", (0, u.createRoot)(_).render(/* @__PURE__ */ (0, f.jsx)(l.StrictMode, { children: /* @__PURE__ */ (0, f.jsx)(g, {}) })));
+//#endregion
