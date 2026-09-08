@@ -23,7 +23,9 @@ function ControlledDialog({
 
   return (
     <>
-      <button onClick={() => changeOpen(true)}>Open settings</button>
+      <button type="button" onClick={() => changeOpen(true)}>
+        Open settings
+      </button>
       <Dialog
         description="Choose an option"
         initialFocusRef={initialFocusRef}
@@ -31,8 +33,10 @@ function ControlledDialog({
         open={open}
         title="Settings"
       >
-        <button ref={initialFocusRef}>First action</button>
-        <button>Last action</button>
+        <button type="button" ref={initialFocusRef}>
+          First action
+        </button>
+        <button type="button">Last action</button>
       </Dialog>
     </>
   );
@@ -92,7 +96,9 @@ describe("Dialog", () => {
     fireEvent.mouseDown(dialog);
     expect(onOpenChange).not.toHaveBeenCalledWith(false);
 
-    fireEvent.mouseDown(dialog.parentElement!);
+    const backdrop = dialog.parentElement;
+    expect(backdrop).not.toBeNull();
+    if (backdrop) fireEvent.mouseDown(backdrop);
     expect(onOpenChange).toHaveBeenLastCalledWith(false);
   });
 });

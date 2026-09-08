@@ -26,7 +26,7 @@ describe("Drawer", () => {
           placement="start"
           title="Filters"
         >
-          <button>Apply filters</button>
+          <button type="button">Apply filters</button>
         </Drawer>
       );
     }
@@ -52,12 +52,14 @@ describe("Drawer", () => {
         open
         title="Details"
       >
-        <button>Continue</button>
+        <button type="button">Continue</button>
       </Drawer>,
     );
 
     const drawer = screen.getByRole("dialog");
-    fireEvent.mouseDown(drawer.parentElement!);
+    const backdrop = drawer.parentElement;
+    expect(backdrop).not.toBeNull();
+    if (backdrop) fireEvent.mouseDown(backdrop);
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 });

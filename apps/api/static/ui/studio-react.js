@@ -9975,7 +9975,9 @@ function Ht(e, t) {
 	return {
 		getSnapshot: () => n,
 		setSnapshot: (e) => {
-			t(n, e) || (n = e, r.forEach((e) => e()));
+			t(n, e) || (n = e, r.forEach((e) => {
+				e();
+			}));
 		},
 		subscribe: (e) => (r.add(e), () => r.delete(e))
 	};
@@ -10138,7 +10140,9 @@ function Kt(e = {}) {
 			}
 		},
 		dispose() {
-			r && (r = !1, i += 1, o.forEach((e) => e()), o = [], t.dispose());
+			r && (r = !1, i += 1, o.forEach((e) => {
+				e();
+			}), o = [], t.dispose());
 		}
 	};
 }

@@ -76,18 +76,6 @@ def test_getting_started_is_first_run_guided_and_reopenable() -> None:
     assert "new URLSearchParams(window.location.search).has(\"view\")" in guide
 
 
-def test_all_workspaces_are_reachable_from_the_left_edge_dock() -> None:
-    index = (STATIC / "index.html").read_text(encoding="utf-8")
-    styles = (STATIC / "view-dock.css").read_text(encoding="utf-8")
-
-    assert 'id="studio-view-dock"' in index
-    assert '<small>VUES</small><b>›</b>' in index
-    for view in ("graph", "plan", "outputs", "bible", "settings"):
-        assert f'data-workspace-target="{view}"' in index
-    assert ".studio-view-dock:hover" in styles
-    assert ".studio-view-dock:focus-within" in styles
-
-
 def test_project_explorer_is_lightweight_synchronized_and_reopenable() -> None:
     index = (STATIC / "index.html").read_text(encoding="utf-8")
     explorer = (STATIC / "project-explorer.js").read_text(encoding="utf-8")

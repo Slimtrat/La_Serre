@@ -37,7 +37,9 @@ function createStore<T>(
     setSnapshot: (next) => {
       if (equals(snapshot, next)) return;
       snapshot = next;
-      listeners.forEach((listener) => listener());
+      listeners.forEach((listener) => {
+        listener();
+      });
     },
     subscribe: (listener) => {
       listeners.add(listener);
@@ -234,7 +236,9 @@ export function createLegacyAppKernel(
       if (!started) return;
       started = false;
       lifecycle += 1;
-      unsubscribeBridge.forEach((unsubscribe) => unsubscribe());
+      unsubscribeBridge.forEach((unsubscribe) => {
+        unsubscribe();
+      });
       unsubscribeBridge = [];
       bridge.dispose();
     },

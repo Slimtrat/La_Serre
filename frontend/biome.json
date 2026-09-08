@@ -1,0 +1,22 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf"
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "a11y": {
+        "noNoninteractiveTabindex": "off",
+        "noStaticElementInteractions": "off"
+      },
+      "style": {
+        "useTemplate": "off"
+      }
+    }
+  }
+}
