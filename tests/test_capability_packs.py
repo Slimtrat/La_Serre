@@ -49,6 +49,7 @@ def _installed_pack(tmp_path: Path, vram_gb: float):
         ollama_reachable=True,
         comfyui_reachable=True,
         available_nodes=set(WorkflowFactory.required_nodes),
+        ffmpeg_available=True,
     )
 
 

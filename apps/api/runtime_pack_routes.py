@@ -21,12 +21,14 @@ from engine.runtime.capability_packs import (
 from engine.runtime.installers import (
     ComfyCliAdapter,
     DirectDownloadAdapter,
+    FFmpegInstallerAdapter,
     HttpxDownloader,
     InstallContext,
     OllamaInstallerAdapter,
     SafeProcessRunner,
 )
 from engine.runtime.installers.comfy import UV_WINDOWS_X64
+from engine.runtime.installers.ffmpeg import FFMPEG_WINDOWS_X64, resolve_managed_ffmpeg
 from engine.runtime.installers.ollama import OLLAMA_WINDOWS_X64
 from engine.runtime.managed_tools import ManagedZipTool
 from engine.runtime.pack_job import PackPreparationManager
@@ -101,6 +103,10 @@ def create_runtime_pack_router(
                         managed_cli=ManagedZipTool(UV_WINDOWS_X64, downloader),
                     ),
                     DirectDownloadAdapter(downloader),
+                    FFmpegInstallerAdapter(
+                        runner,
+                        ManagedZipTool(FFMPEG_WINDOWS_X64, downloader),
+                    ),
                 ),
                 process_runner=runner,
             )
@@ -189,6 +195,7 @@ def create_runtime_pack_router(
     async def diagnose_pack(pack_id: str = DEFAULT_CAPABILITY_PACK.id) -> dict[str, object]:
         _assert_pack(pack_id)
         settings = await asyncio.to_thread(settings_provider)
+        managed_root = (settings.output_dir.resolve().parent / ".la-serre-runtime").resolve()
         roots = _model_roots(settings)
         ollama_reachable, ollama_models = await _inspect_ollama(settings)
         comfyui_reachable, available_nodes = await _inspect_comfyui(settings)
@@ -202,9 +209,9 @@ def create_runtime_pack_router(
             ollama_reachable=ollama_reachable,
             comfyui_reachable=comfyui_reachable,
             available_nodes=available_nodes,
+            ffmpeg_available=resolve_managed_ffmpeg(managed_root) is not None,
         )
         payload = diagnosis.model_dump(mode="json")
-        managed_root = (settings.output_dir.resolve().parent / ".la-serre-runtime").resolve()
         tool_context = InstallContext(
             managed_root=managed_root,
             comfy_workspace=managed_root / "comfyui",
@@ -212,7 +219,11 @@ def create_runtime_pack_router(
             workflow_root=_workflow_root(settings),
         )
         payload["managed_prerequisites"] = []
-        for specification in (UV_WINDOWS_X64, OLLAMA_WINDOWS_X64):
+        for specification in (
+            UV_WINDOWS_X64,
+            OLLAMA_WINDOWS_X64,
+            FFMPEG_WINDOWS_X64,
+        ):
             installed = (
                 ManagedZipTool(specification, HttpxDownloader()).resolve(tool_context)
                 is not None

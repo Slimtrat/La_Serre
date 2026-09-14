@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Literal, cast
 
 from engine.production.artifacts import write_text_atomic
+from engine.runtime.installers.ffmpeg import resolve_managed_ffmpeg
 
 DemoStage = Literal["story", "plan", "frames", "sound", "video"]
 STAGES: tuple[DemoStage, ...] = ("story", "plan", "frames", "sound", "video")
@@ -28,6 +29,11 @@ MEDIA_TYPES = {
 _GENERATED_CONTENT_UNSET = object()
 
 
+def _resolve_ffmpeg() -> str | None:
+    managed = resolve_managed_ffmpeg(Path.cwd() / ".la-serre-runtime")
+    return str(managed[0]) if managed is not None else shutil.which("ffmpeg")
+
+
 class DemoPipeline:
     """Persistent, dependency-aware zero-GPU production walkthrough."""
 
@@ -39,7 +45,7 @@ class DemoPipeline:
         command_runner: Callable[[Sequence[str]], None] | None = None,
     ) -> None:
         self._output_provider = output_provider
-        self._ffmpeg_resolver = ffmpeg_resolver or (lambda: shutil.which("ffmpeg"))
+        self._ffmpeg_resolver = ffmpeg_resolver or _resolve_ffmpeg
         self._command_runner = command_runner or self._run_command
         self._lock = threading.RLock()
 

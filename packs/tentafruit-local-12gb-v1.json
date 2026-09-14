@@ -18,7 +18,7 @@
       "id": "ollama-engine",
       "role": "Moteur narratif local",
       "kind": "engine",
-      "size_bytes": 0,
+      "size_bytes": 1469375054,
       "source": "https://github.com/ollama/ollama",
       "destination": "http://127.0.0.1:11434",
       "license": {
@@ -54,7 +54,7 @@
       "id": "comfyui-engine",
       "role": "Moteur image et vidéo local",
       "kind": "engine",
-      "size_bytes": 0,
+      "size_bytes": 17612025,
       "source": "https://github.com/comfyanonymous/ComfyUI",
       "destination": "http://127.0.0.1:8188",
       "license": {
@@ -67,6 +67,27 @@
       "checksum": {"algorithm": "source-declared", "value": null},
       "detection": {"kind": "comfyui", "value": "comfyui"},
       "action": "Installe puis démarre ComfyUI; le diagnostic reste lisible lorsqu’il est arrêté."
+    },
+    {
+      "id": "ffmpeg-engine",
+      "role": "Montage et validation média",
+      "kind": "engine",
+      "size_bytes": 111253802,
+      "source": "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-9.0.1-essentials_build.zip",
+      "destination": ".la-serre-runtime/tools/ffmpeg/9.0.1-essentials",
+      "license": {
+        "id": "gpl-3.0-ffmpeg-gyan",
+        "name": "GNU GPL v3",
+        "url": "https://www.gyan.dev/ffmpeg/builds/#licensing",
+        "summary": "Build Windows essentials de FFmpeg distribué sous GPL v3.",
+        "commercial_use": "allowed"
+      },
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "fec81ae03971d9dd4be3ebe02e263bd2ec1d789483f931bdba5f5715e65da2e9"
+      },
+      "detection": {"kind": "ffmpeg", "value": "ffmpeg+ffprobe"},
+      "action": "Télécharge et vérifie FFmpeg et FFprobe dans l’espace géré La Serre."
     },
     {
       "id": "keyframe-sdxl",

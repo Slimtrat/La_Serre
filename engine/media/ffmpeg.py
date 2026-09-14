@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Protocol
 
+from engine.runtime.installers.ffmpeg import resolve_managed_ffmpeg
+
 
 @dataclass(frozen=True, slots=True)
 class SegmentInput:
@@ -67,6 +69,10 @@ class FFmpegToolchain:
     name = "ffmpeg"
 
     def __init__(self, ffmpeg: str | Path | None = None, ffprobe: str | Path | None = None) -> None:
+        managed = resolve_managed_ffmpeg(Path.cwd() / ".la-serre-runtime")
+        if managed is not None:
+            ffmpeg = ffmpeg or managed[0]
+            ffprobe = ffprobe or managed[1]
         self.ffmpeg = self._resolve(ffmpeg, "ffmpeg")
         self.ffprobe = self._resolve(ffprobe, "ffprobe")
 
