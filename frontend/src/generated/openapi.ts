@@ -1410,6 +1410,16 @@ export interface JourneyStageSnapshot {
   status: JourneyStatus;
 }
 
+export interface MaterializeRequest {
+  /**
+     * @maximum 600
+     * @exclusiveMinimum 0
+     */
+  duration_target?: number;
+  /** @minimum 0 */
+  expected_revision: number;
+}
+
 export interface NarrativeApprovalRequest {
   /** @maxLength 2000 */
   override_reason?: string;
@@ -1448,6 +1458,42 @@ export interface NarrativeGenerateRequest {
   prompt?: string;
   /** @maxLength 50000 */
   source_text?: string;
+}
+
+export type NarrativeProvenanceMode = typeof NarrativeProvenanceMode[keyof typeof NarrativeProvenanceMode];
+
+
+export const NarrativeProvenanceMode = {
+  manual: 'manual',
+  import: 'import',
+  ai: 'ai',
+} as const;
+
+export type NarrativeProvenanceStage = typeof NarrativeProvenanceStage[keyof typeof NarrativeProvenanceStage];
+
+
+export const NarrativeProvenanceStage = {
+  director: 'director',
+  screenwriter: 'screenwriter',
+  validator: 'validator',
+  episode: 'episode',
+  breakdown: 'breakdown',
+} as const;
+
+/**
+ * Trace an authoring decision without making generated content canonical.
+ */
+export interface NarrativeProvenance {
+  created_at?: string;
+  input_fingerprint?: string | null;
+  mode: NarrativeProvenanceMode;
+  model?: string | null;
+  prompt?: string;
+  provider?: string;
+  source_label?: string;
+  stage: NarrativeProvenanceStage;
+  task_id?: string | null;
+  task_version?: number | null;
 }
 
 export type NotificationCreateRequestLevel = typeof NotificationCreateRequestLevel[keyof typeof NotificationCreateRequestLevel];
@@ -1777,8 +1823,9 @@ export interface RelationshipSummaryCandidate {
   summary: string;
 }
 
-export interface ReorderRequest {
-  item_ids: string[];
+export interface RevisionRequest {
+  /** @minimum 0 */
+  expected_revision: number;
 }
 
 export interface RuntimeCapabilities {
@@ -1825,6 +1872,104 @@ export interface ScreenwriterSaveRequest {
   source_label?: string;
   task_id?: string | null;
   task_version?: number | null;
+}
+
+export interface SeasonItemCreateRequest {
+  character_ids?: string[];
+  /** @maxLength 2000 */
+  cliffhanger?: string;
+  /** @minimum 0 */
+  expected_revision: number;
+  location_ids?: string[];
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  logline: string;
+  /**
+     * @minimum 1
+     * @maximum 99
+     */
+  season?: number;
+  /**
+     * @minLength 20
+     * @maxLength 20000
+     */
+  synopsis: string;
+  /**
+     * @minLength 1
+     * @maxLength 180
+     */
+  title: string;
+}
+
+export type SeasonPlanLifecycle = typeof SeasonPlanLifecycle[keyof typeof SeasonPlanLifecycle];
+
+
+export const SeasonPlanLifecycle = {
+  draft: 'draft',
+  validated: 'validated',
+  obsolete: 'obsolete',
+} as const;
+
+export interface SeasonItemUpdateRequest {
+  character_ids?: string[] | null;
+  cliffhanger?: string | null;
+  /** @minimum 0 */
+  expected_revision: number;
+  lifecycle?: SeasonPlanLifecycle | null;
+  location_ids?: string[] | null;
+  logline?: string | null;
+  season?: number | null;
+  synopsis?: string | null;
+  title?: string | null;
+}
+
+export type SeasonPlanBoardItemProductionState = typeof SeasonPlanBoardItemProductionState[keyof typeof SeasonPlanBoardItemProductionState];
+
+
+export const SeasonPlanBoardItemProductionState = {
+  unmaterialized: 'unmaterialized',
+  materialized: 'materialized',
+  produced: 'produced',
+} as const;
+
+export interface SeasonPlanBoardItem {
+  character_ids?: string[];
+  /** @maxLength 2000 */
+  cliffhanger?: string;
+  created_at?: string;
+  deleted_at?: string | null;
+  episode_id?: string | null;
+  /** @pattern ^season-item-[0-9a-f]+$ */
+  id: string;
+  lifecycle?: SeasonPlanLifecycle;
+  location_ids?: string[];
+  /** @maxLength 1000 */
+  logline?: string;
+  position?: number | null;
+  production_state: SeasonPlanBoardItemProductionState;
+  provenance: NarrativeProvenance;
+  /**
+     * @minimum 1
+     * @maximum 99
+     */
+  season?: number;
+  /** @maxLength 20000 */
+  synopsis?: string;
+  /**
+     * @minLength 1
+     * @maxLength 180
+     */
+  title: string;
+  updated_at?: string;
+}
+
+export interface SeasonPlanSnapshot {
+  items: SeasonPlanBoardItem[];
+  revision: number;
+  schema_version: number;
+  updated_at: string;
 }
 
 export interface SecretMutationRequest {
@@ -1954,6 +2099,20 @@ export const WorkflowProfileRequestKind = {
 export interface WorkflowProfileRequest {
   bindings: WorkflowProfileRequestBindings;
   kind: WorkflowProfileRequestKind;
+}
+
+export interface AppsApiProductionQueueRoutesReorderRequest {
+  item_ids: string[];
+}
+
+export interface AppsApiSeasonRoutesReorderRequest {
+  /** @minimum 0 */
+  expected_revision: number;
+  /**
+     * @minItems 1
+     * @maxItems 100
+     */
+  item_ids: string[];
 }
 
 export type CurrentActivityApiActivityGet200 = { [key: string]: unknown };
@@ -2368,6 +2527,14 @@ limit?: number;
 export type RuntimeServiceLogsApiRuntimeServicesServiceNameLogsGet200 = { [key: string]: unknown };
 
 export type RuntimeServiceActionApiRuntimeServicesServiceNameActionPost200 = { [key: string]: unknown };
+
+export type DeleteSeasonPlanItemApiSeasonPlanItemsItemIdDeleteParams = {
+/**
+ * @minimum 0
+ */
+expected_revision: number;
+keep_produced_episode?: boolean;
+};
 
 export type GenerateStageApiStagesKindPost200 = { [key: string]: unknown };
 
@@ -6289,7 +6456,7 @@ export const getReorderApiProductionQueueOrderPutUrl = () => {
 /**
  * @summary Reorder
  */
-export const reorderApiProductionQueueOrderPut = async (reorderRequest: ReorderRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<ReorderApiProductionQueueOrderPut200> => {
+export const reorderApiProductionQueueOrderPut = async (appsApiProductionQueueRoutesReorderRequest: AppsApiProductionQueueRoutesReorderRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<ReorderApiProductionQueueOrderPut200> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -6310,7 +6477,7 @@ return orvalFetch<ReorderApiProductionQueueOrderPut200>(getReorderApiProductionQ
     ...options,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(reorderRequest)
+    body: JSON.stringify(appsApiProductionQueueRoutesReorderRequest)
   }
 );}
 
@@ -7269,6 +7436,295 @@ export const runtimeServiceActionApiRuntimeServicesServiceNameActionPost = async
     method: 'POST'
 
 
+  }
+);}
+
+
+
+export const getGetSeasonPlanApiSeasonPlanGetUrl = () => {
+
+
+
+
+  return `/api/season-plan`
+}
+
+/**
+ * @summary Get Season Plan
+ */
+export const getSeasonPlanApiSeasonPlanGet = async ( options?: Parameters<typeof orvalFetch>[1]): Promise<SeasonPlanSnapshot> => {
+
+  return orvalFetch<SeasonPlanSnapshot>(getGetSeasonPlanApiSeasonPlanGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getCreateSeasonPlanItemApiSeasonPlanItemsPostUrl = () => {
+
+
+
+
+  return `/api/season-plan/items`
+}
+
+/**
+ * @summary Create Season Plan Item
+ */
+export const createSeasonPlanItemApiSeasonPlanItemsPost = async (seasonItemCreateRequest: SeasonItemCreateRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<SeasonPlanSnapshot> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<SeasonPlanSnapshot>(getCreateSeasonPlanItemApiSeasonPlanItemsPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(seasonItemCreateRequest)
+  }
+);}
+
+
+
+export const getDeleteSeasonPlanItemApiSeasonPlanItemsItemIdDeleteUrl = (itemId: string,
+    params: DeleteSeasonPlanItemApiSeasonPlanItemsItemIdDeleteParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/season-plan/items/${itemId}?${stringifiedParams}` : `/api/season-plan/items/${itemId}`
+}
+
+/**
+ * @summary Delete Season Plan Item
+ */
+export const deleteSeasonPlanItemApiSeasonPlanItemsItemIdDelete = async (itemId: string,
+    params: DeleteSeasonPlanItemApiSeasonPlanItemsItemIdDeleteParams, options?: Parameters<typeof orvalFetch>[1]): Promise<SeasonPlanSnapshot> => {
+
+  return orvalFetch<SeasonPlanSnapshot>(getDeleteSeasonPlanItemApiSeasonPlanItemsItemIdDeleteUrl(itemId,params),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export const getUpdateSeasonPlanItemApiSeasonPlanItemsItemIdPutUrl = (itemId: string,) => {
+
+
+
+
+  return `/api/season-plan/items/${itemId}`
+}
+
+/**
+ * @summary Update Season Plan Item
+ */
+export const updateSeasonPlanItemApiSeasonPlanItemsItemIdPut = async (itemId: string,
+    seasonItemUpdateRequest: SeasonItemUpdateRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<SeasonPlanSnapshot> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<SeasonPlanSnapshot>(getUpdateSeasonPlanItemApiSeasonPlanItemsItemIdPutUrl(itemId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(seasonItemUpdateRequest)
+  }
+);}
+
+
+
+export const getDuplicateSeasonPlanItemApiSeasonPlanItemsItemIdDuplicatePostUrl = (itemId: string,) => {
+
+
+
+
+  return `/api/season-plan/items/${itemId}/duplicate`
+}
+
+/**
+ * @summary Duplicate Season Plan Item
+ */
+export const duplicateSeasonPlanItemApiSeasonPlanItemsItemIdDuplicatePost = async (itemId: string,
+    revisionRequest: RevisionRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<SeasonPlanSnapshot> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<SeasonPlanSnapshot>(getDuplicateSeasonPlanItemApiSeasonPlanItemsItemIdDuplicatePostUrl(itemId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(revisionRequest)
+  }
+);}
+
+
+
+export const getMaterializeSeasonPlanItemApiSeasonPlanItemsItemIdMaterializePostUrl = (itemId: string,) => {
+
+
+
+
+  return `/api/season-plan/items/${itemId}/materialize`
+}
+
+/**
+ * @summary Materialize Season Plan Item
+ */
+export const materializeSeasonPlanItemApiSeasonPlanItemsItemIdMaterializePost = async (itemId: string,
+    materializeRequest: MaterializeRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<SeasonPlanSnapshot> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<SeasonPlanSnapshot>(getMaterializeSeasonPlanItemApiSeasonPlanItemsItemIdMaterializePostUrl(itemId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(materializeRequest)
+  }
+);}
+
+
+
+export const getRestoreSeasonPlanItemApiSeasonPlanItemsItemIdRestorePostUrl = (itemId: string,) => {
+
+
+
+
+  return `/api/season-plan/items/${itemId}/restore`
+}
+
+/**
+ * @summary Restore Season Plan Item
+ */
+export const restoreSeasonPlanItemApiSeasonPlanItemsItemIdRestorePost = async (itemId: string,
+    revisionRequest: RevisionRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<SeasonPlanSnapshot> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<SeasonPlanSnapshot>(getRestoreSeasonPlanItemApiSeasonPlanItemsItemIdRestorePostUrl(itemId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(revisionRequest)
+  }
+);}
+
+
+
+export const getReorderSeasonPlanApiSeasonPlanOrderPutUrl = () => {
+
+
+
+
+  return `/api/season-plan/order`
+}
+
+/**
+ * @summary Reorder Season Plan
+ */
+export const reorderSeasonPlanApiSeasonPlanOrderPut = async (appsApiSeasonRoutesReorderRequest: AppsApiSeasonRoutesReorderRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<SeasonPlanSnapshot> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<SeasonPlanSnapshot>(getReorderSeasonPlanApiSeasonPlanOrderPutUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(appsApiSeasonRoutesReorderRequest)
   }
 );}
 
