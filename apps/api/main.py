@@ -46,6 +46,7 @@ from apps.api.schemas import (
     WorkflowKind,
     WorkflowProfileRequest,
 )
+from apps.api.season_routes import create_season_plan_router
 from apps.api.stage_actions import ShotStageService, StageKind
 from apps.api.studio_routes import create_studio_router
 from apps.api.studio_snapshot import StudioJourneyService
@@ -64,6 +65,7 @@ from engine.generation.comfy.client import ComfyClient
 from engine.generation.comfy.errors import WorkflowConfigurationError
 from engine.generation.comfy.model_installer import ModelInstaller
 from engine.generation.comfy.workflow_factory import WorkflowFactory
+from engine.narrative.season_plan import SeasonPlanRegistry
 from engine.world.bible import BibleRegistry
 from engine.world.catalog import EpisodeCatalog
 
@@ -152,6 +154,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(create_guided_autopilot_router(current_settings))
     app.include_router(create_workflow_template_router(current_settings))
     app.include_router(create_runtime_pack_router(current_settings))
+    app.include_router(
+        create_season_plan_router(
+            lambda: SeasonPlanRegistry(current_settings().private_content_dir),
+            catalog,
+        )
+    )
     app.include_router(create_editorial_router(current_settings))
     app.include_router(
         create_demo_router(

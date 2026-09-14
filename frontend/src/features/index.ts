@@ -11,3 +11,4 @@ export const studioExtensions: readonly StudioExtension[] = [
   apiStatusExtension,
 ];
 export * from "./relationships";
+export * from "./season-plan";

@@ -18,6 +18,7 @@ import {
   type JourneyStageSnapshotId,
 } from "@/generated/openapi";
 import { ErrorState, Progress, Skeleton } from "@shared";
+import { SeasonPlanBoard, seasonPlanApi } from "@features/season-plan";
 
 import { JourneyContext } from "./JourneyContext";
 import { JourneyStepper } from "./JourneyStepper";
@@ -69,6 +70,10 @@ export function GuidedJourney({ locale, onNavigate, slots }: GuidedJourneyProps)
   if (journey.error || guidedQuery.error || !journey.data || !guided) return <ErrorState title="Parcours indisponible" description="Recharge le Studio pour retrouver ton brouillon." />;
   const current = journey.data.stages.find((stage) => stage.id === activeStage) ?? journey.data.stages[0];
   const completed = journey.data.stages.filter((stage) => ["approved", "completed"].includes(stage.status)).length;
+  const stageSlots = {
+    ...slots,
+    season: slots?.season ?? <SeasonPlanBoard api={seasonPlanApi} locale={locale} />,
+  };
 
   const propose = async (target: string) => {
     setError("");
@@ -112,7 +117,7 @@ export function GuidedJourney({ locale, onNavigate, slots }: GuidedJourneyProps)
           onPropose={propose}
           onSaveBrief={(brief: GuidedProjectBrief) => mutation.mutate(() => putBriefApiGuidedBriefPut({ expected_revision: guided.revision, brief }))}
           onSaveCharacter={(character: GuidedCharacterDraft) => mutation.mutate(() => putCharacterApiGuidedCharactersCharacterIdPut(character.id, { expected_revision: guided.revision, character }))}
-          slots={slots}
+          slots={stageSlots}
           stage={current}
         />
         <ProposalReviewDrawer

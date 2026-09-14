@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 
 WORKFLOW = Path(".github/workflows/windows-desktop.yml")
+HARNESS = Path("tools/run_browser_integration.py")
 
 
 def workflow_text() -> str:
@@ -69,6 +70,9 @@ def test_browser_gate_runs_real_fastapi_and_publishes_failure_evidence() -> None
     assert "python -m tools.run_browser_integration --timeout 120" in browser
     assert "Publish browser traces, screenshots and logs\n        if: always()" in browser
     assert "artifacts/browser-integration" in browser
+    harness = HARNESS.read_text(encoding="utf-8")
+    assert 'Path("tests/browser/guided_casting_integration.mjs")' in harness
+    assert 'Path("tests/browser/season_board_smoke.mjs")' in harness
 
 
 def test_packaging_waits_for_quality_and_skips_pull_requests() -> None:

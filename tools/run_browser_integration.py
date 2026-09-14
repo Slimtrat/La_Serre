@@ -60,7 +60,10 @@ def _stop(process: subprocess.Popen[str]) -> None:
 def main(argv: Sequence[str] | None = None) -> int:
     args = parser().parse_args(argv)
     root = Path(__file__).resolve().parents[1]
-    scenarios = args.scenario or [Path("tests/browser/guided_casting_integration.mjs")]
+    scenarios = args.scenario or [
+        Path("tests/browser/guided_casting_integration.mjs"),
+        Path("tests/browser/season_board_smoke.mjs"),
+    ]
     scenario_paths = [
         (root / item).resolve() if not item.is_absolute() else item.resolve()
         for item in scenarios

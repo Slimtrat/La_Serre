@@ -3008,6 +3008,28 @@
         "title": "LocationProfile",
         "type": "object"
       },
+      "MaterializeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "duration_target": {
+            "default": 45,
+            "exclusiveMinimum": 0.0,
+            "maximum": 600.0,
+            "title": "Duration Target",
+            "type": "number"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "MaterializeRequest",
+        "type": "object"
+      },
       "NarrativeApprovalRequest": {
         "additionalProperties": false,
         "properties": {
@@ -3214,6 +3236,104 @@
           }
         },
         "title": "NarrativeGenerateRequest",
+        "type": "object"
+      },
+      "NarrativeProvenance": {
+        "additionalProperties": false,
+        "description": "Trace an authoring decision without making generated content canonical.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "input_fingerprint": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Fingerprint"
+          },
+          "mode": {
+            "enum": [
+              "manual",
+              "import",
+              "ai"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "prompt": {
+            "default": "",
+            "title": "Prompt",
+            "type": "string"
+          },
+          "provider": {
+            "default": "human",
+            "title": "Provider",
+            "type": "string"
+          },
+          "source_label": {
+            "default": "",
+            "title": "Source Label",
+            "type": "string"
+          },
+          "stage": {
+            "enum": [
+              "director",
+              "screenwriter",
+              "validator",
+              "episode",
+              "breakdown"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "task_version": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Version"
+          }
+        },
+        "required": [
+          "stage",
+          "mode"
+        ],
+        "title": "NarrativeProvenance",
         "type": "object"
       },
       "NotificationCreateRequest": {
@@ -4221,21 +4341,19 @@
         "title": "RelationshipSummaryCandidate",
         "type": "object"
       },
-      "ReorderRequest": {
+      "RevisionRequest": {
         "additionalProperties": false,
         "properties": {
-          "item_ids": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Item Ids",
-            "type": "array"
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
           }
         },
         "required": [
-          "item_ids"
+          "expected_revision"
         ],
-        "title": "ReorderRequest",
+        "title": "RevisionRequest",
         "type": "object"
       },
       "RuntimeCapabilities": {
@@ -4388,6 +4506,351 @@
           "content"
         ],
         "title": "ScreenwriterSaveRequest",
+        "type": "object"
+      },
+      "SeasonItemCreateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "character_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Character Ids",
+            "type": "array"
+          },
+          "cliffhanger": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Cliffhanger",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "location_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Location Ids",
+            "type": "array"
+          },
+          "logline": {
+            "maxLength": 1000,
+            "minLength": 10,
+            "title": "Logline",
+            "type": "string"
+          },
+          "season": {
+            "default": 1,
+            "maximum": 99.0,
+            "minimum": 1.0,
+            "title": "Season",
+            "type": "integer"
+          },
+          "synopsis": {
+            "maxLength": 20000,
+            "minLength": 20,
+            "title": "Synopsis",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 180,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "title",
+          "logline",
+          "synopsis"
+        ],
+        "title": "SeasonItemCreateRequest",
+        "type": "object"
+      },
+      "SeasonItemUpdateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "character_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Ids"
+          },
+          "cliffhanger": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cliffhanger"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "lifecycle": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeasonPlanLifecycle"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "location_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Ids"
+          },
+          "logline": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logline"
+          },
+          "season": {
+            "anyOf": [
+              {
+                "maximum": 99.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Season"
+          },
+          "synopsis": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Synopsis"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 180,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "SeasonItemUpdateRequest",
+        "type": "object"
+      },
+      "SeasonPlanBoardItem": {
+        "additionalProperties": false,
+        "properties": {
+          "character_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Character Ids",
+            "type": "array"
+          },
+          "cliffhanger": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Cliffhanger",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
+          },
+          "episode_id": {
+            "anyOf": [
+              {
+                "pattern": "^S\\d{2}E\\d{3}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Episode Id"
+          },
+          "id": {
+            "pattern": "^season-item-[0-9a-f]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "lifecycle": {
+            "$ref": "#/components/schemas/SeasonPlanLifecycle",
+            "default": "draft"
+          },
+          "location_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Location Ids",
+            "type": "array"
+          },
+          "logline": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Logline",
+            "type": "string"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          },
+          "production_state": {
+            "enum": [
+              "unmaterialized",
+              "materialized",
+              "produced"
+            ],
+            "title": "Production State",
+            "type": "string"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/NarrativeProvenance"
+          },
+          "season": {
+            "default": 1,
+            "maximum": 99.0,
+            "minimum": 1.0,
+            "title": "Season",
+            "type": "integer"
+          },
+          "synopsis": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Synopsis",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 180,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "provenance",
+          "production_state"
+        ],
+        "title": "SeasonPlanBoardItem",
+        "type": "object"
+      },
+      "SeasonPlanLifecycle": {
+        "enum": [
+          "draft",
+          "validated",
+          "obsolete"
+        ],
+        "title": "SeasonPlanLifecycle",
+        "type": "string"
+      },
+      "SeasonPlanSnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SeasonPlanBoardItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "schema_version": {
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "revision",
+          "updated_at",
+          "items"
+        ],
+        "title": "SeasonPlanSnapshot",
         "type": "object"
       },
       "Secret": {
@@ -5244,6 +5707,48 @@
           "statement"
         ],
         "title": "WorldRule",
+        "type": "object"
+      },
+      "apps__api__production_queue_routes__ReorderRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "item_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Item Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "item_ids"
+        ],
+        "title": "ReorderRequest",
+        "type": "object"
+      },
+      "apps__api__season_routes__ReorderRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "item_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Item Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "item_ids"
+        ],
+        "title": "ReorderRequest",
         "type": "object"
       }
     }
@@ -10790,7 +11295,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReorderRequest"
+                "$ref": "#/components/schemas/apps__api__production_queue_routes__ReorderRequest"
               }
             }
           },
@@ -12157,6 +12662,377 @@
           }
         },
         "summary": "Runtime Service Action"
+      }
+    },
+    "/api/season-plan": {
+      "get": {
+        "operationId": "get_season_plan_api_season_plan_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonPlanSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Season Plan",
+        "tags": [
+          "season-plan"
+        ]
+      }
+    },
+    "/api/season-plan/items": {
+      "post": {
+        "operationId": "create_season_plan_item_api_season_plan_items_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeasonItemCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonPlanSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Season Plan Item",
+        "tags": [
+          "season-plan"
+        ]
+      }
+    },
+    "/api/season-plan/items/{item_id}": {
+      "delete": {
+        "operationId": "delete_season_plan_item_api_season_plan_items__item_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "keep_produced_episode",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Keep Produced Episode",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonPlanSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Season Plan Item",
+        "tags": [
+          "season-plan"
+        ]
+      },
+      "put": {
+        "operationId": "update_season_plan_item_api_season_plan_items__item_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeasonItemUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonPlanSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Season Plan Item",
+        "tags": [
+          "season-plan"
+        ]
+      }
+    },
+    "/api/season-plan/items/{item_id}/duplicate": {
+      "post": {
+        "operationId": "duplicate_season_plan_item_api_season_plan_items__item_id__duplicate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonPlanSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Duplicate Season Plan Item",
+        "tags": [
+          "season-plan"
+        ]
+      }
+    },
+    "/api/season-plan/items/{item_id}/materialize": {
+      "post": {
+        "operationId": "materialize_season_plan_item_api_season_plan_items__item_id__materialize_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaterializeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonPlanSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Materialize Season Plan Item",
+        "tags": [
+          "season-plan"
+        ]
+      }
+    },
+    "/api/season-plan/items/{item_id}/restore": {
+      "post": {
+        "operationId": "restore_season_plan_item_api_season_plan_items__item_id__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonPlanSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restore Season Plan Item",
+        "tags": [
+          "season-plan"
+        ]
+      }
+    },
+    "/api/season-plan/order": {
+      "put": {
+        "operationId": "reorder_season_plan_api_season_plan_order_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/apps__api__season_routes__ReorderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonPlanSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reorder Season Plan",
+        "tags": [
+          "season-plan"
+        ]
       }
     },
     "/api/stages/{kind}": {

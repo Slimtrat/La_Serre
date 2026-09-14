@@ -1,0 +1,26 @@
+.root { display: grid; gap: 1rem; padding: 1.25rem; }
+.header { align-items: end; display: flex; gap: 1rem; justify-content: space-between; }
+.header h1 { margin: .2rem 0; }
+.header p { margin: 0; max-width: 62ch; }
+.headerActions { align-items: center; display: flex; flex-wrap: wrap; gap: .75rem; }
+.list { display: grid; gap: 1rem; list-style: none; margin: 0; padding: 0; }
+.listItem[data-deleted="true"] { opacity: .7; }
+.card { display: grid; gap: 1rem; }
+.cardHeader, .identity, .moveActions, .actions { align-items: center; display: flex; flex-wrap: wrap; gap: .5rem; }
+.cardHeader { justify-content: space-between; }
+.dragHandle { background: transparent; border: 1px solid var(--color-border, #596273); border-radius: .35rem; color: inherit; cursor: grab; font: inherit; min-height: 2.25rem; min-width: 2.25rem; }
+.dragHandle:focus-visible { outline: 2px solid var(--color-focus, #8bd8bd); outline-offset: 2px; }
+.dragHandle:active { cursor: grabbing; }
+.form { display: grid; gap: .8rem; }
+.form label { display: grid; gap: .3rem; }
+.form input, .form textarea { background: var(--color-surface-raised, #171b22); border: 1px solid var(--color-border, #596273); border-radius: .4rem; color: inherit; font: inherit; padding: .65rem; }
+.form textarea { min-height: 4.5rem; resize: vertical; }
+.advanced { border-top: 1px solid var(--color-border, #596273); padding-top: .75rem; }
+.advanced summary { cursor: pointer; font-weight: 650; }
+.advanced dl { display: flex; flex-wrap: wrap; gap: 1rem; }
+.advanced dl div { display: grid; gap: .2rem; }
+.advanced dd { margin: 0; }
+.actions { justify-content: flex-end; }
+.error { align-items: center; background: color-mix(in srgb, #b64646 20%, transparent); border: 1px solid #b64646; border-radius: .5rem; display: flex; gap: .75rem; justify-content: space-between; padding: .75rem; }
+.live { clip: rect(0 0 0 0); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; white-space: nowrap; width: 1px; }
+@media (max-width: 720px) { .header { align-items: stretch; flex-direction: column; } .headerActions { justify-content: space-between; } .actions { justify-content: stretch; } .actions > button { flex: 1 1 auto; } }

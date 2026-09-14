@@ -51,6 +51,10 @@ class EpisodeStory(StrictEpisodeModel):
 
 class Episode(StrictEpisodeModel):
     id: str = Field(pattern=r"^S\d{2}E\d{3}$")
+    season_plan_item_id: str | None = Field(
+        default=None,
+        pattern=r"^season-item-[0-9a-f]+$",
+    )
     season: int = Field(ge=1, le=99)
     episode: int = Field(ge=1, le=999)
     title: str = "Épisode sans titre"
