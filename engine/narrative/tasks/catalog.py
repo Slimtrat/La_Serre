@@ -3,6 +3,7 @@ from __future__ import annotations
 from enum import StrEnum
 
 from engine.narrative.tasks.models import TaskKind, TaskRegistry, TaskSpec
+from engine.narrative.tasks.tentafruit_series_plan import TENTAFRUIT_SERIES_PLAN_TASK
 from engine.narrative.workflow_models import (
     ContinuityDelta,
     DirectorBrief,
@@ -60,6 +61,7 @@ DEFAULT_TASK_REGISTRY = TaskRegistry(
             ),
             inference_options={"temperature": 0.5},
         ),
+        TENTAFRUIT_SERIES_PLAN_TASK,
         TaskSpec(
             task_id=NarrativeTaskId.SHORT_EPISODE,
             version=1,
