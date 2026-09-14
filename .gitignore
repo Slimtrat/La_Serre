@@ -15,5 +15,6 @@ build/
 dist/
 dist-installer/
 logs/
+artifacts/
 comfyui-extra-model-paths.yaml
 frontend/node_modules/

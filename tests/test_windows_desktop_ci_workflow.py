@@ -16,8 +16,7 @@ def test_quality_gate_runs_for_pull_requests_and_develop_pushes() -> None:
 
     assert re.search(r"(?m)^  pull_request:\s*$", source)
     assert source.count("branches: [main, develop]") == 2
-    assert '"tests/**"' in source
-    assert '"workflows/**"' in source
+    assert not re.search(r"(?m)^\s+paths:\s*$", source)
     assert "cancel-in-progress:" in source
 
 
@@ -59,13 +58,29 @@ def test_python_and_frontend_evidence_is_published_even_after_failures() -> None
     assert "Publish frontend test evidence\n        if: always()" in source
 
 
+def test_browser_gate_runs_real_fastapi_and_publishes_failure_evidence() -> None:
+    source = workflow_text()
+    browser = source.split("\n  browser-integration:\n", maxsplit=1)[1].split(
+        "\n  build:\n", maxsplit=1
+    )[0]
+
+    assert "Browser integration (FastAPI + persistence)" in browser
+    assert "npm --prefix frontend run build" in browser
+    assert "python -m tools.run_browser_integration --timeout 120" in browser
+    assert "Publish browser traces, screenshots and logs\n        if: always()" in browser
+    assert "artifacts/browser-integration" in browser
+
+
 def test_packaging_waits_for_quality_and_skips_pull_requests() -> None:
     source = workflow_text()
 
     build = source.split("\n  build:\n", maxsplit=1)[1]
-    assert "needs: [frontend, quality]" in build
+    assert "needs: [frontend, quality, browser-integration]" in build
     assert "needs.frontend.result == 'success'" in build
     assert "needs.quality.result == 'success'" in build
+    assert "needs.browser-integration.result == 'success'" in build
     assert "github.event_name == 'pull_request'" not in build
     assert "github.ref == 'refs/heads/main'" in build
     assert "python -m tools.build_desktop" in build
+    assert "Launch portable executable and verify API plus React assets" in build
+    assert "http://127.0.0.1:8766/static/ui/studio-react.js" in build
