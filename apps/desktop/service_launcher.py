@@ -20,6 +20,8 @@ from typing import BinaryIO, Protocol
 from urllib.parse import urljoin, urlsplit
 
 from engine.config import Settings
+from engine.runtime.installers.ollama import OLLAMA_WINDOWS_X64
+from engine.runtime.managed_tools import resolve_managed_tool
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_CONFIG_FILENAME = "runtime-services.json"
@@ -518,6 +520,7 @@ def _ollama_spec(
     if command is None:
         executable = _first_executable(
             environ.get("SERRE_OLLAMA_EXECUTABLE"),
+            resolve_managed_tool(runtime_root / ".la-serre-runtime", OLLAMA_WINDOWS_X64),
             shutil.which("ollama"),
             _environment_path(environ, "LOCALAPPDATA", "Programs", "Ollama", "ollama.exe"),
             _environment_path(environ, "PROGRAMFILES", "Ollama", "ollama.exe"),
@@ -530,7 +533,10 @@ def _ollama_spec(
         health_path="/api/tags",
         command=command,
         working_directory=_configured_directory(configured, runtime_root),
-        environment={"OLLAMA_HOST": _listen_address(url)},
+        environment={
+            "OLLAMA_HOST": _listen_address(url),
+            "OLLAMA_MODELS": str(runtime_root / ".la-serre-runtime" / "ollama" / "models"),
+        },
         auto_start=_configured_bool(configured, "auto_start", True),
         startup_timeout_seconds=_configured_float(configured, "startup_timeout_seconds", 45.0),
     )

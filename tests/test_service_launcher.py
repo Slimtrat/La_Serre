@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Callable
 from pathlib import Path
@@ -18,6 +19,7 @@ from apps.desktop.service_launcher import (
     set_active_service_supervisor,
 )
 from engine.config import Settings
+from engine.runtime.installers.ollama import OLLAMA_WINDOWS_X64
 
 
 class FakeProcess:
@@ -244,7 +246,10 @@ def test_discovery_honours_explicit_commands_and_safe_autostart_config(
 
     assert by_name["ollama"].command == (str(ollama.resolve()), "serve")
     assert by_name["ollama"].auto_start is False
-    assert by_name["ollama"].environment == {"OLLAMA_HOST": "127.0.0.1:11434"}
+    assert by_name["ollama"].environment == {
+        "OLLAMA_HOST": "127.0.0.1:11434",
+        "OLLAMA_MODELS": str(tmp_path / ".la-serre-runtime" / "ollama" / "models"),
+    }
     assert by_name["comfyui"].command == (
         str(embedded_python.resolve()),
         str((comfy_root / "main.py").resolve()),
@@ -254,6 +259,36 @@ def test_discovery_honours_explicit_commands_and_safe_autostart_config(
         "8188",
     )
     assert by_name["comfyui"].startup_timeout_seconds == 360
+
+
+def test_discovery_uses_verified_managed_ollama_after_restart(tmp_path: Path) -> None:
+    managed = (
+        tmp_path
+        / ".la-serre-runtime"
+        / "tools"
+        / OLLAMA_WINDOWS_X64.name
+        / OLLAMA_WINDOWS_X64.version
+    )
+    managed.mkdir(parents=True)
+    executable = managed / OLLAMA_WINDOWS_X64.executable
+    executable.write_bytes(b"verified managed ollama")
+    (managed / ".la-serre-tool.json").write_text(
+        json.dumps(
+            {
+                "name": OLLAMA_WINDOWS_X64.name,
+                "version": OLLAMA_WINDOWS_X64.version,
+                "source": OLLAMA_WINDOWS_X64.source,
+                "archive_sha256": OLLAMA_WINDOWS_X64.archive_sha256,
+                "executable_sha256": hashlib.sha256(executable.read_bytes()).hexdigest(),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    services = discover_local_services(Settings(_env_file=None), tmp_path, environ={})
+
+    ollama = next(service for service in services if service.name == "ollama")
+    assert ollama.command == (str(executable.resolve()), "serve")
 
 
 def test_discovery_supports_comfyui_desktop_installation(tmp_path: Path) -> None:

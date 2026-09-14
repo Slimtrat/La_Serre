@@ -17,6 +17,7 @@ from engine.runtime.installers import (
     DirectDownloadAdapter,
     InstallContext,
     IntegrityError,
+    ManualActionRequired,
     OllamaInstallerAdapter,
     ProcessResult,
     UnsafePathError,
@@ -501,3 +502,53 @@ async def test_comfy_uses_pinned_cli_through_managed_uv(tmp_path: Path) -> None:
         "comfy-cli==1.20.0",
         "comfy",
     ]
+
+
+@pytest.mark.asyncio
+async def test_managed_ollama_requests_graphical_restart_then_resumes(
+    tmp_path: Path,
+) -> None:
+    content = zip_bytes({"ollama.exe": b"trusted ollama"})
+    spec = ManagedToolSpec(
+        "ollama",
+        "1.2.3",
+        "https://downloads.invalid/ollama.zip",
+        hashlib.sha256(content).hexdigest(),
+        "ollama.exe",
+        "MIT",
+        "https://licenses.invalid/mit",
+        len(content),
+    )
+    managed = tmp_path / "managed"
+    managed.mkdir()
+    context = InstallContext(managed, managed / "comfy", managed / "models", tmp_path)
+    tool = ManagedZipTool(spec, FakeDownloader(content))
+    runner = FakeRunner()
+    base = make_pack().components[0].model_dump(mode="json")
+    engine = PackComponent.model_validate(
+        {
+            **base,
+            "id": "ollama-engine",
+            "kind": "engine",
+            "destination": "managed",
+            "detection": {"kind": "ollama", "value": "ollama"},
+        }
+    )
+    model = PackComponent.model_validate(
+        {
+            **base,
+            "id": "ollama-model",
+            "destination": "ollama://qwen3:4b",
+            "detection": {"kind": "ollama_model", "value": "qwen3:4b"},
+        }
+    )
+    adapter = OllamaInstallerAdapter(runner, managed_cli=tool)
+
+    installed = await adapter.install(engine, context, CancellationToken())
+    assert installed.path == str(managed / "tools" / "ollama" / "1.2.3" / "ollama.exe")
+    with pytest.raises(ManualActionRequired, match="rouvre La Serre"):
+        await adapter.install(model, context, CancellationToken())
+
+    restarted = OllamaInstallerAdapter(runner, managed_cli=tool)
+    await restarted.install(model, context, CancellationToken())
+    assert runner.calls[-1][0] == [installed.path, "pull", "qwen3:4b"]

@@ -42,26 +42,7 @@ class ManagedZipTool:
         self.downloader = downloader
 
     def resolve(self, context: InstallContext) -> Path | None:
-        root = self._version_root(context)
-        executable = assert_safe_child(root / self.spec.executable, root)
-        receipt = root / ".la-serre-tool.json"
-        if not executable.is_file() or not receipt.is_file():
-            return None
-        try:
-            payload = json.loads(receipt.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return None
-        expected = {
-            "name": self.spec.name,
-            "version": self.spec.version,
-            "source": self.spec.source,
-            "archive_sha256": self.spec.archive_sha256,
-        }
-        if any(payload.get(key) != value for key, value in expected.items()):
-            return None
-        if payload.get("executable_sha256") != _sha256(executable):
-            return None
-        return executable
+        return resolve_managed_tool(context.managed_root, self.spec)
 
     async def ensure(
         self, context: InstallContext, cancellation: CancellationToken
@@ -125,6 +106,30 @@ class ManagedZipTool:
     def _version_root(self, context: InstallContext) -> Path:
         tools_root = assert_safe_child(context.managed_root / "tools", context.managed_root)
         return assert_safe_child(tools_root / self.spec.name / self.spec.version, tools_root)
+
+
+def resolve_managed_tool(managed_root: Path, spec: ManagedToolSpec) -> Path | None:
+    tools_root = assert_safe_child(managed_root / "tools", managed_root)
+    root = assert_safe_child(tools_root / spec.name / spec.version, tools_root)
+    executable = assert_safe_child(root / spec.executable, root)
+    receipt = root / ".la-serre-tool.json"
+    if not executable.is_file() or not receipt.is_file():
+        return None
+    try:
+        payload = json.loads(receipt.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    expected = {
+        "name": spec.name,
+        "version": spec.version,
+        "source": spec.source,
+        "archive_sha256": spec.archive_sha256,
+    }
+    if any(payload.get(key) != value for key, value in expected.items()):
+        return None
+    if payload.get("executable_sha256") != _sha256(executable):
+        return None
+    return executable
 
 
 def _extract_zip_safely(
