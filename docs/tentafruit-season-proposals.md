@@ -60,9 +60,10 @@ Les routes sont regroupées sous `/api/season-plan` :
 
 Les réponses de proposition exposent son identité, sa révision, la révision de
 plan de départ, `stale`, la provenance, les items et le rapport de validation.
-Une sortie invalide ou contenant des IDs inconnus est rejetée en `422`; les
-conflits de révision et la péremption sont des `409` avec les codes stables
-décrits ci-dessus.
+Une proposition invalide ou contenant des IDs inconnus reste consultable pour
+être corrigée, mais son acceptation est rejetée en `422`; les conflits de
+révision et la péremption sont des `409` avec les codes stables décrits
+ci-dessus.
 
 ## Fake CI et fixture golden
 
