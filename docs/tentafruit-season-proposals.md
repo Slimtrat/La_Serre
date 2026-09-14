@@ -73,4 +73,3 @@ aucun service Ollama n'est requis. La fixture couvre plusieurs personnages,
 relations, lieux et secrets avec une révélation progressive ; elle sert à la
 fois de test de contrat, de diversité des beats et de base reproductible pour
 les contrats API.
-
