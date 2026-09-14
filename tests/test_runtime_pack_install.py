@@ -15,6 +15,7 @@ from engine.runtime.installers import (
     CancellationToken,
     ComfyCliAdapter,
     DirectDownloadAdapter,
+    FFmpegInstallerAdapter,
     InstallContext,
     IntegrityError,
     ManualActionRequired,
@@ -172,6 +173,7 @@ def manager_for(
     runner: FakeRunner,
     *,
     disk_free: int = 1_000_000,
+    development_smoke_checks: bool = True,
 ) -> PackPreparationManager:
     managed = tmp_path / "managed"
     managed.mkdir(exist_ok=True)
@@ -187,6 +189,7 @@ def manager_for(
         process_runner=runner,
         pack=pack,
         disk_free=lambda _path: disk_free,
+        development_smoke_checks=development_smoke_checks,
     )
 
 
@@ -343,6 +346,27 @@ async def test_smoke_failure_names_exact_components_and_redacts_logs(tmp_path: P
     assert job.smoke_checks[0].required_components == ["test-model"]
     serialized_logs = json.dumps(manager.logs(job.id))
     assert "super-secret" not in serialized_logs
+
+
+@pytest.mark.asyncio
+async def test_packaged_smoke_uses_embedded_capability_checks_without_dev_tools(
+    tmp_path: Path,
+) -> None:
+    pack = make_pack()
+    runner = FakeRunner(fail_smoke="test-model")
+    manager = manager_for(
+        tmp_path,
+        pack,
+        FakeDownloader(),
+        runner,
+        development_smoke_checks=False,
+    )
+
+    job = await manager.wait(manager.start().id)
+
+    assert job.status == "completed"
+    assert job.smoke_checks[0].message == "Contrôle embarqué des capacités réussi"
+    assert runner.calls == []
 
 
 def test_path_and_log_safety_helpers(tmp_path: Path) -> None:
@@ -552,3 +576,49 @@ async def test_managed_ollama_requests_graphical_restart_then_resumes(
     restarted = OllamaInstallerAdapter(runner, managed_cli=tool)
     await restarted.install(model, context, CancellationToken())
     assert runner.calls[-1][0] == [installed.path, "pull", "qwen3:4b"]
+
+
+@pytest.mark.asyncio
+async def test_managed_ffmpeg_verifies_both_executables(tmp_path: Path) -> None:
+    ffmpeg_relative = "ffmpeg-build/bin/ffmpeg.exe"
+    ffprobe_relative = "ffmpeg-build/bin/ffprobe.exe"
+    content = zip_bytes(
+        {ffmpeg_relative: b"trusted ffmpeg", ffprobe_relative: b"trusted ffprobe"}
+    )
+    spec = ManagedToolSpec(
+        "ffmpeg",
+        "1.2.3",
+        "https://downloads.invalid/ffmpeg.zip",
+        hashlib.sha256(content).hexdigest(),
+        ffmpeg_relative,
+        "GPL-3.0",
+        "https://licenses.invalid/gpl-3.0",
+        len(content),
+        (ffprobe_relative,),
+    )
+    managed = tmp_path / "managed"
+    managed.mkdir()
+    context = InstallContext(managed, managed / "comfy", managed / "models", tmp_path)
+    tool = ManagedZipTool(spec, FakeDownloader(content))
+    runner = FakeRunner()
+    base = make_pack().components[0].model_dump(mode="json")
+    component = PackComponent.model_validate(
+        {
+            **base,
+            "id": "ffmpeg-engine",
+            "kind": "engine",
+            "destination": "managed",
+            "detection": {"kind": "ffmpeg", "value": "ffmpeg+ffprobe"},
+        }
+    )
+    adapter = FFmpegInstallerAdapter(runner, tool)
+
+    installed = await adapter.install(component, context, CancellationToken())
+
+    assert installed.state == "installed"
+    assert runner.calls[-2][0][-1] == "-version"
+    assert runner.calls[-2][0][0].endswith("ffmpeg.exe")
+    assert runner.calls[-1][0][0].endswith("ffprobe.exe")
+    assert await adapter.inspect(component, context) is not None
+    await asyncio.to_thread(Path(runner.calls[-1][0][0]).write_bytes, b"tampered")
+    assert await adapter.inspect(component, context) is None

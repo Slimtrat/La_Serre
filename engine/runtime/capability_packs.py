@@ -12,7 +12,9 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
 DEFAULT_PACK_PATH = Path(__file__).resolve().parents[2] / "packs" / "tentafruit-local-12gb-v1.json"
 
 ComponentKind = Literal["engine", "model", "node_bundle", "workflow_bundle"]
-DetectionKind = Literal["ollama", "ollama_model", "comfyui", "comfy_model", "nodes", "files"]
+DetectionKind = Literal[
+    "ollama", "ollama_model", "comfyui", "comfy_model", "nodes", "files", "ffmpeg"
+]
 PackState = Literal["ready", "incomplete", "incompatible"]
 ComponentState = Literal["installed", "missing", "unavailable", "unknown", "invalid"]
 
@@ -225,6 +227,7 @@ class CapabilityPackInspector:
         ollama_reachable: bool = False,
         comfyui_reachable: bool = False,
         available_nodes: set[str] | frozenset[str] | None = None,
+        ffmpeg_available: bool = False,
     ) -> PackDiagnosis:
         components = [
             self._component_status(
@@ -235,6 +238,7 @@ class CapabilityPackInspector:
                 ollama_reachable=ollama_reachable,
                 comfyui_reachable=comfyui_reachable,
                 available_nodes=available_nodes,
+                ffmpeg_available=ffmpeg_available,
             )
             for component in self.pack.components
         ]
@@ -305,6 +309,7 @@ class CapabilityPackInspector:
         ollama_reachable: bool,
         comfyui_reachable: bool,
         available_nodes: set[str] | frozenset[str] | None,
+        ffmpeg_available: bool,
     ) -> ComponentDiagnosis:
         detection = component.detection
         detected_path: Path | None = None
@@ -343,6 +348,13 @@ class CapabilityPackInspector:
             if detected_path and not self._checksum_matches(detected_path, component.checksum):
                 state = "invalid"
                 reason = "Le checksum du fichier installé ne correspond pas au manifeste."
+        elif detection.kind == "ffmpeg":
+            state = "installed" if ffmpeg_available else "missing"
+            reason = (
+                "FFmpeg et FFprobe gérés sont vérifiés."
+                if ffmpeg_available
+                else "FFmpeg et FFprobe gérés sont absents."
+            )
         elif detection.kind == "nodes":
             required_nodes = {detection.value, *detection.aliases}
             if available_nodes is None:

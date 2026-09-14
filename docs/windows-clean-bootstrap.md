@@ -10,7 +10,7 @@ Le parcours supporté part de `SerreStudio.exe`. Node.js est requis uniquement p
 | ComfyUI | workspace possédé par La Serre et préparé par le CLI isolé | `.la-serre-runtime/comfyui` |
 | Modèles ComfyUI | téléchargements atomiques contrôlés par le manifeste du pack | dossier géré, ou dossier personnel uniquement après choix explicite |
 | Ollama | archive Windows x64 officielle 0.34.0 vérifiée par SHA-256, exécutable et modèles isolés | `.la-serre-runtime/tools/ollama`, sans installateur système |
-| FFmpeg | utilisé par les pipelines média ; bootstrap géré encore à fermer dans #62 | aucune modification silencieuse |
+| FFmpeg + FFprobe | build Windows essentials 9.0.1 recommandé depuis ffmpeg.org, archive Gyan vérifiée par SHA-256 | `.la-serre-runtime/tools/ffmpeg`, sans modification du `PATH` |
 
 Le wizard expose avant consentement la version, la source, la licence, le checksum et la destination de chaque prérequis géré. Un refus ne crée aucun job et ne déclenche aucun téléchargement.
 
@@ -21,3 +21,5 @@ Les archives d’outils sont téléchargées dans un fichier `.part`, validées 
 Après la première installation d’Ollama, le wizard demande de fermer puis rouvrir La Serre. Au redémarrage, le superviseur vérifie le reçu et le hash avant de lancer `ollama serve`, puis le job persistant reprend l’installation du modèle sans retélécharger l’archive. Aucun service ni `PATH` global n’est modifié.
 
 Les tests CI utilisent des archives et processus factices : aucun outil, modèle ou poids réel n’y est téléchargé.
+
+Dans le binaire, l’essai final réinspecte les composants requis avec les adaptateurs embarqués. Il n’appelle jamais les commandes de développement `python`, `pytest` ou `node`. Hors binaire, ces contrôles de développement restent exécutés en complément.

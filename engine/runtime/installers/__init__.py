@@ -15,12 +15,14 @@ from engine.runtime.installers.base import (
 )
 from engine.runtime.installers.comfy import ComfyCliAdapter
 from engine.runtime.installers.direct import DirectDownloadAdapter, HttpxDownloader
+from engine.runtime.installers.ffmpeg import FFmpegInstallerAdapter
 from engine.runtime.installers.ollama import OllamaInstallerAdapter
 
 __all__ = [
     "CancellationToken",
     "ComfyCliAdapter",
     "DirectDownloadAdapter",
+    "FFmpegInstallerAdapter",
     "HttpxDownloader",
     "InstallContext",
     "InstallOutcome",

@@ -32,6 +32,7 @@ class ManagedToolSpec:
     license_name: str
     license_url: str
     size_bytes: int
+    required_files: tuple[str, ...] = ()
 
 
 class ManagedZipTool:
@@ -76,12 +77,22 @@ class ManagedZipTool:
                     f"L’archive vérifiée de {self.spec.name} ne contient pas "
                     f"{self.spec.executable}."
                 )
+            required_files = (self.spec.executable, *self.spec.required_files)
+            file_sha256: dict[str, str] = {}
+            for relative in required_files:
+                required = assert_safe_child(staging / relative, staging)
+                if not required.is_file():
+                    raise IntegrityError(
+                        f"L’archive vérifiée de {self.spec.name} ne contient pas {relative}."
+                    )
+                file_sha256[relative] = _sha256(required)
             receipt = {
                 "name": self.spec.name,
                 "version": self.spec.version,
                 "source": self.spec.source,
                 "archive_sha256": self.spec.archive_sha256,
                 "executable_sha256": _sha256(executable),
+                "file_sha256": file_sha256,
                 "license": {
                     "name": self.spec.license_name,
                     "url": self.spec.license_url,
@@ -129,6 +140,14 @@ def resolve_managed_tool(managed_root: Path, spec: ManagedToolSpec) -> Path | No
         return None
     if payload.get("executable_sha256") != _sha256(executable):
         return None
+    file_sha256 = payload.get("file_sha256")
+    if spec.required_files:
+        if not isinstance(file_sha256, dict):
+            return None
+        for relative in (spec.executable, *spec.required_files):
+            required = assert_safe_child(root / relative, root)
+            if not required.is_file() or file_sha256.get(relative) != _sha256(required):
+                return None
     return executable
 
 

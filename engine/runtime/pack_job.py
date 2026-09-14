@@ -4,6 +4,7 @@ import asyncio
 import json
 import shlex
 import shutil
+import sys
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -102,6 +103,7 @@ class PackPreparationManager:
         process_runner: ProcessRunner,
         pack: CapabilityPack = DEFAULT_CAPABILITY_PACK,
         disk_free: Callable[[Path], int] | None = None,
+        development_smoke_checks: bool | None = None,
     ) -> None:
         self.pack = pack
         self.state_root = state_root.resolve()
@@ -109,6 +111,11 @@ class PackPreparationManager:
         self.adapters = adapters
         self.process_runner = process_runner
         self.disk_free = disk_free or (lambda path: shutil.disk_usage(path).free)
+        self.development_smoke_checks = (
+            not getattr(sys, "frozen", False)
+            if development_smoke_checks is None
+            else development_smoke_checks
+        )
         self._jobs: dict[str, PackPreparationJob] = {}
         self._tasks: dict[str, asyncio.Task[None]] = {}
         self._tokens: dict[str, CancellationToken] = {}
@@ -319,7 +326,7 @@ class PackPreparationManager:
                 step.status = "installed"
                 step.message = "Workflows locaux déjà présents"
                 continue
-            if component.kind == "model":
+            if component.size_bytes:
                 missing_bytes += component.size_bytes
             if (
                 component.license.commercial_use != "allowed"
@@ -375,9 +382,33 @@ class PackPreparationManager:
         job.smoke_checks = []
         for check in self.pack.smoke_checks:
             token.raise_if_cancelled()
+            required = list(check.required_roles)
+            missing = await self._missing_smoke_components(required)
+            if missing:
+                job.smoke_checks.append(
+                    SmokeResult(
+                        check_id=check.id,
+                        status="failed",
+                        required_components=required,
+                        message="Composants non vérifiés : " + ", ".join(missing),
+                    )
+                )
+                raise RuntimeError(
+                    f"Smoke check {check.id} en échec; composants concernés: "
+                    + ", ".join(missing)
+                )
+            if not self.development_smoke_checks:
+                job.smoke_checks.append(
+                    SmokeResult(
+                        check_id=check.id,
+                        status="passed",
+                        required_components=required,
+                        message="Contrôle embarqué des capacités réussi",
+                    )
+                )
+                continue
             arguments = shlex.split(check.command, posix=True)
             result = await self.process_runner.run(arguments, cwd=Path.cwd(), cancellation=token)
-            required = list(check.required_roles)
             if result.returncode:
                 message = redact_sensitive(result.stderr.strip() or result.stdout.strip())
                 job.smoke_checks.append(
@@ -399,6 +430,22 @@ class PackPreparationManager:
                     message="Contrôle réussi",
                 )
             )
+
+    async def _missing_smoke_components(self, component_ids: list[str]) -> list[str]:
+        missing: list[str] = []
+        for component_id in component_ids:
+            component = self.pack.component(component_id)
+            adapter = self._adapter(component)
+            if adapter is not None:
+                try:
+                    if await adapter.inspect(component, self.context) is not None:
+                        continue
+                except (OSError, IntegrityError):
+                    pass
+            elif component.kind == "workflow_bundle" and self._workflow_present(component):
+                continue
+            missing.append(component_id)
+        return missing
 
     def _adapter(self, component: PackComponent) -> InstallerAdapter | None:
         return next((item for item in self.adapters if item.supports(component)), None)
