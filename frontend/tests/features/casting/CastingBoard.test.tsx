@@ -77,7 +77,7 @@ afterEach(cleanup);
 describe("CastingBoard", () => {
   it("compares candidates and exposes full provenance", async () => {
     renderWithStudio(
-      <CastingBoard characters={[{ id: "iris", name: "Iris" }]} locale="fr" />,
+      <CastingBoard characters={[{ id: "iris", name: "Iris" }]} locale="fr" projectId="test" />,
     );
     expect(await screen.findByRole("heading", { name: "Identités visuelles maîtres" })).toBeTruthy();
     expect(screen.getByText("CC-BY-4.0", { exact: false })).toBeTruthy();
@@ -91,12 +91,75 @@ describe("CastingBoard", () => {
 
   it("promotes only after an explicit approval and reports impact", async () => {
     renderWithStudio(
-      <CastingBoard characters={[{ id: "iris", name: "Iris" }]} locale="fr" />,
+      <CastingBoard characters={[{ id: "iris", name: "Iris" }]} locale="fr" projectId="test" />,
     );
     fireEvent.click(await screen.findByRole("button", { name: "Approuver comme maître" }));
     await waitFor(() => expect(api.review).toHaveBeenCalledWith(
       "approve", "iris", variants[1].id, 7,
     ));
     expect((await screen.findByRole("status")).textContent).toContain("Aucune régénération lancée");
+  });
+
+  it("selects the first canonical character after the list changes", async () => {
+    api.get.mockResolvedValue({
+      revision: 7,
+      characters: [
+        { character_id: "iris", active_master_id: null, variants: [] },
+        { character_id: "rose", active_master_id: null, variants: [] },
+      ],
+    });
+    const rendered = renderWithStudio(
+      <CastingBoard characters={[{ id: "iris", name: "Iris" }]} locale="fr" projectId="test" />,
+    );
+    expect(await screen.findByRole("combobox", { name: "Character" })).toBeTruthy();
+    rendered.rerender(
+      <CastingBoard characters={[{ id: "rose", name: "Rose" }]} locale="fr" projectId="test" />,
+    );
+    await waitFor(() => expect(
+      (screen.getByRole("combobox", { name: "Character" }) as HTMLSelectElement).value,
+    ).toBe("rose"));
+  });
+
+  it("prefills the standard generation path and keeps technical settings optional", async () => {
+    api.generate.mockResolvedValue({ board: { revision: 8, characters: [] } });
+    renderWithStudio(
+      <CastingBoard
+        characters={[{
+          id: "iris",
+          name: "Iris",
+          visualDescription: "Silver hair and an angular adult face",
+          wardrobe: "Charcoal petal coat",
+        }]}
+        generationLicenses={[{
+          id: "openrail",
+          name: "Open RAIL",
+          url: "https://example.test/license",
+          summary: "Responsible use restrictions",
+          commercialUse: "allowed",
+        }]}
+        locale="fr"
+        projectId="test"
+      />,
+    );
+    await screen.findByRole("heading", { name: "Identités visuelles maîtres" });
+    const details = screen.getAllByText("Générer une apparence")[0]?.closest("details");
+    const form = details?.querySelector("form");
+    expect(form).toBeTruthy();
+    if (!form) throw new Error("Generation form not found");
+    const license = form.querySelector('[name="license"]');
+    if (!license) throw new Error("License field not found");
+    expect(form.querySelector<HTMLTextAreaElement>('[name="prompt"]')?.value).toContain("Silver hair");
+    expect(screen.getByText("Open RAIL")).toBeTruthy();
+    fireEvent.change(license, { target: { value: "model-output" } });
+    form.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((input) => {
+      fireEvent.click(input);
+    });
+    fireEvent.submit(form);
+    await waitFor(() => expect(api.generate).toHaveBeenCalledWith("iris", expect.objectContaining({
+      seed: 42,
+      prompt: expect.stringContaining("Silver hair"),
+      model: undefined,
+      workflow: undefined,
+    })));
   });
 });

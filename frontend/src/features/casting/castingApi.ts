@@ -83,8 +83,8 @@ export function generateVariant(
     outfit: string;
     transient_state: string;
     prompt: string;
-    model: string;
-    workflow: string;
+    model?: string;
+    workflow?: string;
     seed: number;
     license: string;
   },

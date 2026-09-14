@@ -19,8 +19,33 @@ export interface GuidedPayload {
   readonly revision: number;
   readonly brief: GuidedProjectBrief;
   readonly characters: readonly GuidedCharacterDraft[];
+  readonly canonicalCharacters: readonly CanonicalCharacter[];
+  readonly characterCompletion: Readonly<Record<string, CharacterCompletion>>;
+  readonly generationLicenses: readonly GenerationLicense[];
   readonly activeEpisodeId: string | null;
   readonly proposals: readonly GuidedProposal[];
+}
+
+export interface CanonicalCharacter {
+  readonly id: string;
+  readonly name: string;
+  readonly role: string;
+  readonly visualDescription: string;
+  readonly wardrobe: string;
+}
+
+export interface CharacterCompletion {
+  readonly ready: boolean;
+  readonly promoted: boolean;
+  readonly missing: readonly string[];
+}
+
+export interface GenerationLicense {
+  readonly id: string;
+  readonly name: string;
+  readonly url: string;
+  readonly summary: string;
+  readonly commercialUse: string;
 }
 
 type RecordValue = Readonly<Record<string, unknown>>;
@@ -44,6 +69,20 @@ export function decodeGuidedPayload(value: unknown): GuidedPayload {
   const state = record(root.state);
   const brief = record(state.brief);
   const proposals = Array.isArray(root.proposals) ? root.proposals : [];
+  const completion = record(root.completion);
+  const characterCompletion = Array.isArray(completion.characters)
+    ? completion.characters.reduce<Record<string, CharacterCompletion>>((items, value) => {
+        const item = record(value);
+        if (typeof item.id === "string") {
+          items[item.id] = {
+            ready: item.ready === true,
+            promoted: item.promoted === true,
+            missing: stringArray(item.missing),
+          };
+        }
+        return items;
+      }, {})
+    : {};
   return {
     revision: typeof state.revision === "number" ? state.revision : 0,
     activeEpisodeId: typeof state.active_episode_id === "string" ? state.active_episode_id : null,
@@ -59,6 +98,35 @@ export function decodeGuidedPayload(value: unknown): GuidedPayload {
     },
     characters: Array.isArray(state.characters)
       ? state.characters.map((item) => record(item) as unknown as GuidedCharacterDraft)
+      : [],
+    canonicalCharacters: Array.isArray(root.canonical_characters)
+      ? root.canonical_characters.flatMap((value) => {
+          const item = record(value);
+          return typeof item.id === "string"
+            ? [{
+                id: item.id,
+                name: string(item.name) || item.id,
+                role: string(item.role),
+                visualDescription: string(item.visual_description),
+                wardrobe: string(item.wardrobe),
+              }]
+            : [];
+        })
+      : [],
+    characterCompletion,
+    generationLicenses: Array.isArray(root.generation_licenses)
+      ? root.generation_licenses.flatMap((value) => {
+          const item = record(value);
+          return typeof item.id === "string"
+            ? [{
+                id: item.id,
+                name: string(item.name),
+                url: string(item.url),
+                summary: string(item.summary),
+                commercialUse: string(item.commercial_use),
+              }]
+            : [];
+        })
       : [],
     proposals: proposals.flatMap((value) => {
       const item = record(value);

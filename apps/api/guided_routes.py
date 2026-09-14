@@ -21,6 +21,7 @@ from engine.narrative.guided_authoring import (
     guided_completion,
 )
 from engine.narrative.ollama import OllamaClient
+from engine.runtime.capability_packs import DEFAULT_CAPABILITY_PACK
 from engine.world.bible import BibleRegistry
 from engine.world.catalog import EpisodeCatalog
 
@@ -80,9 +81,37 @@ def create_guided_router(settings_provider: Callable[[], Settings]) -> APIRouter
 
     def response(state: GuidedAuthoringState) -> dict[str, object]:
         store = registry()
+        canonical_characters = BibleRegistry(
+            settings_provider().private_content_dir
+        ).load().characters
+        generation_components = [
+            item
+            for item in DEFAULT_CAPABILITY_PACK.components
+            if item.id in {"keyframe-sdxl", "tentafruit-workflows"}
+        ]
         return {
             "state": state.model_dump(mode="json"),
             "completion": guided_completion(state),
+            "canonical_characters": [
+                {
+                    "id": item.id,
+                    "name": item.name,
+                    "role": item.role,
+                    "visual_description": item.visual_description,
+                    "wardrobe": item.wardrobe,
+                }
+                for item in canonical_characters
+            ],
+            "generation_licenses": [
+                {
+                    "id": item.license.id,
+                    "name": item.license.name,
+                    "url": str(item.license.url),
+                    "summary": item.license.summary,
+                    "commercial_use": item.license.commercial_use,
+                }
+                for item in generation_components
+            ],
             "proposals": [
                 item.model_dump(mode="json") for item in store.list_proposals()
             ],

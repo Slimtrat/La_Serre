@@ -9,8 +9,11 @@ import {
   getGuidedApiGuidedGet,
   journeyApiStudioJourneyGet,
   putBriefApiGuidedBriefPut,
+  putCharacterApiGuidedCharactersCharacterIdPut,
   putEpisodeLinkApiGuidedEpisodeLinkPut,
+  promoteCharacterApiGuidedCharactersCharacterIdPromotePost,
   rejectProposalApiGuidedProposalsProposalIdRejectPost,
+  type GuidedCharacterDraft,
   type GuidedProjectBrief,
   type JourneyStageSnapshotId,
 } from "@/generated/openapi";
@@ -51,6 +54,7 @@ export function GuidedJourney({ locale, onNavigate, slots }: GuidedJourneyProps)
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["guided-authoring"] }),
       queryClient.invalidateQueries({ queryKey: ["studio-journey"] }),
+      queryClient.invalidateQueries({ queryKey: ["casting", journey.data?.project_id] }),
     ]);
   };
   const mutation = useMutation({
@@ -88,6 +92,7 @@ export function GuidedJourney({ locale, onNavigate, slots }: GuidedJourneyProps)
           busy={mutation.isPending}
           guided={guided}
           locale={locale}
+          projectId={journey.data.project_id}
           onAddCharacter={() => mutation.mutate(() => createCharacterApiGuidedCharactersPost({ expected_revision: guided.revision }))}
           onCreateEpisode={() =>
             mutation.mutate(async () => {
@@ -103,8 +108,10 @@ export function GuidedJourney({ locale, onNavigate, slots }: GuidedJourneyProps)
               });
             })
           }
+          onPromoteCharacter={(characterId) => mutation.mutate(() => promoteCharacterApiGuidedCharactersCharacterIdPromotePost(characterId, { expected_revision: guided.revision }))}
           onPropose={propose}
           onSaveBrief={(brief: GuidedProjectBrief) => mutation.mutate(() => putBriefApiGuidedBriefPut({ expected_revision: guided.revision, brief }))}
+          onSaveCharacter={(character: GuidedCharacterDraft) => mutation.mutate(() => putCharacterApiGuidedCharactersCharacterIdPut(character.id, { expected_revision: guided.revision, character }))}
           slots={slots}
           stage={current}
         />

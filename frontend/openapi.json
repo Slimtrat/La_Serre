@@ -485,10 +485,17 @@
             "type": "string"
           },
           "model": {
-            "maxLength": 200,
-            "minLength": 1,
-            "title": "Model",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
           },
           "outfit": {
             "default": "",
@@ -521,6 +528,7 @@
             "title": "Revision"
           },
           "seed": {
+            "default": 42,
             "maximum": 9.223372036854776e+18,
             "minimum": 0.0,
             "title": "Seed",
@@ -533,10 +541,17 @@
             "type": "string"
           },
           "workflow": {
-            "maxLength": 200,
-            "minLength": 1,
-            "title": "Workflow",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow"
           }
         },
         "required": [
@@ -544,9 +559,6 @@
           "kind",
           "permanent_identity",
           "prompt",
-          "model",
-          "workflow",
-          "seed",
           "license"
         ],
         "title": "CastingGenerateRequest",

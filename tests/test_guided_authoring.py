@@ -87,9 +87,22 @@ async def test_guided_drafts_are_persistent_incomplete_and_promotable(
             f"/api/guided/characters/{character['id']}/promote",
             json={"expected_revision": updated["state"]["revision"]},
         )
+        reloaded = (await client.get("/api/guided")).json()
 
     assert promoted.status_code == 200
-    assert promoted.json()["completion"]["characters"][0]["promoted"] is True
+    promoted_payload = promoted.json()
+    assert promoted_payload["completion"]["characters"][0]["promoted"] is True
+    assert promoted_payload["canonical_characters"] == [
+        {
+            "id": character["id"],
+            "name": "Belladone",
+            "role": "Voleuse botanique",
+            "visual_description": character["visual_description"],
+            "wardrobe": character["wardrobe"],
+        }
+    ]
+    assert reloaded["state"]["characters"][0]["id"] == character["id"]
+    assert reloaded["canonical_characters"][0]["id"] == character["id"]
     assert BibleRegistry(settings.private_content_dir).load().characters[0].name == "Belladone"
 
 
