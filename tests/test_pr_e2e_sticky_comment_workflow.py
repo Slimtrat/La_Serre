@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import textwrap
 from pathlib import Path
 
 WORKFLOW = Path(".github/workflows/pr-e2e-mock-sticky-comment.yml")
@@ -29,7 +30,9 @@ def test_sticky_comment_uses_a_safe_pull_request_target_contract() -> None:
         for line in permissions.group("body").splitlines()
         if line.strip()
     }
-    assert grants == {"contents: read", "pull-requests: write"}
+    assert grants == {"contents: read", "checks: read", "pull-requests: write"}
+    assert re.search(r"(?m)^\s*workflow_run:\s*$", source)
+    assert 'workflows: ["Windows desktop CI"]' in source
 
     forbidden_execution = (
         "actions/checkout",
@@ -45,8 +48,9 @@ def test_sticky_comment_uses_a_safe_pull_request_target_contract() -> None:
         "npm ",
     )
     assert not any(token in source for token in forbidden_execution)
-    assert source.count("run:") == 1
+    assert len(re.findall(r"(?m)^\s+run:\s*\|$", source)) == 1
     assert "python - <<'PY'" in source
+    assert "/check-runs?per_page=100" in source
 
 
 def test_sticky_comment_has_one_marker_and_true_patch_or_post_upsert() -> None:
@@ -69,3 +73,10 @@ def test_sticky_comment_publishes_the_exact_maintainer_command_as_text_only() ->
     assert f"`{E2E_COMMAND}`" in source
     assert "urllib.request" in source
     assert not re.search(rf"(?m)^\s*{re.escape(E2E_COMMAND)}\s*$", source)
+
+
+def test_embedded_summary_script_is_valid_python() -> None:
+    source = workflow_text()
+    match = re.search(r"python - <<'PY'\n(?P<body>.*?)\n\s+PY", source, re.DOTALL)
+    assert match is not None
+    compile(textwrap.dedent(match.group("body")), "<integration-summary>", "exec")

@@ -4,27 +4,9 @@ on:
   workflow_dispatch:
   pull_request:
     branches: [main, develop]
-    paths:
-      - "apps/**"
-      - "frontend/**"
-      - "engine/**"
-      - "tools/**"
-      - "workflows/**"
-      - "tests/**"
-      - "pyproject.toml"
-      - ".github/workflows/windows-desktop.yml"
   push:
     branches: [main, develop]
     tags: ["v*"]
-    paths:
-      - "apps/**"
-      - "frontend/**"
-      - "engine/**"
-      - "tools/**"
-      - "workflows/**"
-      - "tests/**"
-      - "pyproject.toml"
-      - ".github/workflows/windows-desktop.yml"
 
 concurrency:
   group: windows-desktop-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -141,12 +123,53 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  browser-integration:
+    name: Browser integration (FastAPI + persistence)
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install application and browser test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,desktop]"
+          npm --prefix frontend ci
+
+      - name: Build the frontend served by FastAPI
+        run: npm --prefix frontend run build
+
+      - name: Run Playwright against isolated FastAPI and real persistence
+        run: python -m tools.run_browser_integration --timeout 120
+
+      - name: Publish browser traces, screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-integration-evidence-${{ github.run_id }}
+          path: artifacts/browser-integration
+          if-no-files-found: warn
+          retention-days: 14
+
   build:
     name: Build release candidates
-    needs: [frontend, quality]
+    needs: [frontend, quality, browser-integration]
     if: >-
       needs.frontend.result == 'success' &&
       needs.quality.result == 'success' &&
+      needs.browser-integration.result == 'success' &&
       (github.event_name == 'workflow_dispatch' ||
       startsWith(github.ref, 'refs/tags/v') ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main'))
@@ -184,6 +207,63 @@ jobs:
           if ($process.ExitCode -ne 0) {
             throw "SerreStudio.exe exited with code $($process.ExitCode)"
           }
+
+      - name: Launch portable executable and verify API plus React assets
+        shell: pwsh
+        run: |
+          $smokeRoot = Join-Path $env:RUNNER_TEMP "serre-portable-smoke-${{ github.run_id }}"
+          $dataRoot = Join-Path $smokeRoot "data"
+          $evidenceRoot = Join-Path $PWD "artifacts\portable-smoke"
+          New-Item -ItemType Directory -Force $smokeRoot, $dataRoot | Out-Null
+          New-Item -ItemType Directory -Force $evidenceRoot | Out-Null
+          Copy-Item -LiteralPath dist\SerreStudio.exe -Destination $smokeRoot
+          $executable = Join-Path $smokeRoot "SerreStudio.exe"
+          $arguments = @('--port', '8766', '--data-dir', $dataRoot)
+          $process = Start-Process -FilePath $executable -ArgumentList $arguments -WorkingDirectory $smokeRoot -WindowStyle Hidden -PassThru
+          try {
+            $ready = $false
+            for ($attempt = 0; $attempt -lt 60; $attempt++) {
+              if ($process.HasExited) {
+                throw "Portable application exited before health check with code $($process.ExitCode)"
+              }
+              try {
+                $health = Invoke-RestMethod -Uri http://127.0.0.1:8766/health -TimeoutSec 2
+                if ($health.status -eq 'ok') {
+                  $ready = $true
+                  break
+                }
+              } catch {
+                Start-Sleep -Seconds 1
+              }
+            }
+            if (-not $ready) {
+              throw "Portable application health check timed out"
+            }
+            $index = Invoke-WebRequest -Uri http://127.0.0.1:8766/ -UseBasicParsing
+            $react = Invoke-WebRequest -Uri http://127.0.0.1:8766/static/ui/studio-react.js -UseBasicParsing
+            if ($index.StatusCode -ne 200 -or $index.Content -notmatch 'studio-react-root') {
+              throw "Portable application did not serve the Studio shell"
+            }
+            if ($react.StatusCode -ne 200 -or $react.RawContentLength -lt 1000) {
+              throw "Portable application did not serve the React bundle"
+            }
+          } finally {
+            if (-not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force
+            }
+            Get-ChildItem -LiteralPath $dataRoot -Recurse -File -Filter *.log -ErrorAction SilentlyContinue | ForEach-Object {
+              Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $evidenceRoot $_.Name) -Force
+            }
+          }
+
+      - name: Publish portable launch evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portable-smoke-evidence-${{ github.run_id }}
+          path: artifacts/portable-smoke
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Install Inno Setup
         run: choco install innosetup --no-progress -y

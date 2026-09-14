@@ -51,7 +51,10 @@ function fakeApi(overrides: Partial<SetupApi> = {}): SetupApi {
   };
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  window.localStorage.clear();
+  cleanup();
+});
 
 describe("SetupWizard", () => {
   it("explains capabilities and requires explicit destination and license consent", async () => {
@@ -119,5 +122,21 @@ describe("SetupWizard", () => {
     expect(screen.getByLabelText("Validation preview generated locally")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Start creating" }));
     expect(screen.getByText("Golden path unlocked")).toBeTruthy();
+  });
+
+  it("keeps manual creation available when runtime diagnosis fails", async () => {
+    const api = fakeApi({ diagnose: vi.fn().mockRejectedValue(new Error("offline")) });
+    const first = renderWithStudio(
+      <SetupWizard api={api} locale="fr" readyContent={<p>Manual creation available</p>} />,
+    );
+    expect(await screen.findByRole("heading", { name: "Impossible de vérifier le studio" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Continuer sans moteurs" }));
+    expect(screen.getByText("Manual creation available")).toBeTruthy();
+
+    first.unmount();
+    renderWithStudio(
+      <SetupWizard api={api} locale="fr" readyContent={<p>Manual creation restored</p>} />,
+    );
+    expect(screen.getByText("Manual creation restored")).toBeTruthy();
   });
 });

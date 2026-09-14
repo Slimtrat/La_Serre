@@ -54,7 +54,9 @@ export function SetupWizard({ locale, api = setupApi, readyContent, onReady }: S
   const [personalModels, setPersonalModels] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [showLogs, setShowLogs] = useState(false);
-  const [enteredStudio, setEnteredStudio] = useState(false);
+  const [enteredStudio, setEnteredStudio] = useState(() =>
+    typeof window !== "undefined" && window.localStorage.getItem("serre-studio-manual-mode") === "1"
+  );
 
   const diagnosis = useQuery({ queryKey: ["runtime-pack", "diagnosis"], queryFn: () => api.diagnose() });
   const latest = useQuery({ queryKey: ["runtime-pack", "latest"], queryFn: () => api.latest() });
@@ -85,6 +87,12 @@ export function SetupWizard({ locale, api = setupApi, readyContent, onReady }: S
     mutationFn: (input: SetupStartInput) => api.start(input),
     onSuccess: updateJob,
   });
+  const enterStudio = (manual = false) => {
+    if (manual) window.localStorage.setItem("serre-studio-manual-mode", "1");
+    else window.localStorage.removeItem("serre-studio-manual-mode");
+    onReady?.();
+    setEnteredStudio(true);
+  };
 
   if (enteredStudio) return <>{readyContent}</>;
   if (diagnosis.isPending || latest.isPending) {
@@ -93,7 +101,7 @@ export function SetupWizard({ locale, api = setupApi, readyContent, onReady }: S
   if (diagnosis.isError || latest.isError || !diagnosis.data) {
     return (
       <main className={styles.root}>
-        <ErrorState title={messages.loadError} description={messages.intro} action={<Button onClick={() => { void diagnosis.refetch(); void latest.refetch(); }}>{messages.retryDiagnosis}</Button>} />
+        <ErrorState title={messages.loadError} description={messages.intro} action={<div className={styles.actions}><Button onClick={() => { void diagnosis.refetch(); void latest.refetch(); }}>{messages.retryDiagnosis}</Button>{readyContent ? <Button onClick={() => enterStudio(true)} variant="secondary">{messages.continueManual}</Button> : null}</div>} />
       </main>
     );
   }
@@ -118,7 +126,7 @@ export function SetupWizard({ locale, api = setupApi, readyContent, onReady }: S
             <Card as="section"><h2>{messages.smokeTitle}</h2><ul>{smokeChecks.map((check) => <li key={check.checkId}><Badge tone={check.status === "passed" ? "success" : "danger"}>{check.status === "passed" ? "✓" : "!"}</Badge> {check.message || check.checkId}</li>)}</ul></Card>
             <MediaFrame caption={messages.preview}><div className={styles.preview} aria-label={messages.preview} role="img"><span className={styles.previewLabel}>LA SERRE</span><strong>Studio local</strong></div></MediaFrame>
           </div>
-          <Button size="large" onClick={() => { onReady?.(); setEnteredStudio(true); }}>{messages.continue}</Button>
+          <Button size="large" onClick={() => enterStudio()}>{messages.continue}</Button>
         </section>
       </main>
     );
@@ -177,7 +185,10 @@ export function SetupWizard({ locale, api = setupApi, readyContent, onReady }: S
       <section className={styles.hero} aria-labelledby="setup-title"><Badge tone={diagnosis.data.status === "incompatible" ? "warning" : "info"}>{diagnosis.data.summary}</Badge><h1 id="setup-title">{messages.title}</h1><p>{messages.intro}</p></section>
       <Card as="section"><h2>{messages.machine}</h2><dl className={styles.machine}><div><dt>{messages.graphics}</dt><dd>{diagnosis.data.hardware.gpuName ?? messages.unknown}</dd></div><div><dt>{messages.memory}</dt><dd>{diagnosis.data.hardware.vramGb === null ? messages.unknown : `${diagnosis.data.hardware.vramGb} GB`}</dd></div><div><dt>{messages.disk}</dt><dd>{formatBytes(diagnosis.data.hardware.diskFreeBytes, locale)}</dd></div><div><dt>{messages.download}</dt><dd>{formatBytes(diagnosis.data.requiredDownloadBytes, locale)}</dd></div></dl></Card>
       <section aria-labelledby="setup-capabilities"><h2 id="setup-capabilities">{messages.capabilitiesTitle}</h2><div className={styles.capabilities}>{messages.capabilities.map(([id, title, description]) => { const ready = capabilityReady(id, diagnosis.data); return <Card key={id}><Badge tone={ready ? "success" : diagnosis.data.status === "incompatible" ? "warning" : "neutral"}>{ready ? messages.available : diagnosis.data.status === "incompatible" ? messages.incompatible : messages.toPrepare}</Badge><h3>{title}</h3><p>{description}</p></Card>; })}</div></section>
-      <div className={styles.primaryAction}><Button disabled={diagnosis.data.status === "incompatible"} size="large" onClick={() => setReviewing(true)}>{messages.prepare}</Button></div>
+      <div className={styles.primaryAction}>
+        <Button disabled={diagnosis.data.status === "incompatible"} size="large" onClick={() => setReviewing(true)}>{messages.prepare}</Button>
+        {readyContent ? <Button onClick={() => enterStudio(true)} size="large" variant="secondary">{messages.continueManual}</Button> : null}
+      </div>
     </main>
   );
 }

@@ -12577,6 +12577,7 @@ var $r = {
 		toPrepare: "À préparer",
 		incompatible: "À vérifier",
 		prepare: "Préparer mon studio",
+		continueManual: "Continuer sans moteurs",
 		reviewTitle: "Avant de commencer",
 		reviewIntro: "Vous gardez le contrôle : rien ne sera installé avant votre accord.",
 		destination: "Où installer les ressources ?",
@@ -12663,6 +12664,7 @@ var $r = {
 		toPrepare: "To prepare",
 		incompatible: "Needs review",
 		prepare: "Prepare my studio",
+		continueManual: "Continue without engines",
 		reviewTitle: "Before we begin",
 		reviewIntro: "You stay in control: nothing is installed before you consent.",
 		destination: "Where should resources be installed?",
@@ -12763,7 +12765,7 @@ function ai(e) {
 	].includes(e.status)).length;
 }
 function oi({ locale: e, api: t = $r, readyContent: n, onReady: r }) {
-	let i = ti(e), a = ht(), [o, s] = (0, _.useState)(!1), [c, l] = (0, _.useState)(/* @__PURE__ */ new Set()), [u, d] = (0, _.useState)(!1), [f, p] = (0, _.useState)(!1), [m, h] = (0, _.useState)(null), [g, v] = (0, _.useState)(!1), [y, x] = (0, _.useState)(!1), S = Fn({
+	let i = ti(e), a = ht(), [o, s] = (0, _.useState)(!1), [c, l] = (0, _.useState)(/* @__PURE__ */ new Set()), [u, d] = (0, _.useState)(!1), [f, p] = (0, _.useState)(!1), [m, h] = (0, _.useState)(null), [g, v] = (0, _.useState)(!1), [y, x] = (0, _.useState)(() => typeof window < "u" && window.localStorage.getItem("serre-studio-manual-mode") === "1"), S = Fn({
 		queryKey: ["runtime-pack", "diagnosis"],
 		queryFn: () => t.diagnose()
 	}), w = Fn({
@@ -12798,7 +12800,9 @@ function oi({ locale: e, api: t = $r, readyContent: n, onReady: r }) {
 	}), oe = Ln({
 		mutationFn: (e) => t.start(e),
 		onSuccess: ie
-	});
+	}), se = (e = !1) => {
+		e ? window.localStorage.setItem("serre-studio-manual-mode", "1") : window.localStorage.removeItem("serre-studio-manual-mode"), r?.(), x(!0);
+	};
 	if (y) return /* @__PURE__ */ (0, b.jsx)(b.Fragment, { children: n });
 	if (S.isPending || w.isPending) return /* @__PURE__ */ (0, b.jsx)("main", {
 		className: F.root,
@@ -12812,16 +12816,23 @@ function oi({ locale: e, api: t = $r, readyContent: n, onReady: r }) {
 		children: /* @__PURE__ */ (0, b.jsx)(O, {
 			title: i.loadError,
 			description: i.intro,
-			action: /* @__PURE__ */ (0, b.jsx)(T, {
-				onClick: () => {
-					S.refetch(), w.refetch();
-				},
-				children: i.retryDiagnosis
+			action: /* @__PURE__ */ (0, b.jsxs)("div", {
+				className: F.actions,
+				children: [/* @__PURE__ */ (0, b.jsx)(T, {
+					onClick: () => {
+						S.refetch(), w.refetch();
+					},
+					children: i.retryDiagnosis
+				}), n ? /* @__PURE__ */ (0, b.jsx)(T, {
+					onClick: () => se(!0),
+					variant: "secondary",
+					children: i.continueManual
+				}) : null]
 			})
 		})
 	});
-	let se = E?.status === "completed" || S.data.status === "ready" ? 4 : E ? E.status === "queued" || E.status === "running" || E.status === "paused" ? 2 : 3 : +!!o, ce = [.../* @__PURE__ */ new Set([...E?.acceptedLicenseIds ?? [], ...c])], D = u && ne.every((e) => c.has(e.id)), le = (e) => ae.mutate(e);
-	if (se === 4) {
+	let ce = E?.status === "completed" || S.data.status === "ready" ? 4 : E ? E.status === "queued" || E.status === "running" || E.status === "paused" ? 2 : 3 : +!!o, D = [.../* @__PURE__ */ new Set([...E?.acceptedLicenseIds ?? [], ...c])], le = u && ne.every((e) => c.has(e.id)), de = (e) => ae.mutate(e);
+	if (ce === 4) {
 		let e = E?.smokeChecks ?? [];
 		return /* @__PURE__ */ (0, b.jsxs)("main", {
 			className: F.root,
@@ -12868,9 +12879,7 @@ function oi({ locale: e, api: t = $r, readyContent: n, onReady: r }) {
 					}),
 					/* @__PURE__ */ (0, b.jsx)(T, {
 						size: "large",
-						onClick: () => {
-							r?.(), x(!0);
-						},
+						onClick: () => se(),
 						children: i.continue
 					})
 				]
@@ -12887,7 +12896,7 @@ function oi({ locale: e, api: t = $r, readyContent: n, onReady: r }) {
 		return /* @__PURE__ */ (0, b.jsxs)("main", {
 			className: F.root,
 			children: [/* @__PURE__ */ (0, b.jsx)(ni, {
-				current: se,
+				current: ce,
 				messages: i
 			}), /* @__PURE__ */ (0, b.jsxs)("section", {
 				"aria-labelledby": "setup-progress-title",
@@ -12962,21 +12971,21 @@ function oi({ locale: e, api: t = $r, readyContent: n, onReady: r }) {
 							}) : null,
 							["queued", "running"].includes(E.status) ? /* @__PURE__ */ (0, b.jsx)(T, {
 								variant: "secondary",
-								onClick: () => le(() => t.pause(E.id)),
+								onClick: () => de(() => t.pause(E.id)),
 								children: i.pause
 							}) : null,
 							E.status === "paused" ? /* @__PURE__ */ (0, b.jsx)(T, {
-								onClick: () => le(() => t.resume(E.id, ce)),
+								onClick: () => de(() => t.resume(E.id, D)),
 								children: i.resume
 							}) : null,
 							r ? /* @__PURE__ */ (0, b.jsx)(T, {
-								disabled: E.status === "awaiting_license" && !ne.every((e) => ce.includes(e.id)),
-								onClick: () => le(() => t.resume(E.id, ce)),
+								disabled: E.status === "awaiting_license" && !ne.every((e) => D.includes(e.id)),
+								onClick: () => de(() => t.resume(E.id, D)),
 								children: i.retry
 							}) : null,
 							r ? /* @__PURE__ */ (0, b.jsx)(T, {
 								variant: "secondary",
-								onClick: () => le(() => t.repair(E.id, ce)),
+								onClick: () => de(() => t.repair(E.id, D)),
 								children: i.repair
 							}) : null,
 							r ? /* @__PURE__ */ (0, b.jsx)(T, {
@@ -12984,7 +12993,7 @@ function oi({ locale: e, api: t = $r, readyContent: n, onReady: r }) {
 								onClick: () => oe.mutate({
 									packId: S.data.packId,
 									mode: "manual",
-									acceptedLicenseIds: ce,
+									acceptedLicenseIds: D,
 									usePersonalComfyModels: !0
 								}),
 								children: i.manual
@@ -12997,7 +13006,7 @@ function oi({ locale: e, api: t = $r, readyContent: n, onReady: r }) {
 								"awaiting_manual"
 							].includes(E.status) ? /* @__PURE__ */ (0, b.jsx)(T, {
 								variant: "danger",
-								onClick: () => le(() => t.cancel(E.id)),
+								onClick: () => de(() => t.cancel(E.id)),
 								children: i.cancel
 							}) : null
 						]
@@ -13106,13 +13115,13 @@ function oi({ locale: e, api: t = $r, readyContent: n, onReady: r }) {
 						onClick: () => s(!1),
 						children: i.back
 					}), /* @__PURE__ */ (0, b.jsx)(T, {
-						disabled: !D,
+						disabled: !le,
 						loading: oe.isPending,
 						loadingLabel: i.starting,
 						onClick: () => oe.mutate({
 							packId: S.data.packId,
 							mode: "automatic",
-							acceptedLicenseIds: ce,
+							acceptedLicenseIds: D,
 							usePersonalComfyModels: f
 						}),
 						children: i.start
@@ -13174,14 +13183,19 @@ function oi({ locale: e, api: t = $r, readyContent: n, onReady: r }) {
 					})
 				})]
 			}),
-			/* @__PURE__ */ (0, b.jsx)("div", {
+			/* @__PURE__ */ (0, b.jsxs)("div", {
 				className: F.primaryAction,
-				children: /* @__PURE__ */ (0, b.jsx)(T, {
+				children: [/* @__PURE__ */ (0, b.jsx)(T, {
 					disabled: S.data.status === "incompatible",
 					size: "large",
 					onClick: () => s(!0),
 					children: i.prepare
-				})
+				}), n ? /* @__PURE__ */ (0, b.jsx)(T, {
+					onClick: () => se(!0),
+					size: "large",
+					variant: "secondary",
+					children: i.continueManual
+				}) : null]
 			})
 		]
 	});
