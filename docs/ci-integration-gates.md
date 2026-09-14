@@ -26,9 +26,13 @@ Le commentaire persistant de PR interroge les check-runs du SHA courant. Il affi
 
 Le scénario `guided_casting_integration.mjs` ne route ni ne remplace aucune API métier. Il part d’une Bible vide, édite et promeut une fiche, importe une vraie image, approuve le maître et vérifie la persistance après rechargement. Les moteurs externes ne sont pas appelés.
 
-## État administratif observé le 14 septembre 2026
+## État administratif configuré le 14 septembre 2026
 
-- `develop` : aucune protection classique et aucun ruleset applicable ; aucun check n’est donc effectivement obligatoire.
-- `main` : ruleset actif imposant une pull request et interdisant suppression/force-push, mais aucun status check requis.
+Les rulesets actifs `develop branch` et `main branch` imposent désormais :
 
-Le YAML rend les checks disponibles et stables, mais ne remplace pas cette configuration administrative. Un mainteneur doit ajouter au ruleset de `develop` et de `main` les trois checks exécutés sur toute PR. `Build release candidates` ne doit pas être obligatoire sur une PR ordinaire puisqu’il est volontairement sauté hors release.
+- une pull request, sans acteur de contournement ;
+- l’interdiction de supprimer la branche ou d’y effectuer un force-push ;
+- une branche à jour avant fusion (`strict_required_status_checks_policy`) ;
+- les trois checks GitHub Actions `Frontend quality and build`, `Python quality and tests` et `Browser integration (FastAPI + persistence)`.
+
+Chaque check requis est lié à l’application officielle GitHub Actions (`integration_id` 15368), afin qu’un check homonyme émis par une autre application ne satisfasse pas la protection. `Build release candidates` n’est pas obligatoire sur une PR ordinaire puisqu’il est volontairement sauté hors release.
