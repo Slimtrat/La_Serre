@@ -142,9 +142,6 @@ async def test_casting_api_import_generate_approve_restore_and_conflict(tmp_path
                 "outfit": "Long charcoal coat",
                 "transient_state": "",
                 "prompt": "Full body neutral turnaround on plain background",
-                "model": "sdxl",
-                "workflow": "casting-v1",
-                "seed": 123,
                 "license": "model-output",
                 "revision": "workflow-r1",
             },
@@ -152,6 +149,9 @@ async def test_casting_api_import_generate_approve_restore_and_conflict(tmp_path
         assert generated.status_code == 201
         second = generated.json()["variant"]
         assert second["provenance"]["source"] == "generated"
+        assert second["provenance"]["seed"] == 42
+        assert second["provenance"]["model"] is None
+        assert second["provenance"]["workflow"] is None
         revision = generated.json()["board"]["revision"]
 
         switched = await client.post(

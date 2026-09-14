@@ -11,6 +11,8 @@ const api = vi.hoisted(() => ({
   guided: vi.fn(),
   saveBrief: vi.fn(),
   addCharacter: vi.fn(),
+  saveCharacter: vi.fn(),
+  promoteCharacter: vi.fn(),
   createEpisode: vi.fn(),
   linkEpisode: vi.fn(),
   propose: vi.fn(),
@@ -23,6 +25,8 @@ vi.mock("@/generated/openapi", () => ({
   getGuidedApiGuidedGet: api.guided,
   putBriefApiGuidedBriefPut: api.saveBrief,
   createCharacterApiGuidedCharactersPost: api.addCharacter,
+  putCharacterApiGuidedCharactersCharacterIdPut: api.saveCharacter,
+  promoteCharacterApiGuidedCharactersCharacterIdPromotePost: api.promoteCharacter,
   createEpisodeApiEpisodesPost: api.createEpisode,
   putEpisodeLinkApiGuidedEpisodeLinkPut: api.linkEpisode,
   generateProposalApiGuidedProposalsPost: api.propose,
@@ -69,6 +73,7 @@ const guided = {
     characters: [],
   },
   completion: {},
+  canonical_characters: [],
   proposals: [],
 };
 
@@ -86,6 +91,8 @@ beforeEach(() => {
   api.addCharacter.mockResolvedValue(guided);
   api.createEpisode.mockResolvedValue({ id: "S01E001" });
   api.linkEpisode.mockResolvedValue(guided);
+  api.saveCharacter.mockResolvedValue(guided);
+  api.promoteCharacter.mockResolvedValue(guided);
 });
 afterEach(cleanup);
 
@@ -138,5 +145,42 @@ describe("GuidedJourney", () => {
     expect((await screen.findByRole("alert")).textContent).toContain(
       "Le brouillon a changé",
     );
+  });
+
+  it("keeps a new character in draft until its completed sheet is explicitly promoted", async () => {
+    const character = {
+      id: "character_123",
+      name: "Iris",
+      role: "Gardienne",
+      visual_description: "Une gardienne adulte aux cheveux argentés et au regard calme.",
+      wardrobe: "Une longue veste anthracite brodée de motifs de pétales.",
+      signature_details: ["cicatrice en étoile"],
+      palette: ["argent", "anthracite", "violet"],
+      personality: "Loyale, lucide et secrètement inquiète.",
+      wants: ["protéger la serre"],
+      fears: ["échouer seule"],
+      voice_description: "Une voix basse, posée et légèrement voilée.",
+      generation_negative_prompt: "identity drift",
+      locked_fields: [],
+      promoted_revision: null,
+    };
+    const withDraft = {
+      ...guided,
+      state: { ...guided.state, revision: 8, characters: [character] },
+      completion: { characters: [{ id: character.id, ready: true, promoted: false, missing: [] }] },
+    };
+    api.guided.mockReset();
+    api.guided.mockResolvedValueOnce(guided).mockResolvedValue(withDraft);
+    api.addCharacter.mockResolvedValue(withDraft);
+    api.promoteCharacter.mockResolvedValue({ ...withDraft, canonical_characters: [{ id: character.id, name: "Iris", role: "Gardienne" }] });
+
+    renderWithStudio(<GuidedJourney locale="fr" onNavigate={vi.fn()} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Ajouter un personnage" }));
+    expect(await screen.findByDisplayValue("Iris")).toBeTruthy();
+    expect(screen.getByText(/brouillon/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Valider dans la Bible" }));
+    await waitFor(() => expect(api.promoteCharacter).toHaveBeenCalledWith(
+      character.id, { expected_revision: 8 },
+    ));
   });
 });

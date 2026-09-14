@@ -39,9 +39,9 @@ class CastingGenerateRequest(StrictRequest):
     outfit: str = Field(default="", max_length=2000)
     transient_state: str = Field(default="", max_length=2000)
     prompt: str = Field(min_length=10, max_length=8000)
-    model: str = Field(min_length=1, max_length=200)
-    workflow: str = Field(min_length=1, max_length=200)
-    seed: int = Field(ge=0, le=2**63 - 1)
+    model: str | None = Field(default=None, min_length=1, max_length=200)
+    workflow: str | None = Field(default=None, min_length=1, max_length=200)
+    seed: int = Field(default=42, ge=0, le=2**63 - 1)
     license: str = Field(min_length=1, max_length=200)
     revision: str | None = Field(default=None, max_length=200)
 

@@ -538,11 +538,7 @@ export interface CastingGenerateRequest {
      * @maxLength 200
      */
   license: string;
-  /**
-     * @minLength 1
-     * @maxLength 200
-     */
-  model: string;
+  model?: string | null;
   /** @maxLength 2000 */
   outfit?: string;
   /**
@@ -560,14 +556,10 @@ export interface CastingGenerateRequest {
      * @minimum 0
      * @maximum 9223372036854776000
      */
-  seed: number;
+  seed?: number;
   /** @maxLength 2000 */
   transient_state?: string;
-  /**
-     * @minLength 1
-     * @maxLength 200
-     */
-  workflow: string;
+  workflow?: string | null;
 }
 
 export interface CoherenceApprovalRequest {

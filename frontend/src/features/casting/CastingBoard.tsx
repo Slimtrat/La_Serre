@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 
 import { Badge, Button, Card, EmptyState, ErrorState, MediaFrame, Skeleton } from "@shared";
 
@@ -16,11 +16,21 @@ import styles from "./CastingBoard.module.css";
 interface CharacterOption {
   id: string;
   name: string;
+  visualDescription?: string;
+  wardrobe?: string;
 }
 
 export interface CastingBoardProps {
   characters: readonly CharacterOption[];
+  generationLicenses?: readonly {
+    id: string;
+    name: string;
+    url: string;
+    summary: string;
+    commercialUse: string;
+  }[];
   locale: "fr" | "en";
+  projectId: string;
 }
 
 const TEXT = {
@@ -40,6 +50,9 @@ const TEXT = {
     transient: "État transitoire",
     source: "Provenance",
     affected: "Le changement affecte",
+    advanced: "Réglages techniques avancés",
+    rights: "Je confirme disposer des droits correspondant à la licence indiquée.",
+    packRights: "J’ai consulté les licences du pack actif.",
   },
   en: {
     title: "Master visual identities",
@@ -57,6 +70,9 @@ const TEXT = {
     transient: "Transient state",
     source: "Provenance",
     affected: "This change affects",
+    advanced: "Advanced technical settings",
+    rights: "I confirm that I hold the rights covered by the stated license.",
+    packRights: "I reviewed the active pack licenses.",
   },
 } as const;
 
@@ -72,19 +88,25 @@ function provenance(variant: VisualVariant) {
   return source.filter(Boolean).join(" · ");
 }
 
-export function CastingBoard({ characters, locale }: CastingBoardProps) {
+export function CastingBoard({ characters, generationLicenses = [], locale, projectId }: CastingBoardProps) {
   const labels = TEXT[locale];
   const queryClient = useQueryClient();
-  const query = useQuery({ queryKey: ["casting"], queryFn: getCasting, enabled: characters.length > 0 });
+  const query = useQuery({ queryKey: ["casting", projectId], queryFn: getCasting, enabled: characters.length > 0 });
   const [characterId, setCharacterId] = useState(characters[0]?.id ?? "");
   const [compared, setCompared] = useState<string[]>([]);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (characters.some((item) => item.id === characterId)) return;
+    setCharacterId(characters[0]?.id ?? "");
+    setCompared([]);
+  }, [characterId, characters]);
   const identity = useMemo(
     () => query.data?.characters.find((item) => item.character_id === characterId),
     [characterId, query.data],
   );
-  const refresh = async () => queryClient.invalidateQueries({ queryKey: ["casting"] });
+  const selectedCharacter = characters.find((item) => item.id === characterId);
+  const refresh = async () => queryClient.invalidateQueries({ queryKey: ["casting", projectId] });
   const mutation = useMutation({
     mutationFn: async (operation: () => Promise<unknown>) => operation(),
     onSuccess: async (result: unknown) => {
@@ -132,25 +154,30 @@ export function CastingBoard({ characters, locale }: CastingBoardProps) {
       outfit: String(data.get("outfit")),
       transient_state: String(data.get("transient_state")),
       prompt: String(data.get("prompt")),
-      model: String(data.get("model")),
-      workflow: String(data.get("workflow")),
+      model: String(data.get("model") || "") || undefined,
+      workflow: String(data.get("workflow") || "") || undefined,
       seed: Number(data.get("seed")),
       license: String(data.get("license")),
     }));
   };
 
   const fields = (generation = false) => <>
-    <label>{labels.permanent}<textarea minLength={10} name="permanent_identity" required /></label>
-    <label>{labels.outfit}<input name="outfit" /></label>
+    <label>{labels.permanent}<textarea defaultValue={selectedCharacter?.visualDescription} minLength={10} name="permanent_identity" required /></label>
+    <label>{labels.outfit}<input defaultValue={selectedCharacter?.wardrobe} name="outfit" /></label>
     <label>{labels.transient}<input name="transient_state" /></label>
     <label>Type<select name="kind"><option value="portrait">Portrait</option><option value="full_body">Full body</option><option value="expression">Expression</option></select></label>
     {generation ? <>
-      <label>Prompt<textarea minLength={10} name="prompt" required /></label>
-      <label>Model<input name="model" required /></label>
-      <label>Workflow<input name="workflow" required /></label>
-      <label>Seed<input min="0" name="seed" required type="number" /></label>
+      <label>Prompt<textarea defaultValue={[selectedCharacter?.name, selectedCharacter?.visualDescription, selectedCharacter?.wardrobe].filter(Boolean).join(", ")} minLength={10} name="prompt" required /></label>
+      {generationLicenses.length ? <aside><strong>Licences du pack actif</strong><ul>{generationLicenses.map((license) => <li key={license.id}><a href={license.url} rel="noreferrer" target="_blank">{license.name}</a> · {license.summary} · {license.commercialUse}</li>)}</ul></aside> : null}
+      <label><input name="pack_licenses_confirmed" required type="checkbox" />{labels.packRights}</label>
+      <details><summary>{labels.advanced}</summary>
+        <label>Model<input name="model" placeholder="Détecté depuis le workflow actif" /></label>
+        <label>Workflow<input name="workflow" placeholder="Profil keyframe actif" /></label>
+        <label>Seed<input defaultValue="42" min="0" name="seed" required type="number" /></label>
+      </details>
     </> : <label>Image<input accept="image/png,image/jpeg,image/webp" name="file" required type="file" /></label>}
     <label>License<input name="license" required /></label>
+    <label><input name="rights_confirmed" required type="checkbox" />{labels.rights}</label>
   </>;
 
   return <section className={styles.root} data-casting-board>
@@ -160,8 +187,8 @@ export function CastingBoard({ characters, locale }: CastingBoardProps) {
     {error ? <p className={styles.error} role="alert">{error}</p> : null}
     {notice ? <p className={styles.notice} role="status">{notice}</p> : null}
     <div className={styles.forms}>
-      <details><summary>{labels.import}</summary><form onSubmit={importImage}>{fields()}<Button loading={mutation.isPending} type="submit">{labels.import}</Button></form></details>
-      <details><summary>{labels.generate}</summary><form onSubmit={generateImage}>{fields(true)}<Button loading={mutation.isPending} type="submit">{labels.generate}</Button></form></details>
+      <details><summary>{labels.import}</summary><form key={`import-${characterId}`} onSubmit={importImage}>{fields()}<Button loading={mutation.isPending} type="submit">{labels.import}</Button></form></details>
+      <details><summary>{labels.generate}</summary><form key={`generate-${characterId}`} onSubmit={generateImage}>{fields(true)}<Button loading={mutation.isPending} type="submit">{labels.generate}</Button></form></details>
     </div>
     {!identity || identity.variants.length === 0 ? <EmptyState title={labels.empty} /> :
       <div className={styles.grid}>{identity.variants.map((variant) => {
