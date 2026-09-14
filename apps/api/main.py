@@ -158,6 +158,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         create_season_plan_router(
             lambda: SeasonPlanRegistry(current_settings().private_content_dir),
             catalog,
+            current_settings,
+            lambda: project_registry.format_profile().task_context(),
         )
     )
     app.include_router(create_editorial_router(current_settings))

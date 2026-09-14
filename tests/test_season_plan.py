@@ -122,6 +122,28 @@ def test_create_update_duplicate_persist_and_reject_stale_revision(tmp_path: Pat
     )
 
 
+def test_create_many_commits_the_reviewed_season_atomically(tmp_path: Path) -> None:
+    registry = SeasonPlanRegistry(tmp_path)
+    batch = [proposal(number) for number in range(1, 7)]
+    accepted = registry.create_many(
+        batch,
+        [provenance() for _ in batch],
+        expected_revision=0,
+    )
+
+    assert accepted.revision == 1
+    assert [item.position for item in accepted.active_items] == list(range(1, 7))
+    assert [item.title for item in accepted.active_items] == [
+        item.title for item in batch
+    ]
+    assert SeasonPlanRegistry(tmp_path).load() == accepted
+
+    before = (tmp_path / "world" / "season-plan.json").read_bytes()
+    with pytest.raises(ValueError, match="Every season item requires provenance"):
+        registry.create_many(batch, [provenance()], expected_revision=accepted.revision)
+    assert (tmp_path / "world" / "season-plan.json").read_bytes() == before
+
+
 def test_reorder_insert_and_reload_never_rename_materialized_episode_directory(
     tmp_path: Path,
 ) -> None:

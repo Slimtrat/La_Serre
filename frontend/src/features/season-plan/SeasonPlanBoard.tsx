@@ -8,8 +8,10 @@ import type { SeasonPlanApi } from "./api";
 import { getSeasonPlanMessages, type SeasonPlanLocale } from "./messages";
 import { editableFields, EMPTY_SEASON_PLAN_ITEM, type SeasonPlanItem, type SeasonPlanItemFields, type SeasonPlanSnapshot, type SeasonPlanStatus } from "./model";
 import styles from "./SeasonPlanBoard.module.css";
+import { SeasonProposalReview } from "./SeasonProposalReview";
 
 const QUERY_KEY = ["season-plan"] as const;
+const PROPOSAL_QUERY_KEY = ["season-plan", "proposal"] as const;
 export interface SeasonPlanBoardProps { readonly api: SeasonPlanApi; readonly locale: SeasonPlanLocale; }
 const STATUS_TONE: Record<SeasonPlanStatus, "neutral" | "success" | "warning" | "info"> = {
   draft: "neutral", validated: "success", materialized: "info", produced: "success", obsolete: "warning",
@@ -20,6 +22,7 @@ export function SeasonPlanBoard({ api, locale }: SeasonPlanBoardProps) {
   const labels = getSeasonPlanMessages(locale);
   const queryClient = useQueryClient();
   const planQuery = useQuery({ queryKey: QUERY_KEY, queryFn: api.getPlan });
+  const proposalQuery = useQuery({ queryKey: PROPOSAL_QUERY_KEY, queryFn: api.getProposal });
   const [busyItem, setBusyItem] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [announcement, setAnnouncement] = useState("");
@@ -37,6 +40,7 @@ export function SeasonPlanBoard({ api, locale }: SeasonPlanBoardProps) {
     catch (reason) { setError(reason instanceof ApiError && reason.status === 409 ? labels.conflict : labels.genericError); }
     finally { setBusyItem(null); }
   };
+  const operationError = (reason: unknown) => setError(reason instanceof ApiError && reason.status === 409 ? labels.proposalConflict : labels.genericError);
   const reorder = async (sourceId: string, targetId: string) => {
     if (!plan || sourceId === targetId || busyItem) return;
     const ids = plan.items.filter((item) => !item.deleted_at).map((item) => item.id);
@@ -69,6 +73,10 @@ export function SeasonPlanBoard({ api, locale }: SeasonPlanBoardProps) {
     </header>
     <p aria-live="polite" className={styles.live}>{announcement}</p>
     {error ? <div className={styles.error} role="alert"><span>{error}</span><Button onClick={() => planQuery.refetch()} size="small" variant="secondary">{labels.reload}</Button></div> : null}
+    <SeasonProposalReview api={api} locale={locale} onError={operationError}
+      onPlanAccepted={(snapshot) => commit(snapshot, labels.proposalAccepted)}
+      onProposalChanged={(proposal) => queryClient.setQueryData(PROPOSAL_QUERY_KEY, proposal)}
+      plan={plan} proposal={proposalQuery.data ?? null} />
     {plan.items.length === 0 ? <EmptyState action={<Button onClick={add}>{labels.add}</Button>} description={labels.emptyDescription} title={labels.emptyTitle} /> :
       <ol className={styles.list}>{plan.items.map((item, index) =>
         <li className={styles.listItem} data-deleted={Boolean(item.deleted_at)} data-season-item-id={item.id} key={item.id}

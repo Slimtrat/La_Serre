@@ -1972,6 +1972,95 @@ export interface SeasonPlanSnapshot {
   updated_at: string;
 }
 
+export interface SeasonProposalAcceptRequest {
+  /** @minimum 0 */
+  expected_plan_revision: number;
+  /** @minimum 0 */
+  expected_revision: number;
+}
+
+export interface SeasonProposalGenerateRequest {
+  /** @maxLength 10000 */
+  custom_prompt?: string;
+  /**
+     * @minimum 6
+     * @maximum 20
+     */
+  episode_count?: number;
+  model?: string | null;
+}
+
+export interface SeasonProposalItemRequest {
+  /** @minItems 1 */
+  character_ids: string[];
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  cliffhanger: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  conflict: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  hook: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  id: string;
+  /** @minItems 1 */
+  location_ids: string[];
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  logline: string;
+  manually_edited_fields?: string[];
+  /**
+     * @minimum 1
+     * @maximum 20
+     */
+  position: number;
+  /** @minItems 1 */
+  relationship_ids: string[];
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  relationship_shift: string;
+  /**
+     * @minimum 1
+     * @maximum 99
+     */
+  season?: number;
+  secret_id?: string | null;
+  /**
+     * @minLength 20
+     * @maxLength 20000
+     */
+  synopsis: string;
+  /**
+     * @minLength 1
+     * @maxLength 180
+     */
+  title: string;
+}
+
+export interface SeasonProposalUpdateRequest {
+  /** @minimum 0 */
+  expected_revision: number;
+  /**
+     * @minItems 6
+     * @maxItems 20
+     */
+  items: SeasonProposalItemRequest[];
+}
+
 export interface SecretMutationRequest {
   confirmed_by_user: true;
   /** @minimum 0 */
@@ -2535,6 +2624,12 @@ export type DeleteSeasonPlanItemApiSeasonPlanItemsItemIdDeleteParams = {
 expected_revision: number;
 keep_produced_episode?: boolean;
 };
+
+export type GetSeasonProposalApiSeasonPlanProposalGet200 = { [key: string]: unknown };
+
+export type UpdateSeasonProposalApiSeasonPlanProposalPut200 = { [key: string]: unknown };
+
+export type GenerateSeasonProposalApiSeasonPlanProposalGeneratePost200 = { [key: string]: unknown };
 
 export type GenerateStageApiStagesKindPost200 = { [key: string]: unknown };
 
@@ -7725,6 +7820,144 @@ return orvalFetch<SeasonPlanSnapshot>(getReorderSeasonPlanApiSeasonPlanOrderPutU
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(appsApiSeasonRoutesReorderRequest)
+  }
+);}
+
+
+
+export const getGetSeasonProposalApiSeasonPlanProposalGetUrl = () => {
+
+
+
+
+  return `/api/season-plan/proposal`
+}
+
+/**
+ * @summary Get Season Proposal
+ */
+export const getSeasonProposalApiSeasonPlanProposalGet = async ( options?: Parameters<typeof orvalFetch>[1]): Promise<GetSeasonProposalApiSeasonPlanProposalGet200> => {
+
+  return orvalFetch<GetSeasonProposalApiSeasonPlanProposalGet200>(getGetSeasonProposalApiSeasonPlanProposalGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getUpdateSeasonProposalApiSeasonPlanProposalPutUrl = () => {
+
+
+
+
+  return `/api/season-plan/proposal`
+}
+
+/**
+ * @summary Update Season Proposal
+ */
+export const updateSeasonProposalApiSeasonPlanProposalPut = async (seasonProposalUpdateRequest: SeasonProposalUpdateRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<UpdateSeasonProposalApiSeasonPlanProposalPut200> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<UpdateSeasonProposalApiSeasonPlanProposalPut200>(getUpdateSeasonProposalApiSeasonPlanProposalPutUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(seasonProposalUpdateRequest)
+  }
+);}
+
+
+
+export const getAcceptSeasonProposalApiSeasonPlanProposalAcceptPostUrl = () => {
+
+
+
+
+  return `/api/season-plan/proposal/accept`
+}
+
+/**
+ * @summary Accept Season Proposal
+ */
+export const acceptSeasonProposalApiSeasonPlanProposalAcceptPost = async (seasonProposalAcceptRequest: SeasonProposalAcceptRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<SeasonPlanSnapshot> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<SeasonPlanSnapshot>(getAcceptSeasonProposalApiSeasonPlanProposalAcceptPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(seasonProposalAcceptRequest)
+  }
+);}
+
+
+
+export const getGenerateSeasonProposalApiSeasonPlanProposalGeneratePostUrl = () => {
+
+
+
+
+  return `/api/season-plan/proposal/generate`
+}
+
+/**
+ * @summary Generate Season Proposal
+ */
+export const generateSeasonProposalApiSeasonPlanProposalGeneratePost = async (seasonProposalGenerateRequest: SeasonProposalGenerateRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<GenerateSeasonProposalApiSeasonPlanProposalGeneratePost200> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<GenerateSeasonProposalApiSeasonPlanProposalGeneratePost200>(getGenerateSeasonProposalApiSeasonPlanProposalGeneratePostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(seasonProposalGenerateRequest)
   }
 );}
 

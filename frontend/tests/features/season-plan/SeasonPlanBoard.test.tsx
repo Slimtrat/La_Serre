@@ -2,20 +2,35 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { SeasonPlanBoard, type SeasonPlanApi, type SeasonPlanItem, type SeasonPlanSnapshot } from "@features/season-plan";
+import { SeasonPlanBoard, type SeasonPlanApi, type SeasonPlanItem, type SeasonPlanProposal, type SeasonPlanSnapshot } from "@features/season-plan";
 
 const items: readonly SeasonPlanItem[] = [
   { id: "spi-first", position: 0, title: "La graine", logline: "Une graine réveille la serre.", synopsis: "Belladone découvre une graine qui bouleverse l’équilibre.", cliffhanger: "La graine prononce son nom.", character_ids: ["belladone"], location_ids: ["serre"], status: "draft", episode_id: null, deleted_at: null },
   { id: "spi-second", position: 1, title: "Les racines", logline: "Aconit suit les racines.", synopsis: "Les racines conduisent Aconit sous la serre.", cliffhanger: "Une porte s’ouvre.", character_ids: ["aconit"], location_ids: ["serre"], status: "produced", episode_id: "S01E001", deleted_at: null },
 ];
 const snapshot = (revision = 3, nextItems = items): SeasonPlanSnapshot => ({ revision, updated_at: "2026-09-14T10:00:00Z", items: nextItems });
+const proposal = (overrides: Partial<SeasonPlanProposal> = {}): SeasonPlanProposal => ({
+  id: "season-proposal-a1", revision: 2, base_plan_revision: 3,
+  source_fingerprint: "1234567890abcdef", current_source_fingerprint: "1234567890abcdef", stale: false,
+  provenance: { task_id: "tentafruit_series_plan", task_version: "1.0.0", model: "fake-ollama", input_fingerprint: "1234567890abcdef" },
+  validation: { valid: true, issues: [] },
+  items: Array.from({ length: 6 }, (_, index) => ({
+    id: `proposal-item-${index}`, position: index + 1, season: 1, title: index === 0 ? "La graine noire" : `Épisode IA ${index + 1}`,
+    hook: `Hook ${index + 1}`, conflict: `Conflit ${index + 1}`, relationship_shift: `Bascule ${index + 1}`,
+    relationship_ids: [`relation-${index}`], secret_id: null, cliffhanger: `Cliffhanger ${index + 1}`,
+    logline: `Promesse ${index + 1}`, synopsis: `Synopsis ${index + 1}`, character_ids: ["belladone"], location_ids: ["serre"],
+    manually_edited_fields: [],
+  })),
+  ...overrides,
+});
 
 function api(overrides: Partial<SeasonPlanApi> = {}): SeasonPlanApi {
   const unchanged = async () => snapshot(4);
   return {
     getPlan: async () => snapshot(), createItem: unchanged, updateItem: unchanged, validateItem: unchanged,
     duplicateItem: unchanged, deleteItem: unchanged, restoreItem: unchanged,
-    reorder: unchanged, materializeItem: unchanged, ...overrides,
+    reorder: unchanged, materializeItem: unchanged, getProposal: async () => null,
+    generateProposal: async () => proposal(), updateProposal: async () => proposal(), acceptProposal: unchanged, ...overrides,
   };
 }
 
@@ -102,5 +117,46 @@ describe("SeasonPlanBoard", () => {
     renderBoard(api({ getPlan: async () => snapshot(5, [removed]), restoreItem }));
     fireEvent.click(await screen.findByRole("button", { name: "Restaurer" }));
     await waitFor(() => expect(restoreItem).toHaveBeenCalledWith("spi-first", { expected_revision: 5 }));
+  });
+
+  it("keeps an AI proposal isolated, exposes its diff and requires explicit acceptance", async () => {
+    const generated = proposal();
+    const generateProposal = vi.fn(async () => generated);
+    const updateProposal = vi.fn(async ({ items: nextItems }: Parameters<SeasonPlanApi["updateProposal"]>[0]) => proposal({
+      revision: 3,
+      items: nextItems.map((item, index) => ({ ...item, id: `saved-${index}`, position: index + 1, manually_edited_fields: index === 0 ? ["title"] : [] })),
+    }));
+    const acceptProposal = vi.fn(async () => snapshot(4));
+    renderBoard(api({ generateProposal, updateProposal, acceptProposal }));
+
+    expect(await screen.findByText("Aucune proposition active. Le plan actuel reste inchangé.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Générer" }));
+    await waitFor(() => expect(generateProposal).toHaveBeenCalledWith({ episode_count: 6 }));
+    await screen.findByDisplayValue("La graine noire");
+    expect(screen.getByText((_, element) => element?.tagName === "SPAN" && element.textContent === "Avant : La graine")).toBeTruthy();
+    expect(screen.getByText((_, element) => element?.tagName === "SPAN" && element.textContent === "Après : La graine noire")).toBeTruthy();
+    expect(screen.getByText("fake-ollama")).toBeTruthy();
+    expect(acceptProposal).not.toHaveBeenCalled();
+
+    const title = screen.getByDisplayValue("La graine noire");
+    fireEvent.change(title, { target: { value: "La graine écarlate" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Descendre la proposition" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Retirer de la proposition" })[5]);
+    fireEvent.click(screen.getByRole("button", { name: "Ajouter un épisode" }));
+    fireEvent.click(screen.getByRole("button", { name: "Enregistrer le brouillon" }));
+
+    await waitFor(() => expect(updateProposal).toHaveBeenCalledWith(expect.objectContaining({
+      expected_revision: 2,
+      items: expect.arrayContaining([expect.objectContaining({ title: "La graine écarlate" })]),
+    })));
+    fireEvent.click(screen.getByRole("button", { name: "Valider et appliquer au plan" }));
+    await waitFor(() => expect(acceptProposal).toHaveBeenCalledWith({ expected_revision: 3, expected_plan_revision: 3 }));
+    expect(await screen.findByText("Proposition validée et appliquée au plan.")).toBeTruthy();
+  });
+
+  it("blocks acceptance when the proposal sources or plan revision are stale", async () => {
+    renderBoard(api({ getProposal: async () => proposal({ stale: true, current_source_fingerprint: "changed" }) }));
+    expect((await screen.findByRole("alert")).textContent).toContain("Le casting, les relations ou le plan ont changé.");
+    expect(screen.getByRole("button", { name: "Valider et appliquer au plan" }).hasAttribute("disabled")).toBe(true);
   });
 });

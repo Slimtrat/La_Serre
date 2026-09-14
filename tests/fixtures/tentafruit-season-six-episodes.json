@@ -1,0 +1,291 @@
+{
+  "generation": {
+    "episode_count": 6,
+    "model": "fake:tentafruit-season-v1",
+    "custom_prompt": "Dark romance comique, verticale, six épisodes de 40 secondes."
+  },
+  "bible": {
+    "schema_version": 1,
+    "revision": 12,
+    "updated_at": "2026-01-15T12:00:00Z",
+    "title": "La Serre Tentafruit",
+    "characters": [
+      {
+        "id": "belladone",
+        "name": "Belladone",
+        "role": "voleuse botanique",
+        "visual_description": "Silhouette violette aux feuilles coupantes et au regard calculateur.",
+        "wardrobe": "Manteau prune structuré, gants noirs et bijoux en graines toxiques.",
+        "signature_details": ["pollen violet", "sourire asymétrique"],
+        "palette": ["#321144", "#7d3c98", "#d7bde2"],
+        "personality": {"audace": 0.9, "tendresse": 0.35, "contrôle": 0.8},
+        "wants": ["voler la graine-oracle", "être choisie par Aconit"],
+        "fears": ["devoir un aveu sincère"],
+        "voice_description": "Voix grave, lente et ironiquement tendre.",
+        "generation_negative_prompt": "photorealism, extra limbs, readable text"
+      },
+      {
+        "id": "aconit",
+        "name": "Aconit",
+        "role": "gardien de la serre",
+        "visual_description": "Grande tige bleu nuit, posture rigide et corolle toujours impeccable.",
+        "wardrobe": "Tablier bleu pétrole, chemise ivoire et sécateur ancien à la ceinture.",
+        "signature_details": ["corolle bleue", "sécateur d'argent"],
+        "palette": ["#071a40", "#1f618d", "#f8f9f9"],
+        "personality": {"loyauté": 0.9, "jalousie": 0.65, "humour": 0.25},
+        "wants": ["protéger la graine-oracle", "comprendre Belladone"],
+        "fears": ["trahir Iris"],
+        "voice_description": "Voix précise, retenue, traversée de silences secs.",
+        "generation_negative_prompt": "photorealism, extra limbs, readable text"
+      },
+      {
+        "id": "iris",
+        "name": "Iris",
+        "role": "archiviste des racines",
+        "visual_description": "Pétales ambrés, lunettes rondes et racines mobiles couvertes d'étiquettes.",
+        "wardrobe": "Veste safran à poches, lunettes fumées et carnets attachés en bandoulière.",
+        "signature_details": ["lunettes rondes", "étiquettes de cuivre"],
+        "palette": ["#7d6608", "#f4d03f", "#6e2c00"],
+        "personality": {"curiosité": 0.95, "prudence": 0.55, "rancune": 0.7},
+        "wants": ["restaurer les archives", "forcer Aconit à dire la vérité"],
+        "fears": ["voir la serre recommencer son ancien cycle"],
+        "voice_description": "Voix vive et clinique, ponctuée de rires trop courts.",
+        "generation_negative_prompt": "photorealism, extra limbs, readable text"
+      }
+    ],
+    "locations": [
+      {
+        "id": "serre_noire",
+        "name": "Serre noire",
+        "visual_description": "Verrière nocturne envahie de lianes sensibles aux mensonges et de pollen violet.",
+        "signature_details": ["verre noir", "lianes réactives"],
+        "palette": ["#090909", "#512e5f", "#a569bd"],
+        "generation_negative_prompt": "daylight, modern signage, readable text"
+      },
+      {
+        "id": "laboratoire",
+        "name": "Laboratoire humide",
+        "visual_description": "Paillasses de cuivre sous condensation, fioles organiques et lumière verdâtre.",
+        "signature_details": ["fioles-racines", "condensation verte"],
+        "palette": ["#0b5345", "#b7950b", "#d5f5e3"],
+        "generation_negative_prompt": "sterile white room, readable text, daylight"
+      },
+      {
+        "id": "archives_racines",
+        "name": "Archives des racines",
+        "visual_description": "Galerie souterraine où des racines étiquetées murmurent les dettes anciennes.",
+        "signature_details": ["étiquettes de cuivre", "murs de racines"],
+        "palette": ["#3e2723", "#a04000", "#f5cba7"],
+        "generation_negative_prompt": "concrete office, readable text, sunlight"
+      }
+    ],
+    "relationships": [
+      {
+        "id": "belladone-aconit",
+        "source": "belladone",
+        "target": "aconit",
+        "label": "désir sous surveillance",
+        "summary": "Belladone séduit Aconit pour approcher la graine, sans savoir s'il joue le même jeu.",
+        "desire": 82,
+        "trust": -35,
+        "anger": 30,
+        "fear": 25,
+        "attachment": 45,
+        "jealousy": 68,
+        "toxicity": 72
+      },
+      {
+        "id": "aconit-iris",
+        "source": "aconit",
+        "target": "iris",
+        "label": "loyauté fissurée",
+        "summary": "Aconit protège Iris mais lui cache le prix réel de leur ancien pacte.",
+        "desire": 5,
+        "trust": 48,
+        "anger": 20,
+        "fear": 55,
+        "attachment": 78,
+        "jealousy": 12,
+        "toxicity": 35
+      },
+      {
+        "id": "iris-belladone",
+        "source": "iris",
+        "target": "belladone",
+        "label": "alliance de circonstance",
+        "summary": "Iris méprise les méthodes de Belladone mais a besoin de son audace.",
+        "desire": -10,
+        "trust": -60,
+        "anger": 58,
+        "fear": 18,
+        "attachment": 8,
+        "jealousy": 22,
+        "toxicity": 46
+      }
+    ],
+    "art_direction": {
+      "summary": "Dark romance botanique stylisée au format vertical.",
+      "visual_style": ["illustration 3D", "clair-obscur végétal"],
+      "palette": ["violet toxique", "bleu nuit", "cuivre"],
+      "rendering_rules": ["personnages immédiatement reconnaissables"],
+      "banned_elements": ["texte incrusté", "photorealisme"]
+    },
+    "tone": {
+      "summary": "Romance toxique et comédie sèche sans glamouriser l'emprise.",
+      "keywords": ["vénéneux", "tendre", "absurde"],
+      "dialogue_rules": ["répliques courtes", "les silences changent le rapport de force"],
+      "content_boundaries": ["aucune violence sexuelle", "pas de torture graphique"]
+    },
+    "world_rules": [
+      {
+        "id": "mensonge-liane",
+        "statement": "Dans la serre noire, un mensonge explicite fait bouger les lianes.",
+        "applies_to": ["serre_noire"],
+        "immutable": true
+      }
+    ],
+    "narrative_arcs": [
+      {
+        "id": "graine-oracle",
+        "title": "La graine choisit son voleur",
+        "summary": "Le vol prévu devient un pacte choisi entre trois rivaux.",
+        "character_ids": ["belladone", "aconit", "iris"],
+        "status": "planned",
+        "beats": ["approche", "dette", "trahison", "choix"]
+      }
+    ],
+    "secrets": [
+      {
+        "id": "aconit-a-ouvert-la-porte",
+        "owners": ["aconit"],
+        "known_by": [],
+        "hidden_from": ["belladone", "iris"],
+        "summary": "Aconit a laissé volontairement Belladone entrer dans la serre.",
+        "severity": 0.65,
+        "created_episode": 1,
+        "revealed": false
+      },
+      {
+        "id": "iris-entend-la-graine",
+        "owners": ["iris"],
+        "known_by": [],
+        "hidden_from": ["belladone", "aconit"],
+        "summary": "Iris entend la graine-oracle lui demander de briser le pacte.",
+        "severity": 0.85,
+        "created_episode": 1,
+        "revealed": false
+      }
+    ],
+    "references": [],
+    "prompts": [],
+    "changes": []
+  },
+  "expected_plan": {
+    "season": 1,
+    "series_arc": "Belladone tente de voler la graine-oracle, puis les trois rivaux choisissent quelle dette mérite d'être sauvée.",
+    "items": [
+      {
+        "candidate_id": "candidate-pollen",
+        "season": 1,
+        "position": 1,
+        "title": "Le pollen menteur",
+        "hook": "Une liane menotte Belladone à Aconit au premier mensonge.",
+        "conflict": "Belladone doit fouiller la serre sans avouer ce qu'elle veut voler.",
+        "turning_point": "Aconit lui donne délibérément la mauvaise clé.",
+        "relationship_id": "belladone-aconit",
+        "relationship_shift": "La méfiance devient un jeu de coopération forcée.",
+        "secret_id": null,
+        "reveals_secret": false,
+        "cliffhanger": "La mauvaise clé ouvre pourtant la chambre de la graine.",
+        "character_ids": ["belladone", "aconit"],
+        "location_ids": ["serre_noire"],
+        "duration_seconds": 40
+      },
+      {
+        "candidate_id": "candidate-dette",
+        "season": 1,
+        "position": 2,
+        "title": "Une dette bien taillée",
+        "hook": "Iris réclame à Aconit une dette qu'il nie avoir contractée.",
+        "conflict": "Aconit doit choisir entre protéger Iris et conserver sa couverture.",
+        "turning_point": "Il détruit un registre pour sauver une preuve contre elle.",
+        "relationship_id": "aconit-iris",
+        "relationship_shift": "La loyauté protectrice devient une suspicion réciproque.",
+        "secret_id": null,
+        "reveals_secret": false,
+        "cliffhanger": "Une page intacte porte la signature d'Aconit.",
+        "character_ids": ["aconit", "iris"],
+        "location_ids": ["archives_racines"],
+        "duration_seconds": 38
+      },
+      {
+        "candidate_id": "candidate-fausse-alliance",
+        "season": 1,
+        "position": 3,
+        "title": "Les ennemies arrosent ensemble",
+        "hook": "Belladone et Iris découvrent que leurs deux clés ne fonctionnent qu'ensemble.",
+        "conflict": "Elles doivent partager leurs indices sans donner à l'autre l'avantage.",
+        "turning_point": "Iris confie une fausse destination et Belladone choisit de la suivre.",
+        "relationship_id": "iris-belladone",
+        "relationship_shift": "Le mépris devient une alliance fragile fondée sur un mensonge partagé.",
+        "secret_id": null,
+        "reveals_secret": false,
+        "cliffhanger": "La graine appelle Iris depuis le laboratoire vide.",
+        "character_ids": ["belladone", "iris"],
+        "location_ids": ["laboratoire"],
+        "duration_seconds": 42
+      },
+      {
+        "candidate_id": "candidate-porte",
+        "season": 1,
+        "position": 4,
+        "title": "La porte était ouverte",
+        "hook": "Belladone retrouve sur la serrure le pollen bleu d'Aconit.",
+        "conflict": "Elle peut révéler sa complicité ou continuer à jouer la voleuse isolée.",
+        "turning_point": "Aconit avoue avoir préparé son intrusion avant leur rencontre.",
+        "relationship_id": "belladone-aconit",
+        "relationship_shift": "La séduction tactique devient une trahison intime mais consentie.",
+        "secret_id": "aconit-a-ouvert-la-porte",
+        "reveals_secret": true,
+        "cliffhanger": "Iris entend l'aveu derrière la verrière.",
+        "character_ids": ["belladone", "aconit", "iris"],
+        "location_ids": ["serre_noire"],
+        "duration_seconds": 44
+      },
+      {
+        "candidate_id": "candidate-voix",
+        "season": 1,
+        "position": 5,
+        "title": "La voix sous les racines",
+        "hook": "Iris répond à voix haute à une graine que personne d'autre n'entend.",
+        "conflict": "Aconit veut la protéger tandis qu'Iris exige enfin d'être crue.",
+        "turning_point": "Iris révèle l'ordre de la graine mais refuse de lui obéir.",
+        "relationship_id": "aconit-iris",
+        "relationship_shift": "La protection paternaliste cède la place à une confiance négociée.",
+        "secret_id": "iris-entend-la-graine",
+        "reveals_secret": true,
+        "cliffhanger": "La graine change d'ordre et demande à Belladone de choisir.",
+        "character_ids": ["belladone", "aconit", "iris"],
+        "location_ids": ["archives_racines"],
+        "duration_seconds": 45
+      },
+      {
+        "candidate_id": "candidate-choix",
+        "season": 1,
+        "position": 6,
+        "title": "Le fruit de la dette",
+        "hook": "La graine offre à Belladone le pouvoir de quitter la serre seule.",
+        "conflict": "Belladone doit choisir le vol parfait ou un pacte dont elle ne contrôlera rien.",
+        "turning_point": "Elle remet la graine à Iris et confie la clé à Aconit.",
+        "relationship_id": "iris-belladone",
+        "relationship_shift": "L'alliance utilitaire devient une dette choisie et équilibrée.",
+        "secret_id": null,
+        "reveals_secret": false,
+        "cliffhanger": "Dans la poche de Belladone, une seconde graine éclot en riant.",
+        "character_ids": ["belladone", "aconit", "iris"],
+        "location_ids": ["laboratoire"],
+        "duration_seconds": 46
+      }
+    ]
+  }
+}

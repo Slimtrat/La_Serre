@@ -7,6 +7,21 @@ from engine.narrative.tasks.models import (
     TaskRegistry,
     TaskSpec,
 )
+from engine.narrative.tasks.tentafruit_series_plan import (
+    TENTAFRUIT_SERIES_PLAN_TASK,
+    SeasonPlanProposal,
+    SeasonPlanProposalDocument,
+    SeasonPlanProposalRegistry,
+    SeasonPlanProposalRevisionConflictError,
+    SeriesPlanBudget,
+    SeriesPlanValidation,
+    TentafruitSeriesPlan,
+    TentafruitSeriesPlanItem,
+    build_fake_series_plan,
+    build_series_plan_context,
+    series_plan_source_fingerprint,
+    validate_series_plan,
+)
 
 __all__ = [
     "CompiledTask",
@@ -17,4 +32,17 @@ __all__ = [
     "TaskKind",
     "TaskRegistry",
     "TaskSpec",
+    "TENTAFRUIT_SERIES_PLAN_TASK",
+    "SeasonPlanProposal",
+    "SeasonPlanProposalDocument",
+    "SeasonPlanProposalRegistry",
+    "SeasonPlanProposalRevisionConflictError",
+    "SeriesPlanBudget",
+    "SeriesPlanValidation",
+    "TentafruitSeriesPlan",
+    "TentafruitSeriesPlanItem",
+    "build_fake_series_plan",
+    "build_series_plan_context",
+    "series_plan_source_fingerprint",
+    "validate_series_plan",
 ]
