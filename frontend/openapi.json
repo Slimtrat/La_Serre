@@ -2761,9 +2761,19 @@
             "title": "Active Jobs",
             "type": "integer"
           },
+          "approved_media": {
+            "default": 0,
+            "title": "Approved Media",
+            "type": "integer"
+          },
           "awaiting_approval": {
             "default": 0,
             "title": "Awaiting Approval",
+            "type": "integer"
+          },
+          "complete_shots": {
+            "default": 0,
+            "title": "Complete Shots",
             "type": "integer"
           },
           "episodes": {
@@ -2779,6 +2789,16 @@
           "generated_media": {
             "default": 0,
             "title": "Generated Media",
+            "type": "integer"
+          },
+          "incomplete_shots": {
+            "default": 0,
+            "title": "Incomplete Shots",
+            "type": "integer"
+          },
+          "required_media": {
+            "default": 0,
+            "title": "Required Media",
             "type": "integer"
           },
           "shots": {
@@ -3370,6 +3390,48 @@
           "priority"
         ],
         "title": "PriorityRequest",
+        "type": "object"
+      },
+      "ProductionReadiness": {
+        "additionalProperties": false,
+        "properties": {
+          "approved_media": {
+            "default": 0,
+            "title": "Approved Media",
+            "type": "integer"
+          },
+          "assemblable": {
+            "default": false,
+            "title": "Assemblable",
+            "type": "boolean"
+          },
+          "complete_shots": {
+            "default": 0,
+            "title": "Complete Shots",
+            "type": "integer"
+          },
+          "master_available": {
+            "default": false,
+            "title": "Master Available",
+            "type": "boolean"
+          },
+          "present_media": {
+            "default": 0,
+            "title": "Present Media",
+            "type": "integer"
+          },
+          "required_media": {
+            "default": 0,
+            "title": "Required Media",
+            "type": "integer"
+          },
+          "total_shots": {
+            "default": 0,
+            "title": "Total Shots",
+            "type": "integer"
+          }
+        },
+        "title": "ProductionReadiness",
         "type": "object"
       },
       "ProjectBible": {
@@ -3987,6 +4049,33 @@
         "title": "ReorderRequest",
         "type": "object"
       },
+      "RuntimeCapabilities": {
+        "additionalProperties": false,
+        "properties": {
+          "image": {
+            "default": false,
+            "title": "Image",
+            "type": "boolean"
+          },
+          "manual_import": {
+            "default": true,
+            "title": "Manual Import",
+            "type": "boolean"
+          },
+          "narrative": {
+            "default": false,
+            "title": "Narrative",
+            "type": "boolean"
+          },
+          "video": {
+            "default": false,
+            "title": "Video",
+            "type": "boolean"
+          }
+        },
+        "title": "RuntimeCapabilities",
+        "type": "object"
+      },
       "ScreenwriterPlan": {
         "additionalProperties": false,
         "properties": {
@@ -4442,8 +4531,14 @@
             ],
             "title": "Active Episode Id"
           },
+          "capabilities": {
+            "$ref": "#/components/schemas/RuntimeCapabilities"
+          },
           "counts": {
             "$ref": "#/components/schemas/JourneyCounts"
+          },
+          "production": {
+            "$ref": "#/components/schemas/ProductionReadiness"
           },
           "project_id": {
             "title": "Project Id",

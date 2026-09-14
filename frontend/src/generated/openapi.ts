@@ -1351,10 +1351,14 @@ export interface HTTPValidationError {
 
 export interface JourneyCounts {
   active_jobs?: number;
+  approved_media?: number;
   awaiting_approval?: number;
+  complete_shots?: number;
   episodes?: number;
   failed_jobs?: number;
   generated_media?: number;
+  incomplete_shots?: number;
+  required_media?: number;
   shots?: number;
   stale_artifacts?: number;
 }
@@ -1496,6 +1500,16 @@ export interface PriorityRequest {
      * @maximum 100
      */
   priority: number;
+}
+
+export interface ProductionReadiness {
+  approved_media?: number;
+  assemblable?: boolean;
+  complete_shots?: number;
+  master_available?: boolean;
+  present_media?: number;
+  required_media?: number;
+  total_shots?: number;
 }
 
 export interface ProjectBible {
@@ -1679,6 +1693,13 @@ export interface ReorderRequest {
   item_ids: string[];
 }
 
+export interface RuntimeCapabilities {
+  image?: boolean;
+  manual_import?: boolean;
+  narrative?: boolean;
+  video?: boolean;
+}
+
 export interface ScreenwriterPlan {
   /** @maxItems 50 */
   character_progression?: string[];
@@ -1769,7 +1790,9 @@ export type StudioJourneySnapshotStaleArtifactsItem = { [key: string]: unknown }
 
 export interface StudioJourneySnapshot {
   active_episode_id: string | null;
+  capabilities?: RuntimeCapabilities;
   counts: JourneyCounts;
+  production?: ProductionReadiness;
   project_id: string;
   revision: string;
   schema_version?: number;
