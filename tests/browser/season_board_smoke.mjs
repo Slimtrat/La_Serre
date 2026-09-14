@@ -79,7 +79,7 @@ async function createItem(title) {
   );
   expect(item, `Le nouvel item ${title} est introuvable`);
 
-  const titleField = page.getByDisplayValue("Nouvel épisode", { exact: true }).last();
+  const titleField = board.getByRole("textbox", { name: "Titre" }).last();
   await titleField.waitFor();
   const card = titleField.locator("xpath=ancestor::li");
   await titleField.fill(title);
@@ -96,8 +96,15 @@ async function createItem(title) {
   return item.id;
 }
 
-function cardForTitle(title) {
-  return page.getByDisplayValue(title, { exact: true }).locator("xpath=ancestor::li");
+async function cardForTitle(title) {
+  const inputs = page.locator("[data-season-plan-board]").getByRole("textbox", {
+    name: "Titre",
+  });
+  for (let index = 0; index < await inputs.count(); index += 1) {
+    const input = inputs.nth(index);
+    if (await input.inputValue() === title) return input.locator("xpath=ancestor::li");
+  }
+  throw new Error(`La carte ${title} est introuvable`);
 }
 
 async function materialize(title, itemId) {
@@ -105,7 +112,7 @@ async function materialize(title, itemId) {
     candidate.request().method() === "PUT"
     && new URL(candidate.url()).pathname === `/api/season-plan/items/${itemId}`
   );
-  await cardForTitle(title).getByRole("button", { name: "Valider" }).click();
+  await (await cardForTitle(title)).getByRole("button", { name: "Valider" }).click();
   expect((await validation).ok(), `La validation de ${title} a échoué`);
   const before = await waitForPlan(
     (candidate) => candidate.items.some((item) => item.id === itemId && item.lifecycle === "validated"),
@@ -115,7 +122,7 @@ async function materialize(title, itemId) {
     candidate.request().method() === "POST"
     && new URL(candidate.url()).pathname === `/api/season-plan/items/${itemId}/materialize`
   );
-  await cardForTitle(title).getByRole("button", { name: "Créer l’épisode" }).click();
+  await (await cardForTitle(title)).getByRole("button", { name: "Créer l’épisode" }).click();
   expect((await response).ok(), `La matérialisation de ${title} a échoué`);
   const plan = await waitForPlan(
     (candidate) => candidate.revision > before.revision
@@ -149,9 +156,18 @@ try {
     response.request().method() === "PUT"
     && new URL(response.url()).pathname === "/api/season-plan/order"
   );
-  await cardForTitle("La graine noire")
-    .getByRole("button", { name: "Déplacer l’intention: La graine noire" })
-    .dragTo(cardForTitle("Le pacte de verre"));
+  const dragSource = page.getByRole("button", {
+    name: "Déplacer l’intention: La graine noire",
+  });
+  const dragTarget = page.getByRole("button", {
+    name: "Déplacer l’intention: Le pacte de verre",
+  }).locator("xpath=ancestor::li");
+  const dataTransfer = await page.evaluateHandle(() => new DataTransfer());
+  await dragSource.dispatchEvent("dragstart", { dataTransfer });
+  await page.waitForTimeout(100);
+  await dragTarget.dispatchEvent("dragover", { dataTransfer });
+  await dragTarget.dispatchEvent("drop", { dataTransfer });
+  await dragSource.dispatchEvent("dragend", { dataTransfer });
   expect((await dragResponse).ok(), "Le reorder souris a échoué");
   await waitForPlan(
     (candidate) => candidate.items[0]?.id === secondId && candidate.items[1]?.id === firstId,
