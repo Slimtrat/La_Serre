@@ -24,6 +24,14 @@ const diagnosis: SetupDiagnosis = {
       license: { id: "sdxl", name: "SDXL", url: "https://example.test/sdxl", summary: "Review model terms", commercialUse: "review_required" },
     },
   ],
+  managedPrerequisites: [
+    {
+      id: "uv", version: "0.12.13", source: "https://github.com/astral-sh/uv",
+      archiveSha256: "a86c9dc7", destination: ".la-serre-runtime/tools/uv/0.12.13",
+      licenseName: "MIT", licenseUrl: "https://github.com/astral-sh/uv/blob/0.12.13/LICENSE-MIT",
+      sizeBytes: 17_612_025, state: "missing",
+    },
+  ],
 };
 
 const runningJob: SetupJob = {
@@ -65,6 +73,11 @@ describe("SetupWizard", () => {
     expect(screen.getByText("RTX 4070")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Créer des personnages" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Préparer mon studio" }));
+
+    expect(screen.getByRole("heading", { name: "Outils gérés nécessaires" })).toBeTruthy();
+    expect(screen.getByText("uv 0.12.13")).toBeTruthy();
+    expect(screen.getByText(".la-serre-runtime/tools/uv/0.12.13")).toBeTruthy();
+    expect(screen.getByText("a86c9dc7")).toBeTruthy();
 
     const start = screen.getByRole("button", { name: "Installer et vérifier" });
     expect((start as HTMLButtonElement).disabled).toBe(true);

@@ -40,6 +40,17 @@ export interface SetupDiagnosis {
     readonly gpuName: string | null;
   };
   readonly components: readonly SetupComponent[];
+  readonly managedPrerequisites: readonly {
+    readonly id: string;
+    readonly version: string;
+    readonly source: string;
+    readonly archiveSha256: string;
+    readonly destination: string;
+    readonly licenseName: string;
+    readonly licenseUrl: string;
+    readonly sizeBytes: number;
+    readonly state: string;
+  }[];
 }
 
 export interface SetupJobStep {
@@ -100,6 +111,9 @@ export function decodeDiagnosis(value: unknown): SetupDiagnosis {
     throw new Error("État du pack inconnu");
   }
   const components = Array.isArray(source.components) ? source.components : [];
+  const managedPrerequisites = Array.isArray(source.managed_prerequisites)
+    ? source.managed_prerequisites
+    : [];
   return {
     packId: text(source.pack_id),
     status: status as PackStatus,
@@ -133,6 +147,20 @@ export function decodeDiagnosis(value: unknown): SetupDiagnosis {
             ? commercialUse
             : "review_required") as SetupLicense["commercialUse"],
         },
+      };
+    }),
+    managedPrerequisites: managedPrerequisites.map((item) => {
+      const prerequisite = record(item);
+      return {
+        id: text(prerequisite.id),
+        version: text(prerequisite.version),
+        source: text(prerequisite.source),
+        archiveSha256: text(prerequisite.archive_sha256),
+        destination: text(prerequisite.destination),
+        licenseName: text(prerequisite.license_name),
+        licenseUrl: text(prerequisite.license_url),
+        sizeBytes: number(prerequisite.size_bytes),
+        state: text(prerequisite.state, "missing"),
       };
     }),
   };
