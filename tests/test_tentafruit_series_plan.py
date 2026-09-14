@@ -151,6 +151,7 @@ def test_proposal_registry_preserves_provenance_manual_edits_and_detects_stale(
         compiled,
         model="fake:ci",
         bible=canonical,
+        base_plan_revision=7,
         expected_revision=0,
     )
     assert created.revision == 1
@@ -158,6 +159,7 @@ def test_proposal_registry_preserves_provenance_manual_edits_and_detects_stale(
     assert created.proposal.provenance.task_version == 2
     assert created.proposal.provenance.model == "fake:ci"
     assert created.proposal.provenance.input_fingerprint == context.fingerprint
+    assert created.proposal.base_plan_revision == 7
     assert "budget.episode_count" in created.proposal.provenance.compiled_messages[0].content
 
     edited_items = created.proposal.plan.ordered_items

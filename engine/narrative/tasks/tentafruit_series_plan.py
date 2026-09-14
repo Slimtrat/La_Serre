@@ -126,6 +126,7 @@ class SeasonPlanProposal(BaseModel):
 
     plan: TentafruitSeriesPlan
     provenance: SeasonPlanProposalProvenance
+    base_plan_revision: int = Field(ge=0)
     source_bible_revision: int = Field(ge=0)
     source_bible_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
 
@@ -177,6 +178,7 @@ class SeasonPlanProposalRegistry:
         *,
         model: str,
         bible: ProjectBible,
+        base_plan_revision: int,
         expected_revision: int,
     ) -> SeasonPlanProposalDocument:
         if compiled.task_id != TASK_ID or compiled.task_version != TASK_VERSION:
@@ -196,6 +198,7 @@ class SeasonPlanProposalRegistry:
                         for message in compiled.messages
                     ],
                 ),
+                base_plan_revision=base_plan_revision,
                 source_bible_revision=bible.revision,
                 source_bible_fingerprint=series_plan_source_fingerprint(bible),
             )
