@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { type DragEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { type DragEvent, type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
 
 import { Badge, Button, Card, ConfirmAction, EmptyState, ErrorState, Skeleton } from "@shared";
 import { ApiError } from "@shared/api";
@@ -12,13 +12,17 @@ import { SeasonProposalReview } from "./SeasonProposalReview";
 
 const QUERY_KEY = ["season-plan"] as const;
 const PROPOSAL_QUERY_KEY = ["season-plan", "proposal"] as const;
-export interface SeasonPlanBoardProps { readonly api: SeasonPlanApi; readonly locale: SeasonPlanLocale; }
+export interface SeasonPlanBoardProps {
+  readonly api: SeasonPlanApi;
+  readonly locale: SeasonPlanLocale;
+  readonly renderEpisodeConsequences?: (episodeId: string) => ReactNode;
+}
 const STATUS_TONE: Record<SeasonPlanStatus, "neutral" | "success" | "warning" | "info"> = {
   draft: "neutral", validated: "success", materialized: "info", produced: "success", obsolete: "warning",
 };
 const lines = (value: string) => value.split("\n").map((item) => item.trim()).filter(Boolean);
 
-export function SeasonPlanBoard({ api, locale }: SeasonPlanBoardProps) {
+export function SeasonPlanBoard({ api, locale, renderEpisodeConsequences }: SeasonPlanBoardProps) {
   const labels = getSeasonPlanMessages(locale);
   const queryClient = useQueryClient();
   const planQuery = useQuery({ queryKey: QUERY_KEY, queryFn: api.getPlan });
@@ -82,7 +86,9 @@ export function SeasonPlanBoard({ api, locale }: SeasonPlanBoardProps) {
         <li className={styles.listItem} data-deleted={Boolean(item.deleted_at)} data-season-item-id={item.id} key={item.id}
           onDragOver={(event) => { if (draggedId && !item.deleted_at) event.preventDefault(); }}
           onDrop={(event) => { event.preventDefault(); if (draggedId) void reorder(draggedId, item.id); setDraggedId(null); }}>
-          <SeasonPlanCard busy={busyItem === item.id} index={index} item={item} labels={labels}
+          <SeasonPlanCard busy={busyItem === item.id}
+            consequences={item.episode_id && renderEpisodeConsequences ? renderEpisodeConsequences(item.episode_id) : null}
+            index={index} item={item} labels={labels}
             moveDown={() => moveBy(item.id, 1)} moveUp={() => moveBy(item.id, -1)}
             onDelete={() => item.status === "produced" ? setConfirmDelete(item) : void perform(item.id, () => api.deleteItem(item.id, { expected_revision: plan.revision }), labels.removed)}
             onDragEnd={() => setDraggedId(null)} onDragStart={(event) => { setDraggedId(item.id); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", item.id); }}
@@ -101,7 +107,7 @@ export function SeasonPlanBoard({ api, locale }: SeasonPlanBoardProps) {
 
 type Labels = ReturnType<typeof getSeasonPlanMessages>;
 interface CardProps {
-  readonly busy: boolean; readonly index: number; readonly item: SeasonPlanItem; readonly labels: Labels;
+  readonly busy: boolean; readonly consequences?: ReactNode; readonly index: number; readonly item: SeasonPlanItem; readonly labels: Labels;
   readonly moveDown: () => void; readonly moveUp: () => void; readonly onDelete: () => void; readonly onDragEnd: () => void;
   readonly onDragStart: (event: DragEvent<HTMLButtonElement>) => void; readonly onDuplicate: () => void;
   readonly onMaterialize: () => void; readonly onRestore: () => void; readonly onSave: (fields: SeasonPlanItemFields) => void;
@@ -109,7 +115,7 @@ interface CardProps {
   readonly registerHandle: (node: HTMLButtonElement | null) => void; readonly total: number;
 }
 
-function SeasonPlanCard({ busy, index, item, labels, moveDown, moveUp, onDelete, onDragEnd, onDragStart, onDuplicate, onMaterialize, onRestore, onSave, onValidate, registerHandle, total }: CardProps) {
+function SeasonPlanCard({ busy, consequences, index, item, labels, moveDown, moveUp, onDelete, onDragEnd, onDragStart, onDuplicate, onMaterialize, onRestore, onSave, onValidate, registerHandle, total }: CardProps) {
   const [draft, setDraft] = useState(() => editableFields(item));
   useEffect(() => setDraft(editableFields(item)), [item]);
   const deleted = Boolean(item.deleted_at);
@@ -141,5 +147,6 @@ function SeasonPlanCard({ busy, index, item, labels, moveDown, moveUp, onDelete,
         <Button disabled={busy || item.episode_id !== null || item.status !== "validated"} onClick={onMaterialize} variant="secondary">{labels.materialize}</Button><Button disabled={busy} onClick={onDelete} variant="danger">{labels.remove}</Button>
       </>}</div>
     </form>
+    {consequences}
   </Card>;
 }

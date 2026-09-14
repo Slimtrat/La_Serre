@@ -75,6 +75,13 @@ export interface AIReviewerResult {
   verdict: AIReviewerResultVerdict;
 }
 
+export interface ApproveDeltaRequest {
+  /** @minimum 0 */
+  expected_revision: number;
+  /** @pattern ^[0-9a-f]{64}$ */
+  expected_source_fingerprint: string;
+}
+
 export type ArcStatus = typeof ArcStatus[keyof typeof ArcStatus];
 
 
@@ -668,6 +675,28 @@ export interface CoherenceReviewRequest {
   use_ai?: boolean;
 }
 
+export type DeltaEvidenceSource = typeof DeltaEvidenceSource[keyof typeof DeltaEvidenceSource];
+
+
+export const DeltaEvidenceSource = {
+  episode: 'episode',
+  bible: 'bible',
+  manual: 'manual',
+} as const;
+
+export interface DeltaEvidence {
+  /** @maxLength 2000 */
+  excerpt?: string;
+  /** @pattern ^evidence-[a-z0-9_-]+$ */
+  id: string;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  reference: string;
+  source: DeltaEvidenceSource;
+}
+
 export type DemoDecisionRequestLocale = typeof DemoDecisionRequestLocale[keyof typeof DemoDecisionRequestLocale];
 
 
@@ -961,6 +990,76 @@ export interface EpisodePatchRequest {
   status?: EpisodeStatus | null;
   story?: EpisodeStory | null;
   title?: string | null;
+}
+
+export interface StateMutation {
+  evidence_ids?: string[];
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  key: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  value: string;
+}
+
+export interface KnowledgeMutation {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  character_id: string;
+  evidence_ids?: string[];
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  fact_id: string;
+}
+
+export type ObjectiveMutationStatus = typeof ObjectiveMutationStatus[keyof typeof ObjectiveMutationStatus];
+
+
+export const ObjectiveMutationStatus = {
+  active: 'active',
+  resolved: 'resolved',
+  abandoned: 'abandoned',
+} as const;
+
+export interface ObjectiveMutation {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  character_id: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  description: string;
+  evidence_ids?: string[];
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  objective_id: string;
+  status?: ObjectiveMutationStatus;
+}
+
+export interface EpisodeStateDelta {
+  evidence?: DeltaEvidence[];
+  facts?: StateMutation[];
+  knowledge?: KnowledgeMutation[];
+  object_states?: StateMutation[];
+  objectives?: ObjectiveMutation[];
+  relationships?: StateMutation[];
+  secrets_revealed?: StateMutation[];
+  threads_opened?: StateMutation[];
+  threads_resolved?: StateMutation[];
+  visual_states?: StateMutation[];
 }
 
 export type GeneralValidationVerdict = typeof GeneralValidationVerdict[keyof typeof GeneralValidationVerdict];
@@ -1410,6 +1509,15 @@ export interface JourneyStageSnapshot {
   status: JourneyStatus;
 }
 
+export type ManualDeltaRequestSourcePayload = { [key: string]: unknown };
+
+export interface ManualDeltaRequest {
+  delta: EpisodeStateDelta;
+  /** @minimum 0 */
+  expected_revision: number;
+  source_payload?: ManualDeltaRequestSourcePayload;
+}
+
 export interface MaterializeRequest {
   /**
      * @maximum 600
@@ -1780,6 +1888,13 @@ export interface QueueRequest {
   tts?: QueueRequestTts;
 }
 
+export interface RefuseDeltaRequest {
+  /** @minimum 0 */
+  expected_revision: number;
+  /** @maxLength 2000 */
+  reason?: string;
+}
+
 export interface RelationshipBoardCharacter {
   id: string;
   name: string;
@@ -1821,6 +1936,16 @@ export interface RelationshipSummaryCandidate {
   secret_ids: string[];
   status?: 'candidate';
   summary: string;
+}
+
+export interface ReorderImpactRequest {
+  /** @minimum 0 */
+  expected_plan_revision: number;
+  /**
+     * @minItems 1
+     * @maxItems 100
+     */
+  item_ids: string[];
 }
 
 export interface RevisionRequest {
@@ -2327,6 +2452,24 @@ export type RejectVariantApiCastingCharacterIdVariantsVariantIdRejectPost200 = {
 export type RestoreVariantApiCastingCharacterIdVariantsVariantIdRestorePost200 = { [key: string]: unknown };
 
 export type SaveConfigApiConfigPost200 = {[key: string]: string};
+
+export type GetEpisodeContinuityApiContinuityEpisodesEpisodeIdGet200 = { [key: string]: unknown };
+
+export type GenerateProposalApiContinuityEpisodesEpisodeIdProposalGeneratePost200 = { [key: string]: unknown };
+
+export type ProposeManualApiContinuityEpisodesEpisodeIdProposalManualPost200 = { [key: string]: unknown };
+
+export type ApproveProposalApiContinuityEpisodesEpisodeIdProposalsProposalIdApprovePost200 = { [key: string]: unknown };
+
+export type RefuseProposalApiContinuityEpisodesEpisodeIdProposalsProposalIdRefusePost200 = { [key: string]: unknown };
+
+export type GetImpactApiContinuityImpactGetParams = {
+episode_id: string;
+};
+
+export type GetImpactApiContinuityImpactGet200 = { [key: string]: unknown };
+
+export type PreviewReorderApiContinuityImpactReorderPost200 = { [key: string]: unknown };
 
 export type ListingApiDemoGetParams = {
 locale?: ListingApiDemoGetLocale;
@@ -3974,6 +4117,244 @@ return orvalFetch<SaveConfigApiConfigPost200>(getSaveConfigApiConfigPostUrl(),
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(studioConfigRequest)
+  }
+);}
+
+
+
+export const getGetEpisodeContinuityApiContinuityEpisodesEpisodeIdGetUrl = (episodeId: string,) => {
+
+
+
+
+  return `/api/continuity/episodes/${episodeId}`
+}
+
+/**
+ * @summary Get Episode Continuity
+ */
+export const getEpisodeContinuityApiContinuityEpisodesEpisodeIdGet = async (episodeId: string, options?: Parameters<typeof orvalFetch>[1]): Promise<GetEpisodeContinuityApiContinuityEpisodesEpisodeIdGet200> => {
+
+  return orvalFetch<GetEpisodeContinuityApiContinuityEpisodesEpisodeIdGet200>(getGetEpisodeContinuityApiContinuityEpisodesEpisodeIdGetUrl(episodeId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGenerateProposalApiContinuityEpisodesEpisodeIdProposalGeneratePostUrl = (episodeId: string,) => {
+
+
+
+
+  return `/api/continuity/episodes/${episodeId}/proposal/generate`
+}
+
+/**
+ * @summary Generate Proposal
+ */
+export const generateProposalApiContinuityEpisodesEpisodeIdProposalGeneratePost = async (episodeId: string, options?: Parameters<typeof orvalFetch>[1]): Promise<GenerateProposalApiContinuityEpisodesEpisodeIdProposalGeneratePost200> => {
+
+  return orvalFetch<GenerateProposalApiContinuityEpisodesEpisodeIdProposalGeneratePost200>(getGenerateProposalApiContinuityEpisodesEpisodeIdProposalGeneratePostUrl(episodeId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export const getProposeManualApiContinuityEpisodesEpisodeIdProposalManualPostUrl = (episodeId: string,) => {
+
+
+
+
+  return `/api/continuity/episodes/${episodeId}/proposal/manual`
+}
+
+/**
+ * @summary Propose Manual
+ */
+export const proposeManualApiContinuityEpisodesEpisodeIdProposalManualPost = async (episodeId: string,
+    manualDeltaRequest: ManualDeltaRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<ProposeManualApiContinuityEpisodesEpisodeIdProposalManualPost200> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<ProposeManualApiContinuityEpisodesEpisodeIdProposalManualPost200>(getProposeManualApiContinuityEpisodesEpisodeIdProposalManualPostUrl(episodeId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(manualDeltaRequest)
+  }
+);}
+
+
+
+export const getApproveProposalApiContinuityEpisodesEpisodeIdProposalsProposalIdApprovePostUrl = (episodeId: string,
+    proposalId: string,) => {
+
+
+
+
+  return `/api/continuity/episodes/${episodeId}/proposals/${proposalId}/approve`
+}
+
+/**
+ * @summary Approve Proposal
+ */
+export const approveProposalApiContinuityEpisodesEpisodeIdProposalsProposalIdApprovePost = async (episodeId: string,
+    proposalId: string,
+    approveDeltaRequest: ApproveDeltaRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<ApproveProposalApiContinuityEpisodesEpisodeIdProposalsProposalIdApprovePost200> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<ApproveProposalApiContinuityEpisodesEpisodeIdProposalsProposalIdApprovePost200>(getApproveProposalApiContinuityEpisodesEpisodeIdProposalsProposalIdApprovePostUrl(episodeId,proposalId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(approveDeltaRequest)
+  }
+);}
+
+
+
+export const getRefuseProposalApiContinuityEpisodesEpisodeIdProposalsProposalIdRefusePostUrl = (episodeId: string,
+    proposalId: string,) => {
+
+
+
+
+  return `/api/continuity/episodes/${episodeId}/proposals/${proposalId}/refuse`
+}
+
+/**
+ * @summary Refuse Proposal
+ */
+export const refuseProposalApiContinuityEpisodesEpisodeIdProposalsProposalIdRefusePost = async (episodeId: string,
+    proposalId: string,
+    refuseDeltaRequest: RefuseDeltaRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<RefuseProposalApiContinuityEpisodesEpisodeIdProposalsProposalIdRefusePost200> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<RefuseProposalApiContinuityEpisodesEpisodeIdProposalsProposalIdRefusePost200>(getRefuseProposalApiContinuityEpisodesEpisodeIdProposalsProposalIdRefusePostUrl(episodeId,proposalId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(refuseDeltaRequest)
+  }
+);}
+
+
+
+export const getGetImpactApiContinuityImpactGetUrl = (params: GetImpactApiContinuityImpactGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/continuity/impact?${stringifiedParams}` : `/api/continuity/impact`
+}
+
+/**
+ * @summary Get Impact
+ */
+export const getImpactApiContinuityImpactGet = async (params: GetImpactApiContinuityImpactGetParams, options?: Parameters<typeof orvalFetch>[1]): Promise<GetImpactApiContinuityImpactGet200> => {
+
+  return orvalFetch<GetImpactApiContinuityImpactGet200>(getGetImpactApiContinuityImpactGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getPreviewReorderApiContinuityImpactReorderPostUrl = () => {
+
+
+
+
+  return `/api/continuity/impact/reorder`
+}
+
+/**
+ * @summary Preview Reorder
+ */
+export const previewReorderApiContinuityImpactReorderPost = async (reorderImpactRequest: ReorderImpactRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<PreviewReorderApiContinuityImpactReorderPost200> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<PreviewReorderApiContinuityImpactReorderPost200>(getPreviewReorderApiContinuityImpactReorderPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(reorderImpactRequest)
   }
 );}
 

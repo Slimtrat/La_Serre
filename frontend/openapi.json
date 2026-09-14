@@ -45,6 +45,27 @@
         "title": "AIReviewerResult",
         "type": "object"
       },
+      "ApproveDeltaRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "expected_source_fingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Expected Source Fingerprint",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "expected_source_fingerprint"
+        ],
+        "title": "ApproveDeltaRequest",
+        "type": "object"
+      },
       "ArcStatus": {
         "enum": [
           "planned",
@@ -1004,6 +1025,44 @@
         "title": "CoherenceReviewRequest",
         "type": "object"
       },
+      "DeltaEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "excerpt": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^evidence-[a-z0-9_-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "reference": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reference",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "episode",
+              "bible",
+              "manual"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "reference"
+        ],
+        "title": "DeltaEvidence",
+        "type": "object"
+      },
       "DemoDecisionRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1771,6 +1830,83 @@
           }
         },
         "title": "EpisodePatchRequest",
+        "type": "object"
+      },
+      "EpisodeStateDelta": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/DeltaEvidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/StateMutation"
+            },
+            "title": "Facts",
+            "type": "array"
+          },
+          "knowledge": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeMutation"
+            },
+            "title": "Knowledge",
+            "type": "array"
+          },
+          "object_states": {
+            "items": {
+              "$ref": "#/components/schemas/StateMutation"
+            },
+            "title": "Object States",
+            "type": "array"
+          },
+          "objectives": {
+            "items": {
+              "$ref": "#/components/schemas/ObjectiveMutation"
+            },
+            "title": "Objectives",
+            "type": "array"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/StateMutation"
+            },
+            "title": "Relationships",
+            "type": "array"
+          },
+          "secrets_revealed": {
+            "items": {
+              "$ref": "#/components/schemas/StateMutation"
+            },
+            "title": "Secrets Revealed",
+            "type": "array"
+          },
+          "threads_opened": {
+            "items": {
+              "$ref": "#/components/schemas/StateMutation"
+            },
+            "title": "Threads Opened",
+            "type": "array"
+          },
+          "threads_resolved": {
+            "items": {
+              "$ref": "#/components/schemas/StateMutation"
+            },
+            "title": "Threads Resolved",
+            "type": "array"
+          },
+          "visual_states": {
+            "items": {
+              "$ref": "#/components/schemas/StateMutation"
+            },
+            "title": "Visual States",
+            "type": "array"
+          }
+        },
+        "title": "EpisodeStateDelta",
         "type": "object"
       },
       "EpisodeStatus": {
@@ -2938,6 +3074,36 @@
         "title": "JourneyStatus",
         "type": "string"
       },
+      "KnowledgeMutation": {
+        "additionalProperties": false,
+        "properties": {
+          "character_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Character Id",
+            "type": "string"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "fact_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Fact Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "fact_id"
+        ],
+        "title": "KnowledgeMutation",
+        "type": "object"
+      },
       "LocationProfile": {
         "additionalProperties": false,
         "properties": {
@@ -3006,6 +3172,30 @@
           "generation_negative_prompt"
         ],
         "title": "LocationProfile",
+        "type": "object"
+      },
+      "ManualDeltaRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "delta": {
+            "$ref": "#/components/schemas/EpisodeStateDelta"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "source_payload": {
+            "additionalProperties": true,
+            "title": "Source Payload",
+            "type": "object"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "delta"
+        ],
+        "title": "ManualDeltaRequest",
         "type": "object"
       },
       "MaterializeRequest": {
@@ -3396,6 +3586,53 @@
           }
         },
         "title": "NotificationReadRequest",
+        "type": "object"
+      },
+      "ObjectiveMutation": {
+        "additionalProperties": false,
+        "properties": {
+          "character_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Character Id",
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Description",
+            "type": "string"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "objective_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Objective Id",
+            "type": "string"
+          },
+          "status": {
+            "default": "active",
+            "enum": [
+              "active",
+              "resolved",
+              "abandoned"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "objective_id",
+          "description"
+        ],
+        "title": "ObjectiveMutation",
         "type": "object"
       },
       "PackRepairRequest": {
@@ -4093,6 +4330,27 @@
         "title": "ReferenceOwner",
         "type": "string"
       },
+      "RefuseDeltaRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "reason": {
+            "default": "Refus utilisateur",
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "RefuseDeltaRequest",
+        "type": "object"
+      },
       "RelationshipBoardCharacter": {
         "additionalProperties": false,
         "properties": {
@@ -4339,6 +4597,31 @@
           "secret_ids"
         ],
         "title": "RelationshipSummaryCandidate",
+        "type": "object"
+      },
+      "ReorderImpactRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_plan_revision": {
+            "minimum": 0.0,
+            "title": "Expected Plan Revision",
+            "type": "integer"
+          },
+          "item_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Item Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_plan_revision",
+          "item_ids"
+        ],
+        "title": "ReorderImpactRequest",
         "type": "object"
       },
       "RevisionRequest": {
@@ -5390,6 +5673,36 @@
           "shot"
         ],
         "title": "StageGenerationRequest",
+        "type": "object"
+      },
+      "StateMutation": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "key": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Key",
+            "type": "string"
+          },
+          "value": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "value"
+        ],
+        "title": "StateMutation",
         "type": "object"
       },
       "StudioConfigRequest": {
@@ -8038,6 +8351,361 @@
           }
         },
         "summary": "Save Config"
+      }
+    },
+    "/api/continuity/episodes/{episode_id}": {
+      "get": {
+        "operationId": "get_episode_continuity_api_continuity_episodes__episode_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "title": "Episode Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Episode Continuity Api Continuity Episodes  Episode Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Episode Continuity",
+        "tags": [
+          "continuity"
+        ]
+      }
+    },
+    "/api/continuity/episodes/{episode_id}/proposal/generate": {
+      "post": {
+        "operationId": "generate_proposal_api_continuity_episodes__episode_id__proposal_generate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "title": "Episode Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Generate Proposal Api Continuity Episodes  Episode Id  Proposal Generate Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generate Proposal",
+        "tags": [
+          "continuity"
+        ]
+      }
+    },
+    "/api/continuity/episodes/{episode_id}/proposal/manual": {
+      "post": {
+        "operationId": "propose_manual_api_continuity_episodes__episode_id__proposal_manual_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "title": "Episode Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualDeltaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Propose Manual Api Continuity Episodes  Episode Id  Proposal Manual Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Propose Manual",
+        "tags": [
+          "continuity"
+        ]
+      }
+    },
+    "/api/continuity/episodes/{episode_id}/proposals/{proposal_id}/approve": {
+      "post": {
+        "operationId": "approve_proposal_api_continuity_episodes__episode_id__proposals__proposal_id__approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "title": "Episode Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "proposal_id",
+            "required": true,
+            "schema": {
+              "title": "Proposal Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveDeltaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Approve Proposal Api Continuity Episodes  Episode Id  Proposals  Proposal Id  Approve Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Approve Proposal",
+        "tags": [
+          "continuity"
+        ]
+      }
+    },
+    "/api/continuity/episodes/{episode_id}/proposals/{proposal_id}/refuse": {
+      "post": {
+        "operationId": "refuse_proposal_api_continuity_episodes__episode_id__proposals__proposal_id__refuse_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "title": "Episode Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "proposal_id",
+            "required": true,
+            "schema": {
+              "title": "Proposal Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefuseDeltaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Refuse Proposal Api Continuity Episodes  Episode Id  Proposals  Proposal Id  Refuse Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refuse Proposal",
+        "tags": [
+          "continuity"
+        ]
+      }
+    },
+    "/api/continuity/impact": {
+      "get": {
+        "operationId": "get_impact_api_continuity_impact_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "title": "Episode Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Impact Api Continuity Impact Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Impact",
+        "tags": [
+          "continuity"
+        ]
+      }
+    },
+    "/api/continuity/impact/reorder": {
+      "post": {
+        "operationId": "preview_reorder_api_continuity_impact_reorder_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderImpactRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Preview Reorder Api Continuity Impact Reorder Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Reorder",
+        "tags": [
+          "continuity"
+        ]
       }
     },
     "/api/demo": {

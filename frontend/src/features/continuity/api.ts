@@ -70,6 +70,10 @@ function proposal(value: unknown): EpisodeStateDeltaProposal | null {
     source_fingerprint: text(source.source_fingerprint), current_source_fingerprint: text(source.current_source_fingerprint ?? source.source_fingerprint),
     stale: source.stale === true, status: ["approved", "refused"].includes(status) ? status as "approved" | "refused" : "proposed",
     changes: deltaChanges(source),
+    findings: array(source.findings).map((value) => {
+      const finding = record(value);
+      return { code: text(finding.code), severity: severity(finding.severity), message: text(finding.message), cause_ids: array(finding.cause_ids).map((item) => text(item)).filter(Boolean) };
+    }),
     provenance: { task_id: text(provenance.task_id, "continuity_delta"), task_version: text(provenance.task_version, "unknown"), model: text(provenance.model, "manual"), source_fingerprint: text(provenance.source_fingerprint ?? source.source_fingerprint) },
   };
 }

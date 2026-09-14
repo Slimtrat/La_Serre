@@ -7,7 +7,7 @@ import pytest
 from fastapi import FastAPI
 
 from apps.api.continuity_routes import create_continuity_router
-from engine.narrative.episode_models import NarrativeProvenance
+from engine.narrative.episode_models import EpisodeStatus, NarrativeProvenance
 from engine.narrative.season_plan import SeasonPlanLifecycle, SeasonPlanRegistry
 from engine.narrative.series_state import (
     DeltaEvidence,
@@ -48,6 +48,8 @@ def _app(tmp_path: Path, *, generator=None) -> tuple[FastAPI, SeasonPlanRegistry
             expected_revision=plan.revision,
         )
         plan = plan_store.materialize(item.id, catalog, expected_revision=plan.revision)
+        episode = catalog.get(plan.active_items[-1].episode_id or "")
+        catalog.save(episode.model_copy(update={"status": EpisodeStatus.APPROVED}))
     app = FastAPI()
     state_store = SeriesStateRegistry(tmp_path)
     app.include_router(
@@ -79,6 +81,28 @@ def _delta() -> dict[str, object]:
             )
         ],
     ).model_dump(mode="json")
+
+
+@pytest.mark.asyncio
+async def test_delta_proposal_requires_an_explicitly_approved_episode(
+    tmp_path: Path,
+) -> None:
+    app, _plan = _app(tmp_path)
+    catalog = EpisodeCatalog(tmp_path)
+    episode = catalog.get("S01E001")
+    catalog.save(episode.model_copy(update={"status": EpisodeStatus.REVIEW}))
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.post(
+            "/api/continuity/episodes/S01E001/proposal/manual",
+            json={"expected_revision": 0, "delta": _delta()},
+        )
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "episode_not_approved"
+    assert SeriesStateRegistry(tmp_path).load().proposals == []
 
 
 @pytest.mark.asyncio
@@ -144,6 +168,18 @@ async def test_manual_proposal_refusal_and_approval_are_separate_and_revisioned(
         assert next_after["input_state"]["entries"][0]["value"] == (
             "Belladone connaît le secret d’Aconit."
         )
+        repeated_reveal = await client.post(
+            "/api/continuity/episodes/S01E002/proposal/manual",
+            json={
+                "expected_revision": approved.json()["revision"],
+                "delta": _delta(),
+            },
+        )
+        assert repeated_reveal.status_code == 200
+        finding = repeated_reveal.json()["proposal"]["findings"][0]
+        assert finding["code"] == "secret_already_revealed"
+        assert finding["severity"] == "warning"
+        assert finding["cause_ids"]
 
 
 @pytest.mark.asyncio

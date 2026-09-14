@@ -4,10 +4,11 @@ from collections.abc import Awaitable, Callable, Mapping
 from datetime import UTC, datetime
 from typing import Any
 
+import httpx
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 
-from engine.narrative.episode_models import Episode
+from engine.narrative.episode_models import Episode, EpisodeStatus
 from engine.narrative.season_plan import SeasonPlan, SeasonPlanRegistry
 from engine.narrative.series_state import (
     ContinuityComposition,
@@ -119,6 +120,7 @@ def create_continuity_router(
     @router.post("/episodes/{episode_id}/proposal/manual")
     def propose_manual(episode_id: str, payload: ManualDeltaRequest) -> dict[str, object]:
         episode, _plan, entry = context(episode_id)
+        _require_approved_episode(episode)
         # source_payload carries UI notes/evidence only.  The canonical source hash must
         # remain identical to the one recomputed by snapshot() and approve().
         _ = payload.source_payload
@@ -133,6 +135,11 @@ def create_continuity_router(
             )
         except SeriesStateRevisionConflictError as exc:
             raise _revision_conflict(exc) from exc
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail={"code": "continuity_delta_invalid", "message": str(exc)},
+            ) from exc
         return snapshot(episode_id)
 
     @router.post("/episodes/{episode_id}/proposal/generate")
@@ -143,6 +150,7 @@ def create_continuity_router(
                 detail={"code": "continuity_delta_generator_unavailable"},
             )
         episode, _plan, entry = context(episode_id)
+        _require_approved_episode(episode)
         registry = registry_provider()
         document = registry.load()
         try:
@@ -167,6 +175,23 @@ def create_continuity_router(
             )
         except SeriesStateRevisionConflictError as exc:
             raise _revision_conflict(exc) from exc
+        except HTTPException:
+            raise
+        except httpx.RequestError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail={"code": "ollama_unavailable"},
+            ) from exc
+        except httpx.HTTPStatusError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail={"code": "continuity_delta_generation_failed"},
+            ) from exc
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail={"code": "continuity_delta_invalid", "message": str(exc)},
+            ) from exc
         return snapshot(episode_id)
 
     @router.post("/episodes/{episode_id}/proposals/{proposal_id}/approve")
@@ -313,6 +338,7 @@ def _proposal_payload(
         "stale": proposal.is_stale(current_fingerprint),
         "status": proposal.status.value,
         "changes": _delta_changes(proposal, input_state),
+        "findings": _continuity_findings(proposal, input_state),
         "provenance": {
             "task_id": provenance.task_id or "continuity_delta",
             "task_version": str(provenance.task_version or 1),
@@ -321,6 +347,30 @@ def _proposal_payload(
         },
         "refusal_reason": proposal.refusal_reason,
     }
+
+
+def _continuity_findings(
+    proposal: EpisodeDeltaProposal,
+    input_state: SeriesState,
+) -> list[dict[str, object]]:
+    return [
+        {
+            "code": "secret_already_revealed",
+            "severity": "warning",
+            "message": (
+                f"Le secret {mutation.key} est déjà révélé dans l'état d'entrée ; "
+                "il ne peut plus être traité comme inconnu."
+            ),
+            "cause_ids": [
+                cause.delta_id
+                for cause in input_state.causes
+                if cause.category == "secret" and cause.key == mutation.key
+            ],
+            "evidence_ids": mutation.evidence_ids,
+        }
+        for mutation in proposal.delta.secrets_revealed
+        if mutation.key in input_state.revealed_secrets
+    ]
 
 
 def _state_entries(state: SeriesState) -> list[dict[str, object]]:
@@ -577,6 +627,17 @@ def _revision_conflict(exc: SeriesStateRevisionConflictError) -> HTTPException:
             "current_revision": exc.current,
         },
     )
+
+
+def _require_approved_episode(episode: Episode) -> None:
+    if episode.status is not EpisodeStatus.APPROVED:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "episode_not_approved",
+                "episode_id": episode.id,
+            },
+        )
 
 
 def _stale_conflict(expected: str, current: str) -> HTTPException:

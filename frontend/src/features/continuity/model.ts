@@ -43,12 +43,20 @@ export interface EpisodeStateDeltaProposal {
   readonly stale: boolean;
   readonly status: "proposed" | "approved" | "refused";
   readonly changes: readonly EpisodeDeltaChange[];
+  readonly findings?: readonly ContinuityFinding[];
   readonly provenance: {
     readonly task_id: string;
     readonly task_version: string;
     readonly model: string;
     readonly source_fingerprint: string;
   };
+}
+
+export interface ContinuityFinding {
+  readonly code: string;
+  readonly severity: ContinuitySeverity;
+  readonly message: string;
+  readonly cause_ids: readonly string[];
 }
 
 export interface ContinuityImpactItem {
