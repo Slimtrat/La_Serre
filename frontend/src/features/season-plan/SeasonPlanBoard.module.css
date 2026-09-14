@@ -23,4 +23,19 @@
 .actions { justify-content: flex-end; }
 .error { align-items: center; background: color-mix(in srgb, #b64646 20%, transparent); border: 1px solid #b64646; border-radius: .5rem; display: flex; gap: .75rem; justify-content: space-between; padding: .75rem; }
 .live { clip: rect(0 0 0 0); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; white-space: nowrap; width: 1px; }
+.proposal { background: color-mix(in srgb, var(--color-surface-raised, #171b22) 88%, #68b99b); border: 1px solid var(--color-border, #596273); border-radius: .75rem; display: grid; gap: 1rem; padding: 1rem; }
+.proposalHeader, .proposalMeta, .proposalActions, .generate { align-items: end; display: flex; flex-wrap: wrap; gap: .75rem; justify-content: space-between; }
+.proposalHeader h2, .proposalHeader p { margin: .2rem 0 0; }
+.generate label { display: grid; gap: .25rem; }
+.generate input { background: var(--color-surface-raised, #171b22); border: 1px solid var(--color-border, #596273); border-radius: .4rem; color: inherit; font: inherit; max-width: 6rem; padding: .55rem; }
+.proposalMeta { align-items: center; justify-content: flex-start; }
+.proposalEmpty { border: 1px dashed var(--color-border, #596273); border-radius: .5rem; margin: 0; padding: 1rem; }
+.stale { background: color-mix(in srgb, var(--ui-color-stale, #c39bd3) 18%, transparent); border: 1px solid var(--ui-color-stale, #c39bd3); border-radius: .5rem; padding: .75rem; }
+.issues { margin: 0; }
+.proposalList { display: grid; gap: .75rem; list-style: none; margin: 0; padding: 0; }
+.proposalCard { display: grid; gap: .75rem; }
+.diff { background: color-mix(in srgb, #6daee8 12%, transparent); border-left: 3px solid #6daee8; display: grid; gap: .25rem; margin: 0; padding: .5rem .75rem; }
+.diff span { overflow-wrap: anywhere; }
+.diff ins { color: #8bd8bd; text-decoration: none; }
+.proposalActions { justify-content: flex-end; }
 @media (max-width: 720px) { .header { align-items: stretch; flex-direction: column; } .headerActions { justify-content: space-between; } .actions { justify-content: stretch; } .actions > button { flex: 1 1 auto; } }

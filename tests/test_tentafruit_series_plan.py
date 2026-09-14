@@ -161,12 +161,20 @@ def test_proposal_registry_preserves_provenance_manual_edits_and_detects_stale(
     assert "budget.episode_count" in created.proposal.provenance.compiled_messages[0].content
 
     edited_items = created.proposal.plan.ordered_items
-    edited_items[0] = edited_items[0].model_copy(update={"title": "Titre humain conservé"})
+    edited_items[0] = edited_items[0].model_copy(
+        update={
+            "title": "Titre humain conservé",
+            "logline": "Une logline réécrite à la main et conservée sans régénération.",
+            "synopsis": "Un synopsis humain remplace explicitement la suggestion du modèle.",
+        }
+    )
     edited = registry.update(edited_items, expected_revision=1)
 
     assert edited.revision == 2
     assert edited.proposal is not None
     assert edited.proposal.plan.items[0].title == "Titre humain conservé"
+    assert edited.proposal.plan.items[0].logline.startswith("Une logline réécrite")
+    assert edited.proposal.plan.items[0].synopsis.startswith("Un synopsis humain")
     assert edited.proposal.provenance == created.proposal.provenance
     assert SeasonPlanProposalRegistry(tmp_path).load() == edited
     assert not edited.is_stale(canonical)

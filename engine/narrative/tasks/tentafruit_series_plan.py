@@ -26,6 +26,8 @@ class TentafruitSeriesPlanItem(StrictWorkflowModel):
     season: int = Field(default=1, ge=1, le=99)
     position: int = Field(ge=1, le=20)
     title: str = Field(min_length=1, max_length=180)
+    logline: str = Field(default="", max_length=1000)
+    synopsis: str = Field(default="", max_length=20_000)
     hook: str = Field(min_length=1, max_length=1000)
     conflict: str = Field(min_length=1, max_length=2000)
     turning_point: str = Field(min_length=1, max_length=2000)
@@ -441,6 +443,11 @@ def build_fake_series_plan(
                 season=season,
                 position=position,
                 title=f"Bascule {position:02d}",
+                logline=f"L'épreuve {position} force la relation à choisir son prochain seuil.",
+                synopsis=(
+                    f"Un obstacle {position} met le pacte à l'épreuve; le choix qui suit "
+                    "transforme concrètement le rapport de force."
+                ),
                 hook=f"Le pacte impose l'épreuve {position} avant quiconque puisse reculer.",
                 conflict=f"Le conflit {position} oppose deux décisions incompatibles.",
                 turning_point=f"Le choix {position} inverse le rapport de force.",

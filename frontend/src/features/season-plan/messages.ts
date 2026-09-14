@@ -18,6 +18,8 @@ const messages = {
     genericError: "L’opération a échoué. Tes données n’ont pas été remplacées.", producedDeleteTitle: "Retirer un épisode produit ?",
     producedDeleteDescription: "L’intention sera retirée du plan, mais l’épisode et ses fichiers seront conservés.",
     confirmRemove: "Retirer en conservant l’épisode", cancel: "Annuler",
+    proposalConflict: "La proposition ou ses sources ont changé. Recharge ou régénère avant de poursuivre.",
+    proposalAccepted: "Proposition validée et appliquée au plan.",
     status: { draft: "Brouillon", validated: "Validé", materialized: "Matérialisé", produced: "Produit", obsolete: "Obsolète" } satisfies Record<SeasonPlanStatus, string>,
   },
   en: {
@@ -31,6 +33,8 @@ const messages = {
     conflict: "The plan changed elsewhere. Reload it before continuing.", genericError: "The operation failed. Your data was not replaced.",
     producedDeleteTitle: "Remove a produced episode?", producedDeleteDescription: "The intention will leave the plan, but the episode and its files will be kept.",
     confirmRemove: "Remove and keep episode", cancel: "Cancel",
+    proposalConflict: "The proposal or its sources changed. Reload or regenerate before continuing.",
+    proposalAccepted: "Proposal validated and applied to the plan.",
     status: { draft: "Draft", validated: "Validated", materialized: "Materialized", produced: "Produced", obsolete: "Obsolete" } satisfies Record<SeasonPlanStatus, string>,
   },
 } as const;
