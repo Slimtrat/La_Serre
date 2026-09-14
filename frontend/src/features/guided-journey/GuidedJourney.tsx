@@ -18,6 +18,7 @@ import {
   type JourneyStageSnapshotId,
 } from "@/generated/openapi";
 import { ErrorState, Progress, Skeleton } from "@shared";
+import { continuityApi, EpisodeConsequencesPanel } from "@features/continuity";
 import { SeasonPlanBoard, seasonPlanApi } from "@features/season-plan";
 
 import { JourneyContext } from "./JourneyContext";
@@ -72,7 +73,8 @@ export function GuidedJourney({ locale, onNavigate, slots }: GuidedJourneyProps)
   const completed = journey.data.stages.filter((stage) => ["approved", "completed"].includes(stage.status)).length;
   const stageSlots = {
     ...slots,
-    season: slots?.season ?? <SeasonPlanBoard api={seasonPlanApi} locale={locale} />,
+    season: slots?.season ?? <SeasonPlanBoard api={seasonPlanApi} locale={locale}
+      renderEpisodeConsequences={(episodeId) => <EpisodeConsequencesPanel api={continuityApi} episodeId={episodeId} locale={locale} />} />,
   };
 
   const propose = async (target: string) => {

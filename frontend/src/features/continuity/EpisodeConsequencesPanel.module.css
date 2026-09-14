@@ -1,0 +1,25 @@
+.root { display: grid; gap: 1rem; padding: 1.25rem; }
+.header { align-items: end; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; }
+.header h2, .header p { margin: .2rem 0 0; }
+.columns { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.columns > section, .impact { border: 1px solid var(--color-border, #596273); border-radius: .65rem; padding: 1rem; }
+.columns h3, .impact h3 { margin-top: 0; }
+.entries, .changes, .impact ol { display: grid; gap: .75rem; list-style: none; margin: 0; padding: 0; }
+.entries > li, .changes > li { border-bottom: 1px solid var(--color-border, #596273); display: grid; gap: .4rem; padding-bottom: .75rem; }
+.changes header, .impact article header, .provenance { align-items: center; display: flex; flex-wrap: wrap; gap: .5rem; }
+.diff { align-items: center; display: grid; gap: .5rem; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+.diff del, .diff ins, .diff em { background: color-mix(in srgb, #596273 22%, transparent); border-radius: .3rem; overflow-wrap: anywhere; padding: .5rem; }
+.diff ins { color: #8bd8bd; text-decoration: none; }
+.evidence summary { cursor: pointer; font-weight: 650; }
+.evidence ul { display: grid; gap: .35rem; margin: .5rem 0 0; padding-left: 1.25rem; }
+.evidence li { display: grid; }
+.provenance { margin-bottom: .75rem; }
+.decisions { border-top: 1px solid var(--color-border, #596273); display: grid; gap: .75rem; margin-top: 1rem; padding-top: 1rem; }
+.decisions label { display: grid; gap: .3rem; }
+.decisions textarea { background: var(--color-surface-raised, #171b22); border: 1px solid var(--color-border, #596273); border-radius: .4rem; color: inherit; font: inherit; min-height: 4rem; padding: .65rem; }
+.decisions > div { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; }
+.stale, .notice { border-radius: .5rem; margin: 0; padding: .75rem; }
+.stale { background: color-mix(in srgb, var(--ui-color-stale, #c39bd3) 18%, transparent); border: 1px solid var(--ui-color-stale, #c39bd3); }
+.notice { background: color-mix(in srgb, #68b99b 16%, transparent); border: 1px solid #68b99b; }
+.impact article { display: grid; gap: .5rem; }
+@media (max-width: 800px) { .columns { grid-template-columns: 1fr; } .diff { grid-template-columns: 1fr; } .diff > span { transform: rotate(90deg); } }

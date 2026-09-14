@@ -17,6 +17,7 @@ from apps.api.casting_generator import ComfyCastingGenerator
 from apps.api.casting_routes import create_casting_router
 from apps.api.coherence_routes import create_coherence_router
 from apps.api.context_graph import create_context_graph_router
+from apps.api.continuity_routes import create_continuity_router
 from apps.api.demo_routes import create_demo_router
 from apps.api.editorial_routes import create_editorial_router
 from apps.api.episode_job_manager import EpisodeJobManager
@@ -65,7 +66,20 @@ from engine.generation.comfy.client import ComfyClient
 from engine.generation.comfy.errors import WorkflowConfigurationError
 from engine.generation.comfy.model_installer import ModelInstaller
 from engine.generation.comfy.workflow_factory import WorkflowFactory
+from engine.narrative.episode_models import Episode
+from engine.narrative.ollama import OllamaClient
 from engine.narrative.season_plan import SeasonPlanRegistry
+from engine.narrative.series_state import (
+    DeltaProvenance,
+    EpisodeStateDelta,
+    SeriesState,
+    SeriesStateRegistry,
+)
+from engine.narrative.tasks.continuity_delta import (
+    CONTINUITY_DELTA_TASK,
+    build_continuity_delta_context,
+)
+from engine.narrative.tasks.provider import OllamaTaskProvider
 from engine.world.bible import BibleRegistry
 from engine.world.catalog import EpisodeCatalog
 
@@ -127,6 +141,45 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def notifications() -> StudioNotificationLog:
         return StudioNotificationLog(current_settings().output_dir)
 
+    async def continuity_delta_generator(
+        episode: Episode,
+        entry_state: SeriesState,
+    ) -> tuple[EpisodeStateDelta, DeltaProvenance]:
+        settings = current_settings()
+        bible = BibleRegistry(settings.private_content_dir).load()
+        compiled = CONTINUITY_DELTA_TASK.compile(
+            build_continuity_delta_context(entry_state, episode, bible)
+        )
+        async with OllamaClient(str(settings.ollama_url)) as client:
+            models = await client.list_models()
+            names = [
+                item.name
+                for item in models
+                if not any(
+                    marker in item.name.casefold() for marker in ("coder", "embedding", "embed")
+                )
+            ]
+            selected = settings.ollama_model if settings.ollama_model in names else None
+            selected = selected or (names[0] if names else None)
+            if selected is None:
+                raise HTTPException(
+                    status_code=422,
+                    detail="Installe ou sélectionne un modèle narratif Ollama",
+                )
+            execution = await OllamaTaskProvider(client).execute(
+                compiled,
+                model=selected,
+                contract=EpisodeStateDelta,
+            )
+        return execution.result, DeltaProvenance(
+            mode="ai",
+            provider="ollama",
+            model=execution.model,
+            task_id=execution.task_id,
+            task_version=execution.task_version,
+            input_fingerprint=execution.input_fingerprint,
+        )
+
     app = FastAPI(title="La Serre", version=__version__)
     manager = JobManager(current_settings, assets)
     episode_manager = EpisodeJobManager(current_settings)
@@ -148,6 +201,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         create_episode_router(catalog, lambda: current_settings().output_dir, current_settings)
     )
     app.include_router(create_context_graph_router(catalog, lambda: current_settings().output_dir))
+    app.include_router(
+        create_continuity_router(
+            lambda: SeriesStateRegistry(current_settings().private_content_dir),
+            lambda: SeasonPlanRegistry(current_settings().private_content_dir),
+            catalog,
+            continuity_delta_generator,
+        )
+    )
     app.include_router(create_coherence_router(current_settings, catalog))
     app.include_router(create_narrative_router(current_settings, assets, catalog))
     app.include_router(create_guided_router(current_settings))
@@ -347,11 +408,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         listing = service_supervisor_listing()
         raw_services = listing.get("services")
         runtime_services = raw_services if isinstance(raw_services, list) else []
-        known = {
-            str(item.get("name"))
-            for item in runtime_services
-            if isinstance(item, dict)
-        }
+        known = {str(item.get("name")) for item in runtime_services if isinstance(item, dict)}
         if service_name not in known:
             raise HTTPException(status_code=404, detail="Runtime local introuvable")
         try:

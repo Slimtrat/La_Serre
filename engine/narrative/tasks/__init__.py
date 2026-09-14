@@ -1,4 +1,9 @@
 from engine.narrative.tasks.catalog import DEFAULT_TASK_REGISTRY, NarrativeTaskId
+from engine.narrative.tasks.continuity_delta import (
+    CONTINUITY_DELTA_TASK,
+    build_continuity_delta_context,
+    build_fake_continuity_delta,
+)
 from engine.narrative.tasks.models import (
     CompiledTask,
     TaskContext,
@@ -25,6 +30,7 @@ from engine.narrative.tasks.tentafruit_series_plan import (
 
 __all__ = [
     "CompiledTask",
+    "CONTINUITY_DELTA_TASK",
     "DEFAULT_TASK_REGISTRY",
     "NarrativeTaskId",
     "TaskContext",
@@ -32,6 +38,8 @@ __all__ = [
     "TaskKind",
     "TaskRegistry",
     "TaskSpec",
+    "build_continuity_delta_context",
+    "build_fake_continuity_delta",
     "TENTAFRUIT_SERIES_PLAN_TASK",
     "SeasonPlanProposal",
     "SeasonPlanProposalDocument",
