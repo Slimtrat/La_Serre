@@ -27,6 +27,7 @@ from engine.runtime.installers import (
     SafeProcessRunner,
 )
 from engine.runtime.installers.comfy import UV_WINDOWS_X64
+from engine.runtime.installers.ollama import OLLAMA_WINDOWS_X64
 from engine.runtime.managed_tools import ManagedZipTool
 from engine.runtime.pack_job import PackPreparationManager
 
@@ -75,6 +76,8 @@ def create_runtime_pack_router(
                     "UV_TOOL_DIR": str(tool_root / "uv-tools"),
                     "UV_PYTHON_INSTALL_DIR": str(tool_root / "uv-python"),
                     "UV_PYTHON_PREFERENCE": "only-managed",
+                    "OLLAMA_HOST": str(settings.ollama_url),
+                    "OLLAMA_MODELS": str(managed_root / "ollama" / "models"),
                 }
             )
             downloader = HttpxDownloader()
@@ -89,7 +92,10 @@ def create_runtime_pack_router(
                     workflow_root=_workflow_root(settings),
                 ),
                 adapters=(
-                    OllamaInstallerAdapter(runner),
+                    OllamaInstallerAdapter(
+                        runner,
+                        managed_cli=ManagedZipTool(OLLAMA_WINDOWS_X64, downloader),
+                    ),
                     ComfyCliAdapter(
                         runner,
                         managed_cli=ManagedZipTool(UV_WINDOWS_X64, downloader),
@@ -199,32 +205,36 @@ def create_runtime_pack_router(
         )
         payload = diagnosis.model_dump(mode="json")
         managed_root = (settings.output_dir.resolve().parent / ".la-serre-runtime").resolve()
-        managed_tool = ManagedZipTool(UV_WINDOWS_X64, HttpxDownloader())
         tool_context = InstallContext(
             managed_root=managed_root,
             comfy_workspace=managed_root / "comfyui",
             models_root=managed_root / "comfyui" / "ComfyUI" / "models",
             workflow_root=_workflow_root(settings),
         )
-        tool_installed = managed_tool.resolve(tool_context) is not None
-        if not tool_installed:
-            payload["required_download_bytes"] += UV_WINDOWS_X64.size_bytes
-        payload["managed_prerequisites"] = [
-            {
-                "id": UV_WINDOWS_X64.name,
-                "version": UV_WINDOWS_X64.version,
-                "source": UV_WINDOWS_X64.source,
-                "archive_sha256": UV_WINDOWS_X64.archive_sha256,
-                "destination": (
-                    f".la-serre-runtime/tools/{UV_WINDOWS_X64.name}/"
-                    f"{UV_WINDOWS_X64.version}"
-                ),
-                "license_name": UV_WINDOWS_X64.license_name,
-                "license_url": UV_WINDOWS_X64.license_url,
-                "size_bytes": UV_WINDOWS_X64.size_bytes,
-                "state": "installed" if tool_installed else "missing",
-            }
-        ]
+        payload["managed_prerequisites"] = []
+        for specification in (UV_WINDOWS_X64, OLLAMA_WINDOWS_X64):
+            installed = (
+                ManagedZipTool(specification, HttpxDownloader()).resolve(tool_context)
+                is not None
+            )
+            if not installed:
+                payload["required_download_bytes"] += specification.size_bytes
+            payload["managed_prerequisites"].append(
+                {
+                    "id": specification.name,
+                    "version": specification.version,
+                    "source": specification.source,
+                    "archive_sha256": specification.archive_sha256,
+                    "destination": (
+                        f".la-serre-runtime/tools/{specification.name}/"
+                        f"{specification.version}"
+                    ),
+                    "license_name": specification.license_name,
+                    "license_url": specification.license_url,
+                    "size_bytes": specification.size_bytes,
+                    "state": "installed" if installed else "missing",
+                }
+            )
         return payload
 
     return router

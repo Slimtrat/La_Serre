@@ -172,12 +172,15 @@ async def test_read_only_api_returns_diagnostic_when_comfyui_is_offline(
     payload = response.json()
     assert payload["pack_id"] == "tentafruit-local-12gb-v1"
     assert payload["status"] == "incomplete"
-    prerequisite = payload["managed_prerequisites"][0]
-    assert prerequisite["id"] == "uv"
+    prerequisites = {item["id"]: item for item in payload["managed_prerequisites"]}
+    prerequisite = prerequisites["uv"]
     assert prerequisite["version"] == "0.12.13"
     assert prerequisite["state"] == "missing"
     assert len(prerequisite["archive_sha256"]) == 64
     assert prerequisite["destination"].startswith(".la-serre-runtime/tools/")
+    assert prerequisites["ollama"]["version"] == "0.34.0"
+    assert prerequisites["ollama"]["state"] == "missing"
+    assert prerequisites["ollama"]["size_bytes"] == 1_469_375_054
     comfy = next(item for item in payload["components"] if item["id"] == "comfyui-engine")
     assert comfy["state"] == "unavailable"
     assert "diagnostic reste disponible" in comfy["reason"]
