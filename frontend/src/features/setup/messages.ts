@@ -64,6 +64,7 @@ const messages = {
     readyIntro: "Les vérifications locales sont réussies. Vous pouvez démarrer votre première création.",
     smokeTitle: "Essai final",
     preview: "Aperçu de validation généré localement",
+    downloadReport: "Télécharger le rapport de validation",
     continue: "Commencer à créer",
   },
   en: {
@@ -129,6 +130,7 @@ const messages = {
     readyIntro: "Local checks passed. You can start your first creation.",
     smokeTitle: "Final test",
     preview: "Validation preview generated locally",
+    downloadReport: "Download validation report",
     continue: "Start creating",
   },
 } as const;

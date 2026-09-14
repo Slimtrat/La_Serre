@@ -12629,6 +12629,7 @@ var $r = {
 		readyIntro: "Les vérifications locales sont réussies. Vous pouvez démarrer votre première création.",
 		smokeTitle: "Essai final",
 		preview: "Aperçu de validation généré localement",
+		downloadReport: "Télécharger le rapport de validation",
 		continue: "Commencer à créer"
 	},
 	en: {
@@ -12720,6 +12721,7 @@ var $r = {
 		readyIntro: "Local checks passed. You can start your first creation.",
 		smokeTitle: "Final test",
 		preview: "Validation preview generated locally",
+		downloadReport: "Download validation report",
 		continue: "Start creating"
 	}
 };
@@ -12727,22 +12729,24 @@ function ti(e) {
 	return ei[e];
 }
 var F = {
-	root: "_root_k7f7p_1",
-	stepper: "_stepper_k7f7p_4",
-	hero: "_hero_k7f7p_11",
-	machine: "_machine_k7f7p_12",
-	capabilities: "_capabilities_k7f7p_16",
-	primaryAction: "_primaryAction_k7f7p_19",
-	fieldset: "_fieldset_k7f7p_20",
-	consent: "_consent_k7f7p_22",
-	actions: "_actions_k7f7p_25",
-	notice: "_notice_k7f7p_26",
-	jobSteps: "_jobSteps_k7f7p_27",
-	technical: "_technical_k7f7p_30",
-	ready: "_ready_k7f7p_33",
-	readyGrid: "_readyGrid_k7f7p_34",
-	preview: "_preview_k7f7p_36",
-	previewLabel: "_previewLabel_k7f7p_37"
+	root: "_root_1l1kt_1",
+	stepper: "_stepper_1l1kt_4",
+	hero: "_hero_1l1kt_11",
+	machine: "_machine_1l1kt_12",
+	capabilities: "_capabilities_1l1kt_16",
+	primaryAction: "_primaryAction_1l1kt_19",
+	fieldset: "_fieldset_1l1kt_20",
+	consent: "_consent_1l1kt_22",
+	actions: "_actions_1l1kt_25",
+	notice: "_notice_1l1kt_26",
+	jobSteps: "_jobSteps_1l1kt_27",
+	technical: "_technical_1l1kt_30",
+	ready: "_ready_1l1kt_33",
+	readyGrid: "_readyGrid_1l1kt_34",
+	readyActions: "_readyActions_1l1kt_36",
+	reportLink: "_reportLink_1l1kt_37",
+	preview: "_preview_1l1kt_39",
+	previewLabel: "_previewLabel_1l1kt_40"
 };
 //#endregion
 //#region src/features/setup/SetupStepper.tsx
@@ -12899,10 +12903,18 @@ function oi({ locale: e, api: t = $r, readyContent: n, onReady: r }) {
 							})
 						})]
 					}),
-					/* @__PURE__ */ (0, b.jsx)(T, {
-						size: "large",
-						onClick: () => se(),
-						children: i.continue
+					/* @__PURE__ */ (0, b.jsxs)("div", {
+						className: F.readyActions,
+						children: [E ? /* @__PURE__ */ (0, b.jsx)("a", {
+							className: F.reportLink,
+							download: !0,
+							href: `/api/runtime-packs/jobs/${E.id}/report`,
+							children: i.downloadReport
+						}) : null, /* @__PURE__ */ (0, b.jsx)(T, {
+							size: "large",
+							onClick: () => se(),
+							children: i.continue
+						})]
 					})
 				]
 			})]

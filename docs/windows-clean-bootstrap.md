@@ -23,3 +23,9 @@ Après la première installation d’Ollama, le wizard demande de fermer puis ro
 Les tests CI utilisent des archives et processus factices : aucun outil, modèle ou poids réel n’y est téléchargé.
 
 Dans le binaire, l’essai final réinspecte les composants requis avec les adaptateurs embarqués. Il n’appelle jamais les commandes de développement `python`, `pytest` ou `node`. Hors binaire, ces contrôles de développement restent exécutés en complément.
+
+## Rapport d’essai Windows propre
+
+À la fin de la préparation, **Télécharger le rapport de validation** produit un JSON autonome et expurgé. Il contient la version de La Serre et du pack, Windows et l’architecture détectés, le GPU, la VRAM et l’espace disque, l’état initial de chaque prérequis, les tentatives et versions réellement installées, les reprises ou interventions, puis le résultat des contrôles embarqués. Les chemins absolus locaux ne sont pas exportés.
+
+Pour valider un essai réel, partir du ZIP portable sur une session Windows compatible qui ne possède ni Python, Git, Node.js ni `comfy-cli`, conserver le dossier géré proposé, terminer le wizard puis joindre ce rapport à l’issue de validation. Le rapport `passed` prouve les contrôles techniques de cette exécution ; la machine propre et le matériel utilisé restent des conditions explicites du protocole, pas une affirmation déduite par le logiciel.

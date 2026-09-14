@@ -1341,6 +1341,23 @@ export interface HTTPValidationError {
   detail?: ValidationError[];
 }
 
+export type InitialComponentSnapshotState = typeof InitialComponentSnapshotState[keyof typeof InitialComponentSnapshotState];
+
+
+export const InitialComponentSnapshotState = {
+  installed: 'installed',
+  missing: 'missing',
+  invalid: 'invalid',
+} as const;
+
+export interface InitialComponentSnapshot {
+  checksum?: string | null;
+  component_id: string;
+  message: string;
+  state: InitialComponentSnapshotState;
+  version?: string | null;
+}
+
 export interface JourneyCounts {
   active_jobs?: number;
   approved_media?: number;
@@ -1484,6 +1501,85 @@ export interface PackStartRequest {
   accepted_license_ids?: string[];
   mode?: PackStartRequestMode;
   use_personal_comfy_models?: boolean;
+}
+
+export type PackValidationReportResult = typeof PackValidationReportResult[keyof typeof PackValidationReportResult];
+
+
+export const PackValidationReportResult = {
+  passed: 'passed',
+  failed: 'failed',
+  incomplete: 'incomplete',
+} as const;
+
+export interface ValidationHardware {
+  disk_free_bytes: number;
+  gpu_name?: string | null;
+  source: string;
+  system_ram_gb?: number | null;
+  vram_gb?: number | null;
+}
+
+export type SmokeResultStatus = typeof SmokeResultStatus[keyof typeof SmokeResultStatus];
+
+
+export const SmokeResultStatus = {
+  passed: 'passed',
+  failed: 'failed',
+} as const;
+
+export interface SmokeResult {
+  check_id: string;
+  message: string;
+  required_components: string[];
+  status: SmokeResultStatus;
+}
+
+export type ValidationStepStatus = typeof ValidationStepStatus[keyof typeof ValidationStepStatus];
+
+
+export const ValidationStepStatus = {
+  pending: 'pending',
+  running: 'running',
+  installed: 'installed',
+  skipped: 'skipped',
+  awaiting_license: 'awaiting_license',
+  awaiting_manual: 'awaiting_manual',
+  failed: 'failed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface ValidationStep {
+  attempts: number;
+  checksum?: string | null;
+  component_id: string;
+  destination: string;
+  message: string;
+  status: ValidationStepStatus;
+  updated_at: string;
+  version?: string | null;
+}
+
+export interface PackValidationReport {
+  application_version: string;
+  architecture: string;
+  completed_at: string | null;
+  generated_at?: string;
+  hardware: ValidationHardware;
+  initial_prerequisites: InitialComponentSnapshot[];
+  interventions: string[];
+  job_id: string;
+  operating_system: string;
+  operating_system_release: string;
+  pack_id: string;
+  pack_version: number;
+  packaged_application: boolean;
+  recovered_after_restart: boolean;
+  result: PackValidationReportResult;
+  schema_version?: number;
+  smoke_checks: SmokeResult[];
+  started_at: string;
+  steps: ValidationStep[];
 }
 
 export interface PriorityRequest {
@@ -6964,6 +7060,30 @@ return orvalFetch<RepairJobApiRuntimePacksJobsJobIdRepairPost202>(getRepairJobAp
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(packRepairRequest)
+  }
+);}
+
+
+
+export const getGetValidationReportApiRuntimePacksJobsJobIdReportGetUrl = (jobId: string,) => {
+
+
+
+
+  return `/api/runtime-packs/jobs/${jobId}/report`
+}
+
+/**
+ * @summary Get Validation Report
+ */
+export const getValidationReportApiRuntimePacksJobsJobIdReportGet = async (jobId: string, options?: Parameters<typeof orvalFetch>[1]): Promise<PackValidationReport> => {
+
+  return orvalFetch<PackValidationReport>(getGetValidationReportApiRuntimePacksJobsJobIdReportGetUrl(jobId),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 
