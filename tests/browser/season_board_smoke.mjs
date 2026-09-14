@@ -79,9 +79,9 @@ async function createItem(title) {
   );
   expect(item, `Le nouvel item ${title} est introuvable`);
 
-  const titleField = board.getByRole("textbox", { name: "Titre" }).last();
-  await titleField.waitFor();
-  const card = titleField.locator("xpath=ancestor::li");
+  const card = board.locator(`[data-season-item-id="${item.id}"]`);
+  await card.waitFor();
+  const titleField = card.getByRole("textbox", { name: "Titre" });
   await titleField.fill(title);
   const saveResponse = page.waitForResponse((response) =>
     response.request().method() === "PUT"
@@ -97,14 +97,12 @@ async function createItem(title) {
 }
 
 async function cardForTitle(title) {
-  const inputs = page.locator("[data-season-plan-board]").getByRole("textbox", {
-    name: "Titre",
-  });
-  for (let index = 0; index < await inputs.count(); index += 1) {
-    const input = inputs.nth(index);
-    if (await input.inputValue() === title) return input.locator("xpath=ancestor::li");
-  }
-  throw new Error(`La carte ${title} est introuvable`);
+  const plan = await readPlan();
+  const item = plan.items.find((candidate) => candidate.title === title);
+  expect(item, `La carte ${title} est introuvable dans le plan`);
+  const card = page.locator(`[data-season-item-id="${item.id}"]`);
+  await card.waitFor();
+  return card;
 }
 
 async function materialize(title, itemId) {

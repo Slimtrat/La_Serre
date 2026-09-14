@@ -11883,6 +11883,7 @@ function Xr({ api: e, locale: t }) {
 				children: g.items.map((t, r) => /* @__PURE__ */ (0, b.jsx)("li", {
 					className: Kr.listItem,
 					"data-deleted": !!t.deleted_at,
+					"data-season-item-id": t.id,
 					onDragOver: (e) => {
 						d && !t.deleted_at && e.preventDefault();
 					},

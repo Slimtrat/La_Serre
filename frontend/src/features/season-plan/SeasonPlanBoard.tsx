@@ -71,7 +71,7 @@ export function SeasonPlanBoard({ api, locale }: SeasonPlanBoardProps) {
     {error ? <div className={styles.error} role="alert"><span>{error}</span><Button onClick={() => planQuery.refetch()} size="small" variant="secondary">{labels.reload}</Button></div> : null}
     {plan.items.length === 0 ? <EmptyState action={<Button onClick={add}>{labels.add}</Button>} description={labels.emptyDescription} title={labels.emptyTitle} /> :
       <ol className={styles.list}>{plan.items.map((item, index) =>
-        <li className={styles.listItem} data-deleted={Boolean(item.deleted_at)} key={item.id}
+        <li className={styles.listItem} data-deleted={Boolean(item.deleted_at)} data-season-item-id={item.id} key={item.id}
           onDragOver={(event) => { if (draggedId && !item.deleted_at) event.preventDefault(); }}
           onDrop={(event) => { event.preventDefault(); if (draggedId) void reorder(draggedId, item.id); setDraggedId(null); }}>
           <SeasonPlanCard busy={busyItem === item.id} index={index} item={item} labels={labels}
