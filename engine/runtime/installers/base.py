@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -68,6 +70,9 @@ class ProcessRunner(Protocol):
 class SafeProcessRunner:
     """Runs an argument vector directly; no shell is ever involved."""
 
+    def __init__(self, *, environment: Mapping[str, str] | None = None) -> None:
+        self.environment = dict(environment or {})
+
     async def run(
         self,
         arguments: list[str],
@@ -81,6 +86,7 @@ class SafeProcessRunner:
         process = await asyncio.create_subprocess_exec(
             *arguments,
             cwd=cwd,
+            env={**os.environ, **self.environment},
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )

@@ -13,8 +13,23 @@ from engine.runtime.installers.base import (
     assert_safe_child,
     successful_process,
 )
+from engine.runtime.managed_tools import ManagedToolSpec, ManagedZipTool
 
 _DEFAULT_NODE_IDS = {"comfyui-required-nodes": "comfyui-ltxvideo"}
+COMFY_CLI_VERSION = "1.20.0"
+UV_WINDOWS_X64 = ManagedToolSpec(
+    name="uv",
+    version="0.12.13",
+    source=(
+        "https://github.com/astral-sh/uv/releases/download/0.12.13/"
+        "uv-x86_64-pc-windows-msvc.zip"
+    ),
+    archive_sha256="a86c9dc7bad9b03f388583b7187c05fe9951c2e0d392217e8fd43d97787f6ec2",
+    executable="uv.exe",
+    license_name="Apache License 2.0 / MIT",
+    license_url="https://github.com/astral-sh/uv/blob/0.12.13/LICENSE-MIT",
+    size_bytes=17_612_025,
+)
 
 
 class ComfyCliAdapter:
@@ -25,9 +40,11 @@ class ComfyCliAdapter:
         runner: ProcessRunner,
         *,
         node_ids: Mapping[str, str] = _DEFAULT_NODE_IDS,
+        managed_cli: ManagedZipTool | None = None,
     ) -> None:
         self.runner = runner
         self.node_ids = dict(node_ids)
+        self.managed_cli = managed_cli
 
     def supports(self, component: PackComponent) -> bool:
         return component.detection.kind in {"comfyui", "nodes"}
@@ -54,7 +71,20 @@ class ComfyCliAdapter:
     ) -> InstallOutcome:
         workspace = assert_safe_child(context.comfy_workspace, context.managed_root)
         workspace.mkdir(parents=True, exist_ok=True)
-        prefix = ["comfy", f"--workspace={workspace}", "--skip-prompt"]
+        if self.managed_cli is None:
+            prefix = ["comfy", f"--workspace={workspace}", "--skip-prompt"]
+        else:
+            uv = await self.managed_cli.ensure(context, cancellation)
+            prefix = [
+                str(uv),
+                "tool",
+                "run",
+                "--from",
+                f"comfy-cli=={COMFY_CLI_VERSION}",
+                "comfy",
+                f"--workspace={workspace}",
+                "--skip-prompt",
+            ]
         if component.detection.kind == "comfyui":
             arguments = [*prefix, "install"]
         else:
@@ -68,7 +98,8 @@ class ComfyCliAdapter:
             completed = await self.runner.run(arguments, cwd=workspace, cancellation=cancellation)
         except (FileNotFoundError, OSError) as exc:
             raise ManualActionRequired(
-                "Installe comfy-cli dans un environnement isolé, puis lance Réparer."
+                "La préparation graphique de comfy-cli a échoué. Vérifie le réseau "
+                "et l’espace disque, puis lance Réparer."
             ) from exc
         result = successful_process(completed, "Installation ComfyUI")
         if component.detection.kind == "nodes":

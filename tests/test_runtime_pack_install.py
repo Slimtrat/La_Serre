@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import io
 import json
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -14,11 +16,13 @@ from engine.runtime.installers import (
     ComfyCliAdapter,
     DirectDownloadAdapter,
     InstallContext,
+    IntegrityError,
     OllamaInstallerAdapter,
     ProcessResult,
     UnsafePathError,
     redact_sensitive,
 )
+from engine.runtime.managed_tools import ManagedToolSpec, ManagedZipTool
 from engine.runtime.pack_job import PackPreparationManager
 
 
@@ -52,6 +56,14 @@ class FakeDownloader:
             cancellation.raise_if_cancelled()
         cancelled.cancel()
         await asyncio.to_thread(destination.write_bytes, self.content)
+
+
+def zip_bytes(entries: dict[str, bytes]) -> bytes:
+    stream = io.BytesIO()
+    with zipfile.ZipFile(stream, "w") as archive:
+        for name, content in entries.items():
+            archive.writestr(name, content)
+    return stream.getvalue()
 
 
 class FakeRunner:
@@ -380,4 +392,112 @@ async def test_adapters_use_argument_lists_and_managed_workspace(tmp_path: Path)
         "comfy",
         f"--workspace={context.comfy_workspace}",
         "--skip-prompt",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_managed_zip_tool_is_verified_atomic_and_idempotent(tmp_path: Path) -> None:
+    content = zip_bytes({"uv.exe": b"trusted executable"})
+    downloader = FakeDownloader(content)
+    spec = ManagedToolSpec(
+        name="uv",
+        version="1.2.3",
+        source="https://downloads.invalid/uv.zip",
+        archive_sha256=hashlib.sha256(content).hexdigest(),
+        executable="uv.exe",
+        license_name="MIT",
+        license_url="https://licenses.invalid/mit",
+        size_bytes=len(content),
+    )
+    managed = tmp_path / "managed"
+    managed.mkdir()
+    context = InstallContext(managed, managed / "comfy", managed / "models", tmp_path)
+    tool = ManagedZipTool(spec, downloader)
+
+    first = await tool.ensure(context, CancellationToken())
+    second = await tool.ensure(context, CancellationToken())
+
+    assert first == second == managed / "tools" / "uv" / "1.2.3" / "uv.exe"
+    assert first.read_bytes() == b"trusted executable"
+    assert len(downloader.calls) == 1
+    receipt = json.loads(first.with_name(".la-serre-tool.json").read_text(encoding="utf-8"))
+    assert receipt["archive_sha256"] == spec.archive_sha256
+    assert receipt["license"]["name"] == "MIT"
+
+
+@pytest.mark.asyncio
+async def test_managed_zip_tool_rejects_bad_digest_and_unsafe_members(tmp_path: Path) -> None:
+    managed = tmp_path / "managed"
+    managed.mkdir()
+    context = InstallContext(managed, managed / "comfy", managed / "models", tmp_path)
+    bad_digest = zip_bytes({"uv.exe": b"binary"})
+    spec = ManagedToolSpec(
+        "uv",
+        "1",
+        "https://downloads.invalid/uv.zip",
+        "0" * 64,
+        "uv.exe",
+        "MIT",
+        "https://licenses.invalid/mit",
+        len(bad_digest),
+    )
+    with pytest.raises(IntegrityError):
+        await ManagedZipTool(spec, FakeDownloader(bad_digest)).ensure(
+            context, CancellationToken()
+        )
+    assert not (managed / "tools" / "uv").exists()
+
+    unsafe = zip_bytes({"../escape.exe": b"nope", "uv.exe": b"binary"})
+    unsafe_spec = ManagedToolSpec(
+        "uv",
+        "1",
+        "https://downloads.invalid/uv.zip",
+        hashlib.sha256(unsafe).hexdigest(),
+        "uv.exe",
+        "MIT",
+        "https://licenses.invalid/mit",
+        len(unsafe),
+    )
+    with pytest.raises(IntegrityError, match="chemin non sûr"):
+        await ManagedZipTool(unsafe_spec, FakeDownloader(unsafe)).ensure(
+            context, CancellationToken()
+        )
+    assert not (tmp_path / "escape.exe").exists()
+
+
+@pytest.mark.asyncio
+async def test_comfy_uses_pinned_cli_through_managed_uv(tmp_path: Path) -> None:
+    class FakeManagedCli:
+        async def ensure(
+            self, context: InstallContext, cancellation: CancellationToken
+        ) -> Path:
+            cancellation.raise_if_cancelled()
+            return context.managed_root / "tools" / "uv" / "uv.exe"
+
+    runner = FakeRunner()
+    managed = tmp_path / "managed"
+    managed.mkdir()
+    context = InstallContext(managed, managed / "comfy", managed / "models", tmp_path)
+    base = make_pack().components[0].model_dump(mode="json")
+    component = PackComponent.model_validate(
+        {
+            **base,
+            "id": "comfy-engine",
+            "kind": "engine",
+            "destination": "managed",
+            "detection": {"kind": "comfyui", "value": "comfyui"},
+        }
+    )
+
+    await ComfyCliAdapter(runner, managed_cli=FakeManagedCli()).install(
+        component, context, CancellationToken()
+    )
+
+    assert runner.calls[-1][0][:6] == [
+        str(managed / "tools" / "uv" / "uv.exe"),
+        "tool",
+        "run",
+        "--from",
+        "comfy-cli==1.20.0",
+        "comfy",
     ]
