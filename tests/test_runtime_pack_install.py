@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from engine.runtime.capability_packs import CapabilityPack, PackComponent
+from engine.runtime.capability_packs import CapabilityPack, HardwareSnapshot, PackComponent
 from engine.runtime.installers import (
     CancellationToken,
     ComfyCliAdapter,
@@ -209,6 +209,24 @@ async def test_complete_pack_is_idempotent_and_persistent(tmp_path: Path) -> Non
     assert second.steps[0].attempts == 0
     assert (tmp_path / "state" / f"{first.id}.json").is_file()
     assert second.smoke_checks[0].status == "passed"
+    assert first.initial_components[0].state == "missing"
+    assert second.initial_components[0].state == "installed"
+
+    report = manager.validation_report(
+        first.id,
+        application_version="0.2.13",
+        hardware=HardwareSnapshot(
+            gpu_name="Fake NVIDIA 12GB",
+            vram_gb=12,
+            disk_free_bytes=80 * 1024**3,
+            disk_path="C:/private/user/path",
+        ),
+    )
+    assert report.result == "passed"
+    assert report.application_version == "0.2.13"
+    assert report.initial_prerequisites[0].state == "missing"
+    assert report.steps[0].destination == "checkpoints/model.bin"
+    assert "private/user/path" not in report.model_dump_json()
 
     installed = tmp_path / "managed/comfy/ComfyUI/models/checkpoints/model.bin"
     installed.write_bytes(b"corrupt")

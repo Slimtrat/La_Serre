@@ -126,7 +126,10 @@ export function SetupWizard({ locale, api = setupApi, readyContent, onReady }: S
             <Card as="section"><h2>{messages.smokeTitle}</h2><ul>{smokeChecks.map((check) => <li key={check.checkId}><Badge tone={check.status === "passed" ? "success" : "danger"}>{check.status === "passed" ? "✓" : "!"}</Badge> {check.message || check.checkId}</li>)}</ul></Card>
             <MediaFrame caption={messages.preview}><div className={styles.preview} aria-label={messages.preview} role="img"><span className={styles.previewLabel}>LA SERRE</span><strong>Studio local</strong></div></MediaFrame>
           </div>
-          <Button size="large" onClick={() => enterStudio()}>{messages.continue}</Button>
+          <div className={styles.readyActions}>
+            {job ? <a className={styles.reportLink} download href={`/api/runtime-packs/jobs/${job.id}/report`}>{messages.downloadReport}</a> : null}
+            <Button size="large" onClick={() => enterStudio()}>{messages.continue}</Button>
+          </div>
         </section>
       </main>
     );

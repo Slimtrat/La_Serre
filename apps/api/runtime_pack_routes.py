@@ -6,9 +6,10 @@ from pathlib import Path
 from typing import Literal
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Response
 from pydantic import BaseModel, ConfigDict, Field
 
+from apps.version import __version__
 from engine.config import Settings
 from engine.generation.comfy.client import ComfyClient
 from engine.generation.comfy.model_installer import ModelInstaller
@@ -31,7 +32,7 @@ from engine.runtime.installers.comfy import UV_WINDOWS_X64
 from engine.runtime.installers.ffmpeg import FFMPEG_WINDOWS_X64, resolve_managed_ffmpeg
 from engine.runtime.installers.ollama import OLLAMA_WINDOWS_X64
 from engine.runtime.managed_tools import ManagedZipTool
-from engine.runtime.pack_job import PackPreparationManager
+from engine.runtime.pack_job import PackPreparationManager, PackValidationReport
 
 
 class PackStartRequest(BaseModel):
@@ -153,6 +154,21 @@ def create_runtime_pack_router(
     @router.get("/jobs/{job_id}/logs")
     async def get_logs(job_id: str) -> dict[str, object]:
         return {"logs": find_manager(job_id).logs(job_id)}
+
+    @router.get("/jobs/{job_id}/report", response_model=PackValidationReport)
+    async def get_validation_report(job_id: str, response: Response) -> PackValidationReport:
+        selected_manager = find_manager(job_id)
+        hardware = await asyncio.to_thread(
+            inspect_hardware, selected_manager.context.managed_root
+        )
+        response.headers["Content-Disposition"] = (
+            f'attachment; filename="la-serre-bootstrap-{job_id}.json"'
+        )
+        return selected_manager.validation_report(
+            job_id,
+            application_version=__version__,
+            hardware=hardware,
+        )
 
     @router.post("/jobs/{job_id}/pause")
     async def pause_job(job_id: str) -> dict[str, object]:

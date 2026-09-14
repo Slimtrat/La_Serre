@@ -133,6 +133,9 @@ describe("SetupWizard", () => {
     expect(await screen.findByRole("heading", { name: "Your studio is ready" })).toBeTruthy();
     expect(screen.getByText("Narrative engine responded")).toBeTruthy();
     expect(screen.getByLabelText("Validation preview generated locally")).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Download validation report" }).getAttribute("href"),
+    ).toBe("/api/runtime-packs/jobs/job-1/report");
     fireEvent.click(screen.getByRole("button", { name: "Start creating" }));
     expect(screen.getByText("Golden path unlocked")).toBeTruthy();
   });

@@ -2765,6 +2765,57 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "InitialComponentSnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "checksum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum"
+          },
+          "component_id": {
+            "title": "Component Id",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "installed",
+              "missing",
+              "invalid"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "component_id",
+          "state",
+          "message"
+        ],
+        "title": "InitialComponentSnapshot",
+        "type": "object"
+      },
       "JourneyCounts": {
         "additionalProperties": false,
         "properties": {
@@ -3269,6 +3320,132 @@
           }
         },
         "title": "PackStartRequest",
+        "type": "object"
+      },
+      "PackValidationReport": {
+        "additionalProperties": false,
+        "properties": {
+          "application_version": {
+            "title": "Application Version",
+            "type": "string"
+          },
+          "architecture": {
+            "title": "Architecture",
+            "type": "string"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "generated_at": {
+            "title": "Generated At",
+            "type": "string"
+          },
+          "hardware": {
+            "$ref": "#/components/schemas/ValidationHardware"
+          },
+          "initial_prerequisites": {
+            "items": {
+              "$ref": "#/components/schemas/InitialComponentSnapshot"
+            },
+            "title": "Initial Prerequisites",
+            "type": "array"
+          },
+          "interventions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Interventions",
+            "type": "array"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "operating_system": {
+            "title": "Operating System",
+            "type": "string"
+          },
+          "operating_system_release": {
+            "title": "Operating System Release",
+            "type": "string"
+          },
+          "pack_id": {
+            "title": "Pack Id",
+            "type": "string"
+          },
+          "pack_version": {
+            "title": "Pack Version",
+            "type": "integer"
+          },
+          "packaged_application": {
+            "title": "Packaged Application",
+            "type": "boolean"
+          },
+          "recovered_after_restart": {
+            "title": "Recovered After Restart",
+            "type": "boolean"
+          },
+          "result": {
+            "enum": [
+              "passed",
+              "failed",
+              "incomplete"
+            ],
+            "title": "Result",
+            "type": "string"
+          },
+          "schema_version": {
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "smoke_checks": {
+            "items": {
+              "$ref": "#/components/schemas/SmokeResult"
+            },
+            "title": "Smoke Checks",
+            "type": "array"
+          },
+          "started_at": {
+            "title": "Started At",
+            "type": "string"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationStep"
+            },
+            "title": "Steps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "application_version",
+          "packaged_application",
+          "operating_system",
+          "operating_system_release",
+          "architecture",
+          "pack_id",
+          "pack_version",
+          "job_id",
+          "result",
+          "started_at",
+          "completed_at",
+          "recovered_after_restart",
+          "hardware",
+          "initial_prerequisites",
+          "steps",
+          "interventions",
+          "smoke_checks"
+        ],
+        "title": "PackValidationReport",
         "type": "object"
       },
       "PortableProjectBible": {
@@ -4487,6 +4664,42 @@
         "title": "ShotDraftRequest",
         "type": "object"
       },
+      "SmokeResult": {
+        "additionalProperties": false,
+        "properties": {
+          "check_id": {
+            "title": "Check Id",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "required_components": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Required Components",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "passed",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "check_id",
+          "status",
+          "required_components",
+          "message"
+        ],
+        "title": "SmokeResult",
+        "type": "object"
+      },
       "StageGenerationRequest": {
         "additionalProperties": false,
         "properties": {
@@ -4726,6 +4939,129 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "ValidationHardware": {
+        "additionalProperties": false,
+        "properties": {
+          "disk_free_bytes": {
+            "title": "Disk Free Bytes",
+            "type": "integer"
+          },
+          "gpu_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Name"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "system_ram_gb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Ram Gb"
+          },
+          "vram_gb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vram Gb"
+          }
+        },
+        "required": [
+          "disk_free_bytes",
+          "source"
+        ],
+        "title": "ValidationHardware",
+        "type": "object"
+      },
+      "ValidationStep": {
+        "additionalProperties": false,
+        "properties": {
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "checksum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum"
+          },
+          "component_id": {
+            "title": "Component Id",
+            "type": "string"
+          },
+          "destination": {
+            "title": "Destination",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "running",
+              "installed",
+              "skipped",
+              "awaiting_license",
+              "awaiting_manual",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "component_id",
+          "destination",
+          "status",
+          "attempts",
+          "message",
+          "updated_at"
+        ],
+        "title": "ValidationStep",
         "type": "object"
       },
       "ValidatorSaveRequest": {
@@ -11503,6 +11839,48 @@
           }
         },
         "summary": "Repair Job",
+        "tags": [
+          "runtime-packs"
+        ]
+      }
+    },
+    "/api/runtime-packs/jobs/{job_id}/report": {
+      "get": {
+        "operationId": "get_validation_report_api_runtime_packs_jobs__job_id__report_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackValidationReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Validation Report",
         "tags": [
           "runtime-packs"
         ]

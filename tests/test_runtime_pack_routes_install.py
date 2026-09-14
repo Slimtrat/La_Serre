@@ -67,6 +67,14 @@ async def test_runtime_pack_job_api_start_status_repair_and_logs(tmp_path: Path)
         assert logs.status_code == 200
         assert any("smoke checks" in item["message"] for item in logs.json()["logs"])
 
+        report = await client.get(f"/api/runtime-packs/jobs/{job_id}/report")
+        assert report.status_code == 200
+        assert report.headers["content-disposition"] == (
+            f'attachment; filename="la-serre-bootstrap-{job_id}.json"'
+        )
+        assert report.json()["result"] == "passed"
+        assert report.json()["initial_prerequisites"][0]["state"] == "missing"
+
         latest = await client.get("/api/runtime-packs/jobs/latest")
         assert latest.json()["job"]["id"] == job_id
 

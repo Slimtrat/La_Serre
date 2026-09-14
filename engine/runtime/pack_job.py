@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import platform
 import shlex
 import shutil
 import sys
@@ -13,7 +14,12 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from engine.runtime.capability_packs import DEFAULT_CAPABILITY_PACK, CapabilityPack, PackComponent
+from engine.runtime.capability_packs import (
+    DEFAULT_CAPABILITY_PACK,
+    CapabilityPack,
+    HardwareSnapshot,
+    PackComponent,
+)
 from engine.runtime.installers.base import (
     CancellationToken,
     InstallationCancelled,
@@ -73,6 +79,55 @@ class SmokeResult(StoredModel):
     message: str
 
 
+class InitialComponentSnapshot(StoredModel):
+    component_id: str
+    state: Literal["installed", "missing", "invalid"]
+    message: str
+    version: str | None = None
+    checksum: str | None = None
+
+
+class ValidationStep(StoredModel):
+    component_id: str
+    destination: str
+    status: StepStatus
+    attempts: int
+    message: str
+    version: str | None = None
+    checksum: str | None = None
+    updated_at: str
+
+
+class ValidationHardware(StoredModel):
+    gpu_name: str | None = None
+    vram_gb: float | None = None
+    system_ram_gb: float | None = None
+    disk_free_bytes: int
+    source: str
+
+
+class PackValidationReport(StoredModel):
+    schema_version: int = 1
+    generated_at: str = Field(default_factory=_now)
+    application_version: str
+    packaged_application: bool
+    operating_system: str
+    operating_system_release: str
+    architecture: str
+    pack_id: str
+    pack_version: int
+    job_id: str
+    result: Literal["passed", "failed", "incomplete"]
+    started_at: str
+    completed_at: str | None
+    recovered_after_restart: bool
+    hardware: ValidationHardware
+    initial_prerequisites: list[InitialComponentSnapshot]
+    steps: list[ValidationStep]
+    interventions: list[str]
+    smoke_checks: list[SmokeResult]
+
+
 class PackPreparationJob(StoredModel):
     schema_version: int = 1
     id: str
@@ -87,6 +142,7 @@ class PackPreparationJob(StoredModel):
     error: str | None = None
     created_at: str = Field(default_factory=_now)
     updated_at: str = Field(default_factory=_now)
+    initial_components: list[InitialComponentSnapshot] = Field(default_factory=list)
     steps: list[PackStep]
     smoke_checks: list[SmokeResult] = Field(default_factory=list)
 
@@ -173,6 +229,67 @@ class PackPreparationManager:
             if isinstance(value, dict):
                 entries.append(value)
         return entries
+
+    def validation_report(
+        self,
+        job_id: str,
+        *,
+        application_version: str,
+        hardware: HardwareSnapshot,
+    ) -> PackValidationReport:
+        job = self.get(job_id)
+        if job.status == "completed" and all(
+            check.status == "passed" for check in job.smoke_checks
+        ):
+            result: Literal["passed", "failed", "incomplete"] = "passed"
+        elif job.status == "failed" or any(
+            check.status == "failed" for check in job.smoke_checks
+        ):
+            result = "failed"
+        else:
+            result = "incomplete"
+        warnings = [
+            str(entry.get("message", ""))
+            for entry in self.logs(job_id)
+            if entry.get("level") == "warning" and entry.get("message")
+        ]
+        return PackValidationReport(
+            application_version=application_version,
+            packaged_application=bool(getattr(sys, "frozen", False)),
+            operating_system=platform.system(),
+            operating_system_release=platform.release(),
+            architecture=platform.machine(),
+            pack_id=job.pack_id,
+            pack_version=job.pack_version,
+            job_id=job.id,
+            result=result,
+            started_at=job.created_at,
+            completed_at=job.updated_at if job.status == "completed" else None,
+            recovered_after_restart=job.recovered,
+            hardware=ValidationHardware(
+                gpu_name=hardware.gpu_name,
+                vram_gb=hardware.vram_gb,
+                system_ram_gb=hardware.system_ram_gb,
+                disk_free_bytes=hardware.disk_free_bytes,
+                source=hardware.source,
+            ),
+            initial_prerequisites=job.initial_components,
+            steps=[
+                ValidationStep(
+                    component_id=step.component_id,
+                    destination=self.pack.component(step.component_id).destination,
+                    status=step.status,
+                    attempts=step.attempts,
+                    message=redact_sensitive(step.message),
+                    version=step.version,
+                    checksum=step.checksum,
+                    updated_at=step.updated_at,
+                )
+                for step in job.steps
+            ],
+            interventions=list(dict.fromkeys(warnings)),
+            smoke_checks=job.smoke_checks,
+        )
 
     def pause(self, job_id: str) -> PackPreparationJob:
         job = self._mutable(job_id)
@@ -318,14 +435,34 @@ class PackPreparationManager:
                 except IntegrityError as exc:
                     installed = None
                     step.message = str(exc)
+                    self._record_initial_component(
+                        job, component, state="invalid", message=str(exc)
+                    )
                     self._log(job, "warning", f"Réparation requise pour {component.id}")
                 if installed:
+                    self._record_initial_component(
+                        job,
+                        component,
+                        state="installed",
+                        message=installed.message,
+                        version=installed.version,
+                        checksum=installed.checksum,
+                    )
                     self._apply_outcome(step, installed)
                     continue
             if component.kind == "workflow_bundle" and self._workflow_present(component):
+                self._record_initial_component(
+                    job,
+                    component,
+                    state="installed",
+                    message="Workflows locaux déjà présents",
+                )
                 step.status = "installed"
                 step.message = "Workflows locaux déjà présents"
                 continue
+            self._record_initial_component(
+                job, component, state="missing", message="Composant absent avant préparation"
+            )
             if component.size_bytes:
                 missing_bytes += component.size_bytes
             if (
@@ -344,6 +481,28 @@ class PackPreparationManager:
         available = self.disk_free(self.context.managed_root)
         if available < required:
             raise OSError(f"Espace disque insuffisant : {available} disponibles, {required} requis")
+
+    @staticmethod
+    def _record_initial_component(
+        job: PackPreparationJob,
+        component: PackComponent,
+        *,
+        state: Literal["installed", "missing", "invalid"],
+        message: str,
+        version: str | None = None,
+        checksum: str | None = None,
+    ) -> None:
+        if any(item.component_id == component.id for item in job.initial_components):
+            return
+        job.initial_components.append(
+            InitialComponentSnapshot(
+                component_id=component.id,
+                state=state,
+                message=redact_sensitive(message),
+                version=version,
+                checksum=checksum,
+            )
+        )
 
     async def _run_component(
         self,
