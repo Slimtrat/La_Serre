@@ -51,7 +51,7 @@ function decodeProposal(value: unknown): SeasonPlanProposal {
     source_fingerprint: text(source.source_fingerprint), current_source_fingerprint: text(source.current_source_fingerprint),
     stale: source.stale === true,
     provenance: {
-      task_id: text(provenance.task_id, "unknown"), task_version: text(provenance.task_version, "unknown"),
+      task_id: text(provenance.task_id, "unknown"), task_version: typeof provenance.task_version === "number" || typeof provenance.task_version === "string" ? String(provenance.task_version) : "unknown",
       model: text(provenance.model, "unknown"), input_fingerprint: text(provenance.input_fingerprint ?? source.source_fingerprint, "unknown"),
     },
     validation: {

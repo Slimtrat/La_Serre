@@ -4853,6 +4853,209 @@
         "title": "SeasonPlanSnapshot",
         "type": "object"
       },
+      "SeasonProposalAcceptRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_plan_revision": {
+            "minimum": 0.0,
+            "title": "Expected Plan Revision",
+            "type": "integer"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "expected_plan_revision"
+        ],
+        "title": "SeasonProposalAcceptRequest",
+        "type": "object"
+      },
+      "SeasonProposalGenerateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "custom_prompt": {
+            "default": "",
+            "maxLength": 10000,
+            "title": "Custom Prompt",
+            "type": "string"
+          },
+          "episode_count": {
+            "default": 6,
+            "maximum": 20.0,
+            "minimum": 6.0,
+            "title": "Episode Count",
+            "type": "integer"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          }
+        },
+        "title": "SeasonProposalGenerateRequest",
+        "type": "object"
+      },
+      "SeasonProposalItemRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "character_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Character Ids",
+            "type": "array"
+          },
+          "cliffhanger": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Cliffhanger",
+            "type": "string"
+          },
+          "conflict": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Conflict",
+            "type": "string"
+          },
+          "hook": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Hook",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "location_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Location Ids",
+            "type": "array"
+          },
+          "logline": {
+            "maxLength": 1000,
+            "minLength": 10,
+            "title": "Logline",
+            "type": "string"
+          },
+          "manually_edited_fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Manually Edited Fields",
+            "type": "array"
+          },
+          "position": {
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Position",
+            "type": "integer"
+          },
+          "relationship_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Relationship Ids",
+            "type": "array"
+          },
+          "relationship_shift": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Relationship Shift",
+            "type": "string"
+          },
+          "season": {
+            "default": 1,
+            "maximum": 99.0,
+            "minimum": 1.0,
+            "title": "Season",
+            "type": "integer"
+          },
+          "secret_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secret Id"
+          },
+          "synopsis": {
+            "maxLength": 20000,
+            "minLength": 20,
+            "title": "Synopsis",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 180,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "position",
+          "title",
+          "logline",
+          "synopsis",
+          "hook",
+          "conflict",
+          "relationship_shift",
+          "relationship_ids",
+          "cliffhanger",
+          "character_ids",
+          "location_ids"
+        ],
+        "title": "SeasonProposalItemRequest",
+        "type": "object"
+      },
+      "SeasonProposalUpdateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SeasonProposalItemRequest"
+            },
+            "maxItems": 20,
+            "minItems": 6,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "items"
+        ],
+        "title": "SeasonProposalUpdateRequest",
+        "type": "object"
+      },
       "Secret": {
         "additionalProperties": false,
         "properties": {
@@ -13030,6 +13233,154 @@
           }
         },
         "summary": "Reorder Season Plan",
+        "tags": [
+          "season-plan"
+        ]
+      }
+    },
+    "/api/season-plan/proposal": {
+      "get": {
+        "operationId": "get_season_proposal_api_season_plan_proposal_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Season Proposal Api Season Plan Proposal Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Season Proposal",
+        "tags": [
+          "season-plan"
+        ]
+      },
+      "put": {
+        "operationId": "update_season_proposal_api_season_plan_proposal_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeasonProposalUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Update Season Proposal Api Season Plan Proposal Put",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Season Proposal",
+        "tags": [
+          "season-plan"
+        ]
+      }
+    },
+    "/api/season-plan/proposal/accept": {
+      "post": {
+        "operationId": "accept_season_proposal_api_season_plan_proposal_accept_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeasonProposalAcceptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonPlanSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accept Season Proposal",
+        "tags": [
+          "season-plan"
+        ]
+      }
+    },
+    "/api/season-plan/proposal/generate": {
+      "post": {
+        "operationId": "generate_season_proposal_api_season_plan_proposal_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeasonProposalGenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Generate Season Proposal Api Season Plan Proposal Generate Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generate Season Proposal",
         "tags": [
           "season-plan"
         ]

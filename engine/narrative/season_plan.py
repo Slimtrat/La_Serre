@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import threading
 import uuid
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
@@ -140,6 +140,40 @@ class SeasonPlanRegistry:
                 lifecycle=lifecycle,
             )
             return self._commit(current, [*current.items, item])
+
+    def create_many(
+        self,
+        proposals: Sequence[ProposedEpisode],
+        provenances: Sequence[NarrativeProvenance],
+        *,
+        expected_revision: int,
+        lifecycle: SeasonPlanLifecycle = SeasonPlanLifecycle.DRAFT,
+    ) -> SeasonPlan:
+        """Append a reviewed proposal as one atomic SeasonPlan revision."""
+
+        if lifecycle is SeasonPlanLifecycle.OBSOLETE:
+            raise ValueError("New season items cannot be obsolete")
+        if not proposals:
+            raise ValueError("At least one season item is required")
+        if len(proposals) != len(provenances):
+            raise ValueError("Every season item requires provenance")
+        with self._lock:
+            current = self.load()
+            self._check_revision(current, expected_revision)
+            next_position = len(current.active_items) + 1
+            items = [
+                self._from_proposal(
+                    proposal,
+                    item_id=f"season-item-{uuid.uuid4().hex}",
+                    position=next_position + offset,
+                    provenance=provenance,
+                    lifecycle=lifecycle,
+                )
+                for offset, (proposal, provenance) in enumerate(
+                    zip(proposals, provenances, strict=True)
+                )
+            ]
+            return self._commit(current, [*current.items, *items])
 
     def update(
         self,
