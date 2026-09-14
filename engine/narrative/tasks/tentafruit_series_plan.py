@@ -238,10 +238,18 @@ class SeasonPlanProposalRegistry:
             self._check_revision(current, expected_revision)
             return self._commit(current, proposal)
 
+    def clear(self, *, expected_revision: int) -> SeasonPlanProposalDocument:
+        """Remove the accepted proposal without resetting its optimistic revision."""
+
+        with self._lock:
+            current = self.load()
+            self._check_revision(current, expected_revision)
+            return self._commit(current, None)
+
     def _commit(
         self,
         current: SeasonPlanProposalDocument,
-        proposal: SeasonPlanProposal,
+        proposal: SeasonPlanProposal | None,
     ) -> SeasonPlanProposalDocument:
         document = SeasonPlanProposalDocument(
             schema_version=current.schema_version,

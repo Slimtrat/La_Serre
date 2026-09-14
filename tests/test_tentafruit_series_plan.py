@@ -188,6 +188,13 @@ def test_proposal_registry_preserves_provenance_manual_edits_and_detects_stale(
         registry.update(edited_items, expected_revision=1)
     assert conflict.value.current == 2
 
+    cleared = registry.clear(expected_revision=2)
+    assert cleared.revision == 3
+    assert cleared.proposal is None
+    assert SeasonPlanProposalRegistry(tmp_path).load() == cleared
+    with pytest.raises(SeasonPlanProposalRevisionConflictError):
+        registry.clear(expected_revision=2)
+
 
 def test_candidate_contract_rejects_missing_cliffhanger_and_non_contiguous_order() -> None:
     plan = build_fake_series_plan(bible())
