@@ -79,7 +79,7 @@ async function createItem(title) {
   );
   expect(item, `Le nouvel item ${title} est introuvable`);
 
-  const titleField = board.getByDisplayValue("Nouvel épisode").last();
+  const titleField = page.getByDisplayValue("Nouvel épisode", { exact: true }).last();
   await titleField.waitFor();
   const card = titleField.locator("xpath=ancestor::li");
   await titleField.fill(title);
