@@ -10,7 +10,12 @@ from typing import Any
 
 import pytest
 
-from engine.runtime.capability_packs import CapabilityPack, HardwareSnapshot, PackComponent
+from engine.runtime.capability_packs import (
+    CapabilityPack,
+    HardwareSnapshot,
+    PackComponent,
+    SmokeCheck,
+)
 from engine.runtime.installers import (
     CancellationToken,
     ComfyCliAdapter,
@@ -88,11 +93,12 @@ class FakeRunner:
             return ProcessResult(0, "NAME ID SIZE\n")
         if self.fail_smoke and self.fail_smoke in arguments:
             return ProcessResult(2, stderr="token=super-secret signed failure")
-        if arguments and arguments[0] == "comfy" and "install" in arguments:
+        if "comfy" in arguments and "install" in arguments:
             workspace = Path(
                 next(item.split("=", 1)[1] for item in arguments if item.startswith("--workspace="))
             )
             (workspace / "ComfyUI").mkdir(parents=True, exist_ok=True)
+            (workspace / "ComfyUI" / "main.py").write_text("", encoding="utf-8")
         return ProcessResult(0, "fake 1.0")
 
 
@@ -532,9 +538,10 @@ async def test_comfy_uses_pinned_cli_through_managed_uv(tmp_path: Path) -> None:
         }
     )
 
-    await ComfyCliAdapter(runner, managed_cli=FakeManagedCli()).install(
-        component, context, CancellationToken()
-    )
+    with pytest.raises(ManualActionRequired, match="Ferme puis rouvre"):
+        await ComfyCliAdapter(runner, managed_cli=FakeManagedCli()).install(
+            component, context, CancellationToken()
+        )
 
     assert runner.calls[-1][0][:6] == [
         str(managed / "tools" / "uv" / "uv.exe"),
@@ -544,6 +551,93 @@ async def test_comfy_uses_pinned_cli_through_managed_uv(tmp_path: Path) -> None:
         "comfy-cli==1.20.0",
         "comfy",
     ]
+
+
+@pytest.mark.asyncio
+async def test_comfy_empty_workspace_does_not_pass_inspection(tmp_path: Path) -> None:
+    managed = tmp_path / "managed"
+    workspace = managed / "comfy"
+    (workspace / "ComfyUI").mkdir(parents=True)
+    context = InstallContext(managed, workspace, managed / "models", tmp_path / "workflows")
+    base = make_pack().components[0].model_dump(mode="json")
+    component = PackComponent.model_validate(
+        {
+            **base,
+            "id": "comfy-engine",
+            "kind": "engine",
+            "destination": "managed",
+            "detection": {"kind": "comfyui", "value": "comfyui"},
+        }
+    )
+
+    adapter = ComfyCliAdapter(FakeRunner())
+    assert await adapter.inspect(component, context) is None
+    (workspace / "ComfyUI" / "main.py").write_text("", encoding="utf-8")
+    assert await adapter.inspect(component, context) is not None
+
+
+@pytest.mark.asyncio
+async def test_managed_comfy_job_resumes_after_graphical_restart(tmp_path: Path) -> None:
+    class FakeManagedCli:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        async def ensure(
+            self, context: InstallContext, cancellation: CancellationToken
+        ) -> Path:
+            cancellation.raise_if_cancelled()
+            self.calls += 1
+            return context.managed_root / "tools" / "uv" / "uv.exe"
+
+    managed = tmp_path / "managed"
+    managed.mkdir()
+    context = InstallContext(managed, managed / "comfy", managed / "models", tmp_path)
+    base = make_pack().components[0].model_dump(mode="json")
+    engine = PackComponent.model_validate(
+        {
+            **base,
+            "id": "comfy-engine",
+            "kind": "engine",
+            "destination": "managed",
+            "detection": {"kind": "comfyui", "value": "comfyui"},
+        }
+    )
+    pack = make_pack().model_copy(
+        update={
+            "components": [engine],
+            "smoke_checks": [
+                SmokeCheck(
+                    id="comfy-smoke", label="Comfy smoke", description="Workspace present",
+                    required_roles=[engine.id], command="fake-smoke comfy-engine",
+                )
+            ],
+        }
+    )
+    runner = FakeRunner()
+    cli = FakeManagedCli()
+
+    def make_manager() -> PackPreparationManager:
+        return PackPreparationManager(
+            state_root=tmp_path / "state",
+            context=context,
+            adapters=(ComfyCliAdapter(runner, managed_cli=cli),),  # type: ignore[arg-type]
+            process_runner=runner,
+            pack=pack,
+            disk_free=lambda _path: 1_000_000,
+            development_smoke_checks=False,
+        )
+
+    first_manager = make_manager()
+    initial = await first_manager.wait(first_manager.start().id)
+    assert initial.status == "awaiting_manual"
+    assert "rouvre La Serre" in initial.steps[0].message
+    assert cli.calls == 1
+
+    restarted_manager = make_manager()
+    resumed = await restarted_manager.wait(restarted_manager.resume(initial.id).id)
+    assert resumed.status == "completed"
+    assert resumed.smoke_checks[0].status == "passed"
+    assert cli.calls == 1
 
 
 @pytest.mark.asyncio

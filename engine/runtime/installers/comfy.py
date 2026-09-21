@@ -53,7 +53,9 @@ class ComfyCliAdapter:
         self, component: PackComponent, context: InstallContext
     ) -> InstallOutcome | None:
         workspace = assert_safe_child(context.comfy_workspace, context.managed_root)
-        if component.detection.kind == "comfyui" and (workspace / "ComfyUI").is_dir():
+        if component.detection.kind == "comfyui" and (
+            workspace / "ComfyUI" / "main.py"
+        ).is_file():
             return InstallOutcome(
                 "installed", "Workspace ComfyUI géré détecté", path=str(workspace)
             )
@@ -102,6 +104,15 @@ class ComfyCliAdapter:
                 "et l’espace disque, puis lance Réparer."
             ) from exc
         result = successful_process(completed, "Installation ComfyUI")
+        if component.detection.kind == "comfyui" and self.managed_cli is not None:
+            if not (workspace / "ComfyUI" / "main.py").is_file():
+                raise InstallerError(
+                    "ComfyUI ne contient pas main.py après l’installation; lance Réparer."
+                )
+            raise ManualActionRequired(
+                "ComfyUI est préparé. Ferme puis rouvre La Serre pour démarrer le service "
+                "géré, puis reprends la préparation sans retélécharger l’archive."
+            )
         if component.detection.kind == "nodes":
             marker = workspace / ".la-serre" / f"{component.id}.installed"
             marker.parent.mkdir(parents=True, exist_ok=True)
