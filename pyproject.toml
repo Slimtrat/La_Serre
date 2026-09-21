@@ -47,6 +47,9 @@ serre-desktop = "apps.desktop.cli:main"
 [tool.hatch.build.targets.wheel]
 packages = ["apps", "engine", "tools"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"starter_catalog/story-examples" = "engine/narrative/story-examples"
+
 [tool.pytest.ini_options]
 addopts = "-q"
 asyncio_mode = "auto"

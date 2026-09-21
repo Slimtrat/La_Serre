@@ -20,6 +20,10 @@ class GuidedModel(BaseModel):
 
 class GuidedProjectBrief(GuidedModel):
     working_title: str = Field(default="", max_length=180)
+    language: str = Field(default="fr", pattern=r"^[a-z]{2}$")
+    source_example_id: str | None = None
+    learning_goals: list[str] = Field(default_factory=list)
+    continuity_notes: list[str] = Field(default_factory=list)
     idea: str = Field(default="", max_length=50_000)
     genre: str = Field(default="", max_length=200)
     tone: str = Field(default="", max_length=500)

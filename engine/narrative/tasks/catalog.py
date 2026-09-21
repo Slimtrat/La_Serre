@@ -94,6 +94,38 @@ DEFAULT_TASK_REGISTRY = TaskRegistry(
             inference_options={"temperature": 0.2},
         ),
         TaskSpec(
+            task_id=NarrativeTaskId.SHORT_EPISODE,
+            version=2,
+            kind=TaskKind.CREATIVE,
+            objective="Tu écris un épisode court pour le projet fourni, prêt à relire.",
+            contract=EpisodeDraftCandidate,
+            required_context=("source", "custom_prompt", "bible"),
+            rules=(
+                "Respecte la Bible du projet et ses identifiants canoniques.",
+                "Reproduis le ton, le rythme et les silences définis par le projet, "
+                "sans importer un autre univers.",
+                "Respecte la langue demandée dans le contexte et le niveau du public visé.",
+                "Retourne uniquement une proposition; l’humain décidera de l’appliquer.",
+            ),
+            inference_options={"temperature": 0.55},
+        ),
+        TaskSpec(
+            task_id=NarrativeTaskId.BREAKDOWN,
+            version=2,
+            kind=TaskKind.FACTUAL,
+            objective="Tu découpes l’épisode du projet fourni en plans de 1 à 12 secondes.",
+            contract=EpisodeBreakdownCandidate,
+            required_context=("source", "custom_prompt", "bible"),
+            rules=(
+                "Chaque plan fait avancer l’action et utilise seulement des IDs canoniques.",
+                "Décris caméra, lumière et jeu.",
+                "Distingue on_screen, off_screen et voice_over; "
+                "une voix off peut être sans personnage visible.",
+                "Préserve le ton et la langue demandés dans le contexte du projet.",
+            ),
+            inference_options={"temperature": 0.2},
+        ),
+        TaskSpec(
             task_id=NarrativeTaskId.CONTINUITY_DELTA,
             version=1,
             kind=TaskKind.FACTUAL,

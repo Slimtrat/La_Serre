@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from engine.config import Settings
 from engine.generation.comfy.workflow_templates import WorkflowTemplateCatalogue
 from engine.narrative.episode_models import Episode, EpisodeStatus, EpisodeStory
-from engine.narrative.guided_authoring import GuidedAuthoringRegistry
+from engine.narrative.guided_authoring import GuidedAuthoringRegistry, GuidedProjectBrief
 from engine.narrative.narrative_workflow import OllamaNarrativeAuthor
 from engine.narrative.ollama import OllamaClient
 from engine.production.artifacts import write_text_atomic
@@ -185,6 +185,7 @@ async def execute_guided_autopilot(run_id: str, settings: Settings) -> None:
         )
         return
     bible = BibleRegistry(settings.private_content_dir).load()
+    generation_prompt = _generation_prompt(guided.brief, run.custom_prompt)
     try:
         async with OllamaClient(str(settings.ollama_url)) as client:
             models = await client.list_models()
@@ -211,7 +212,7 @@ async def execute_guided_autopilot(run_id: str, settings: Settings) -> None:
                 _guided_source(guided.model_dump(mode="json")),
                 bible=bible,
                 model=selected,
-                custom_prompt=run.custom_prompt,
+                custom_prompt=generation_prompt,
             )
             registry.complete_stage(
                 run_id,
@@ -225,7 +226,7 @@ async def execute_guided_autopilot(run_id: str, settings: Settings) -> None:
                 direction,
                 bible=bible,
                 model=selected,
-                custom_prompt=run.custom_prompt,
+                custom_prompt=generation_prompt,
             )
             registry.complete_stage(
                 run_id,
@@ -257,7 +258,8 @@ async def execute_guided_autopilot(run_id: str, settings: Settings) -> None:
                 episode,
                 bible=bible,
                 model=selected,
-                custom_prompt=run.custom_prompt,
+                custom_prompt=generation_prompt,
+                task_version=2,
             )
             registry.complete_stage(
                 run_id,
@@ -281,7 +283,8 @@ async def execute_guided_autopilot(run_id: str, settings: Settings) -> None:
                 episode,
                 bible=bible,
                 model=selected,
-                custom_prompt=run.custom_prompt,
+                custom_prompt=generation_prompt,
+                task_version=2,
             )
             registry.complete_stage(
                 run_id,
@@ -320,3 +323,29 @@ async def execute_guided_autopilot(run_id: str, settings: Settings) -> None:
 
 def _guided_source(payload: dict[str, object]) -> str:
     return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
+
+
+def _generation_prompt(brief: GuidedProjectBrief, custom_prompt: str) -> str:
+    language = brief.language
+    names = {"fr": "français", "de": "allemand", "en": "anglais"}
+    name = names.get(language, f"la langue de code ISO 639-1 {language}")
+    directive = (
+        f"Contrainte de langue prioritaire : rédige tous les contenus narratifs et éditoriaux "
+        f"générés en {name} (code {language}), à chaque étape. "
+        "Conserve les identifiants techniques canoniques inchangés."
+    )
+    metadata = {
+        "source_example_id": brief.source_example_id,
+        "learning_goals": brief.learning_goals,
+        "continuity_notes": brief.continuity_notes,
+    }
+    metadata_directive = (
+        "Métadonnées du brief à respecter à chaque étape : "
+        + json.dumps(metadata, ensure_ascii=False)
+        + ". Les objectifs pédagogiques guident le niveau et la progression du récit. "
+        "Les notes de continuité contraignent les scènes et les personnages. "
+        "L’identifiant d’exemple indique la provenance du brief, pas un élément de fiction."
+    )
+    return "\n\n".join(
+        part for part in (custom_prompt.strip(), directive, metadata_directive) if part
+    )

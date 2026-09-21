@@ -6,6 +6,7 @@ import { Button } from "@shared";
 import { CastingBoard } from "@features/casting";
 
 import { useJourneyContext } from "./JourneyContext";
+import { ExampleBriefPicker } from "./ExampleBriefPicker";
 import type { GuidedPayload } from "./model";
 import styles from "./guidedJourney.module.css";
 
@@ -75,6 +76,7 @@ export function StageHost({ stage, guided, busy, locale, projectId, onAddCharact
     const data = new FormData(event.currentTarget);
     const locked_fields = [...data.getAll("locked_fields")].map(String);
     onSaveBrief({
+      ...guided.brief,
       ...Object.fromEntries(
         [...data.entries()].filter(([key]) => key !== "locked_fields"),
       ),
@@ -86,7 +88,7 @@ export function StageHost({ stage, guided, busy, locale, projectId, onAddCharact
     const field = (name: keyof GuidedProjectBrief, label: string, area = false) => (
       <label>{label}{area ? <textarea defaultValue={String(guided.brief[name] ?? "")} name={name} /> : <input defaultValue={String(guided.brief[name] ?? "")} name={name} />}<span><input defaultChecked={guided.brief.locked_fields?.includes(name)} name="locked_fields" type="checkbox" value={name} /> Verrouiller</span></label>
     );
-    content = <form className={styles.form} onSubmit={submitBrief}>{field("working_title", "Titre de travail")}{field("genre", "Genre")}{field("idea", "Idée", true)}{field("tone", "Ton")}{field("audience", "Public")}{field("episode_title", "Titre de l’épisode")}{field("episode_concept", "Promesse de l’épisode", true)}<div className={styles.actions}><Button disabled={busy} type="submit">Enregistrer le brouillon</Button><Button disabled={busy} onClick={() => onPropose("brief")} type="button" variant="secondary">Améliorer avec l’IA</Button></div></form>;
+    content = <><ExampleBriefPicker currentProjectId={projectId} locale={locale} /><form className={styles.form} key={`${projectId}:${guided.revision}`} onSubmit={submitBrief}>{field("working_title", "Titre de travail")}{field("genre", "Genre")}{field("idea", "Idée", true)}{field("tone", "Ton")}{field("audience", "Public")}<label>Langue (code à 2 lettres)<input defaultValue={guided.brief.language ?? "fr"} maxLength={2} minLength={2} name="language" pattern="[a-z]{2}" required /><span><input defaultChecked={guided.brief.locked_fields?.includes("language")} name="locked_fields" type="checkbox" value="language" /> Verrouiller</span></label>{field("episode_title", "Titre de l’épisode")}{field("episode_concept", "Promesse de l’épisode", true)}<div className={styles.actions}><Button disabled={busy} type="submit">Enregistrer le brouillon</Button><Button disabled={busy} onClick={() => onPropose("brief")} type="button" variant="secondary">Améliorer avec l’IA</Button></div></form></>;
   }
   if (!content && stage.id === "episode") {
     content = guided.activeEpisodeId ? (

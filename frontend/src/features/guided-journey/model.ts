@@ -92,8 +92,12 @@ export function decodeGuidedPayload(value: unknown): GuidedPayload {
       genre: string(brief.genre),
       tone: string(brief.tone),
       audience: string(brief.audience),
+      language: string(brief.language) || "fr",
       episode_title: string(brief.episode_title),
       episode_concept: string(brief.episode_concept),
+      ...(typeof brief.source_example_id === "string" ? { source_example_id: brief.source_example_id } : {}),
+      learning_goals: stringArray(brief.learning_goals),
+      continuity_notes: stringArray(brief.continuity_notes),
       locked_fields: stringArray(brief.locked_fields),
     },
     characters: Array.isArray(state.characters)

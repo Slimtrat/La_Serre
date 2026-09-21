@@ -1955,6 +1955,56 @@
         "title": "EpisodeStory",
         "type": "object"
       },
+      "ExampleStory": {
+        "additionalProperties": false,
+        "description": "A reusable story seed; never a pre-written episode or a private project.",
+        "properties": {
+          "brief": {
+            "$ref": "#/components/schemas/GuidedProjectBrief"
+          },
+          "continuity_notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Continuity Notes",
+            "type": "array"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "title": "Id",
+            "type": "string"
+          },
+          "language": {
+            "pattern": "^[a-z]{2}$",
+            "title": "Language",
+            "type": "string"
+          },
+          "learning_goals": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Learning Goals",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "language",
+          "brief"
+        ],
+        "title": "ExampleStory",
+        "type": "object"
+      },
       "FindingSeverity": {
         "enum": [
           "blocker",
@@ -2719,6 +2769,22 @@
         "title": "GuidedEpisodeLinkRequest",
         "type": "object"
       },
+      "GuidedExamplesResponse": {
+        "properties": {
+          "examples": {
+            "items": {
+              "$ref": "#/components/schemas/ExampleStory"
+            },
+            "title": "Examples",
+            "type": "array"
+          }
+        },
+        "required": [
+          "examples"
+        ],
+        "title": "GuidedExamplesResponse",
+        "type": "object"
+      },
       "GuidedProjectBrief": {
         "additionalProperties": false,
         "properties": {
@@ -2727,6 +2793,13 @@
             "maxLength": 500,
             "title": "Audience",
             "type": "string"
+          },
+          "continuity_notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Continuity Notes",
+            "type": "array"
           },
           "episode_concept": {
             "default": "",
@@ -2752,12 +2825,36 @@
             "title": "Idea",
             "type": "string"
           },
+          "language": {
+            "default": "fr",
+            "pattern": "^[a-z]{2}$",
+            "title": "Language",
+            "type": "string"
+          },
+          "learning_goals": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Learning Goals",
+            "type": "array"
+          },
           "locked_fields": {
             "items": {
               "type": "string"
             },
             "title": "Locked Fields",
             "type": "array"
+          },
+          "source_example_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Example Id"
           },
           "tone": {
             "default": "",
@@ -10634,6 +10731,28 @@
           }
         },
         "summary": "Put Episode Link",
+        "tags": [
+          "guided-authoring"
+        ]
+      }
+    },
+    "/api/guided/examples": {
+      "get": {
+        "description": "Expose editable story briefs without mutating the current project.",
+        "operationId": "get_examples_api_guided_examples_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuidedExamplesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Examples",
         "tags": [
           "guided-authoring"
         ]

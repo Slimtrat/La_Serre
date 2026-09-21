@@ -1,0 +1,28 @@
+{
+  "id": "fritz-pizzafest-de",
+  "name": "Fritz et la fête des pizzas",
+  "description": "Une histoire illustrée et chaleureuse, en allemand débutant, où un chat jardinier et deux frères ânes préparent un repas pour la fête du village.",
+  "language": "de",
+  "brief": {
+    "working_title": "Fritz und das Pizzafest",
+    "language": "de",
+    "idea": "Créer une série d'histoires originales en allemand simple pour des enfants qui apprennent la langue. Fritz, un chat jardinier, cultive des légumes et des herbes. Deux frères ânes tiennent un petit restaurant. À l'approche d'une fête, un imprévu les oblige à s'entraider pour préparer pizzas, salades et pommes de terre. Chaque nouvelle aventure doit suivre un autre petit problème concret du jardin, de la cuisine ou du voisinage, avec une résolution coopérative. Écrire le récit et les dialogues en allemand, avec des phrases courtes, répétitions utiles et vocabulaire introduit progressivement.",
+    "genre": "Album jeunesse pédagogique",
+    "tone": "Rassurant, joyeux, accessible ; allemand naturel et simple sans infantilisation.",
+    "audience": "Enfants débutants en allemand, environ 6 à 9 ans ; lecture accompagnée possible.",
+    "episode_title": "Das Pizzafest",
+    "episode_concept": "Un des frères ânes est indisponible le jour de la fête. Fritz vient aider au restaurant avec les récoltes de son jardin. Les personnages comptent les ingrédients, choisissent les légumes et préparent ensemble le repas avant l'arrivée des invités.",
+    "locked_fields": []
+  },
+  "learning_goals": [
+    "Vocabulaire allemand du jardin, des légumes et des aliments.",
+    "Nombres et petites quantités en contexte.",
+    "Verbes d'action simples autour de l'entraide et de la cuisine."
+  ],
+  "continuity_notes": [
+    "Fritz est un chat jardinier ; les deux frères ânes tiennent le restaurant.",
+    "Maintenir une progression de langue compatible avec des débutants, sans alterner arbitrairement la langue du récit.",
+    "Préserver la logique des récoltes, des ingrédients et des recettes entre les scènes.",
+    "Les objectifs pédagogiques sont des métadonnées ; fiches et cartes d'apprentissage relèvent d'une fonctionnalité distincte."
+  ]
+}

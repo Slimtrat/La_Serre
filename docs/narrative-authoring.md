@@ -3,6 +3,23 @@
 Le Studio sépare désormais la **proposition** de la **décision canonique** à chaque niveau.
 Une génération Ollama ne modifie jamais directement la série, un épisode ou ses plans.
 
+## Exemples pour démarrer
+
+À l’étape **Idée** du parcours guidé, on peut choisir l’un de deux points de départ :
+**Fritz et la fête des pizzas**, une histoire jeunesse en allemand débutant, ou
+**Hiva et la maison de la forêt**, une fantasy douce en français. Chaque choix remplit
+les champs du brief avec une proposition modifiable dans un **nouveau projet isolé**.
+Le projet précédent, sa Bible et ses épisodes restent inchangés. Relire et
+personnaliser le titre, la langue, le public, le ton et le concept avant de poursuivre.
+La création du projet et la sauvegarde du brief demandent une action explicite.
+
+Les objectifs linguistiques de Fritz et les notes de continuité des deux histoires
+servent de repères éditoriaux. La production de fiches pédagogiques ou de cartes de
+vocabulaire n’est pas encore incluse dans ce parcours.
+Ces exemples sont des adaptations synthétiques du brief fourni : aucun texte source
+intégral n’est distribué. Toute republication du texte d’origine demande une
+vérification préalable de ses droits.
+
 ## Série
 
 Le graphe Série expose trois nœuds métier :
