@@ -97,7 +97,7 @@ def _template_response(
         status = raw_status if isinstance(raw_status, dict) else {}
         models.append(
             {
-                **model.model_dump(mode="json"),
+                **model.model_dump(mode="json", exclude_none=True),
                 **status,
                 "installed": status.get("state") == "installed",
             }

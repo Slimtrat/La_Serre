@@ -299,7 +299,7 @@ async def execute_guided_autopilot(run_id: str, settings: Settings) -> None:
                 run_id,
                 "visual_pipeline",
                 {
-                    "continuity_chain": [template.spec.id for template in templates],
+                    "continuity_chain": list(WorkflowTemplateCatalogue.chain),
                     "recipes": [
                         {
                             "label": template.spec.label,
