@@ -9,6 +9,10 @@ import { renderWithStudio } from "../../../src/test";
 const api = vi.hoisted(() => ({
   journey: vi.fn(),
   guided: vi.fn(),
+  examples: vi.fn(),
+  createProject: vi.fn(),
+  listProjects: vi.fn(),
+  activateProject: vi.fn(),
   saveBrief: vi.fn(),
   addCharacter: vi.fn(),
   saveCharacter: vi.fn(),
@@ -23,6 +27,10 @@ const api = vi.hoisted(() => ({
 vi.mock("@/generated/openapi", () => ({
   journeyApiStudioJourneyGet: api.journey,
   getGuidedApiGuidedGet: api.guided,
+  getExamplesApiGuidedExamplesGet: api.examples,
+  createProjectApiProjectsPost: api.createProject,
+  listProjectsApiProjectsGet: api.listProjects,
+  activateProjectApiProjectsProjectIdActivatePost: api.activateProject,
   putBriefApiGuidedBriefPut: api.saveBrief,
   createCharacterApiGuidedCharactersPost: api.addCharacter,
   putCharacterApiGuidedCharactersCharacterIdPut: api.saveCharacter,
@@ -78,6 +86,7 @@ const guided = {
 };
 
 beforeEach(() => {
+  window.sessionStorage.removeItem("serre:guided-example-pending");
   api.journey.mockResolvedValue({
     project_id: "tentafruit",
     active_episode_id: null,
@@ -87,6 +96,27 @@ beforeEach(() => {
     stages,
   });
   api.guided.mockResolvedValue(guided);
+  api.createProject.mockResolvedValue({ active_id: "example-123", projects: [] });
+  api.listProjects.mockResolvedValue({ active_id: "example-123", projects: [] });
+  api.activateProject.mockResolvedValue({ active_id: "example-123", projects: [] });
+  api.examples.mockResolvedValue({ examples: [{
+    id: "fritz-pizza",
+    name: "Fritz et la fête des pizzas",
+    description: "Une histoire pour apprendre l’allemand.",
+    language: "de",
+    learning_goals: ["Nommer les légumes en allemand"],
+    continuity_notes: ["Fritz est un chat fermier"],
+    brief: {
+      working_title: "Fritz et la fête des pizzas",
+      language: "de",
+      idea: "Fritz aide deux ânes à préparer une fête.",
+      genre: "Conte éducatif",
+      tone: "Chaleureux",
+      audience: "Enfants apprenant l’allemand",
+      episode_title: "La fête",
+      episode_concept: "Préparer ensemble un repas.",
+    },
+  }] });
   api.saveBrief.mockResolvedValue(guided);
   api.addCharacter.mockResolvedValue(guided);
   api.createEpisode.mockResolvedValue({ id: "S01E001" });
@@ -94,7 +124,10 @@ beforeEach(() => {
   api.saveCharacter.mockResolvedValue(guided);
   api.promoteCharacter.mockResolvedValue(guided);
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  window.sessionStorage.removeItem("serre:guided-example-pending");
+});
 
 describe("GuidedJourney", () => {
   it("resumes at the first incomplete snapshot stage", async () => {
@@ -129,6 +162,103 @@ describe("GuidedJourney", () => {
       brief: {
         working_title: "Tentafruit saison 1",
         locked_fields: ["tone"],
+      },
+    });
+  });
+
+  it("creates an isolated example project only after confirmation and retries saving without duplicating it", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+    const emptyProject = {
+      ...guided,
+      state: {
+        ...guided.state,
+        revision: 0,
+        active_episode_id: null,
+        brief: { working_title: "", idea: "", genre: "", tone: "", audience: "", language: "fr", episode_title: "", episode_concept: "", locked_fields: [] },
+        characters: [],
+      },
+      canonical_characters: [],
+    };
+    const savedProject = {
+      ...emptyProject,
+      state: {
+        ...emptyProject.state,
+        revision: 1,
+        brief: {
+          ...emptyProject.state.brief,
+          working_title: "Fritz et la fête des pizzas",
+          idea: "Fritz aide deux ânes à préparer une fête.",
+          language: "de",
+          source_example_id: "fritz-pizza",
+          learning_goals: ["Nommer les légumes en allemand"],
+          continuity_notes: ["Fritz est un chat fermier"],
+        },
+      },
+    };
+    let created = false;
+    let saved = false;
+    api.createProject.mockImplementation(async () => { created = true; return { active_id: "example-123", projects: [] }; });
+    api.guided.mockImplementation(async () => saved ? savedProject : created ? emptyProject : guided);
+    api.journey.mockImplementation(async () => ({
+      project_id: created ? "example-123" : "tentafruit",
+      active_episode_id: null,
+      revision: created ? "r2" : "r1",
+      counts: {},
+      stale_artifacts: [],
+      stages,
+    }));
+    api.saveBrief.mockRejectedValueOnce(new Error("Écriture interrompue")).mockImplementation(async () => {
+      saved = true;
+      return savedProject;
+    });
+    const view = renderWithStudio(<GuidedJourney locale="fr" onNavigate={vi.fn()} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Idée/ }));
+    const title = screen.getByRole("textbox", { name: /Titre de travail/ }) as HTMLInputElement;
+    fireEvent.change(await screen.findByRole("combobox", { name: "Histoire" }), { target: { value: "fritz-pizza" } });
+    fireEvent.click(screen.getByRole("button", { name: "Créer ce projet" }));
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(title.value).toBe("Tentafruit");
+    expect(api.createProject).not.toHaveBeenCalled();
+    expect(api.saveBrief).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Créer ce projet" }));
+    await waitFor(() => expect(api.createProject).toHaveBeenCalledWith({
+      name: "Fritz et la fête des pizzas",
+      template_id: "custom",
+      clone_content: false,
+      include_example_content: false,
+    }));
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("Écriture interrompue"));
+    expect(api.createProject).toHaveBeenCalledTimes(1);
+    expect(api.saveBrief).toHaveBeenCalledWith({
+      expected_revision: 0,
+      brief: expect.objectContaining({
+        working_title: "Fritz et la fête des pizzas",
+        language: "de",
+        source_example_id: "fritz-pizza",
+        learning_goals: ["Nommer les légumes en allemand"],
+        continuity_notes: ["Fritz est un chat fermier"],
+        locked_fields: [],
+      }),
+    });
+    expect(window.sessionStorage.getItem("serre:guided-example-pending")).toContain("example-123");
+    view.unmount();
+    renderWithStudio(<GuidedJourney locale="fr" onNavigate={vi.fn()} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Idée/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Réessayer l’enregistrement" }));
+    await waitFor(() => expect(api.saveBrief).toHaveBeenCalledTimes(2));
+    expect(api.createProject).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText(/Projet séparé créé avec ce brief/)).toBeTruthy();
+    await waitFor(() => expect((screen.getByRole("textbox", { name: /Titre de travail/ }) as HTMLInputElement).value).toBe("Fritz et la fête des pizzas"));
+    expect(window.sessionStorage.getItem("serre:guided-example-pending")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Enregistrer le brouillon" }));
+    await waitFor(() => expect(api.saveBrief).toHaveBeenCalledTimes(3));
+    expect(api.saveBrief.mock.calls[2]?.[0]).toMatchObject({
+      expected_revision: 1,
+      brief: {
+        source_example_id: "fritz-pizza",
+        learning_goals: ["Nommer les légumes en allemand"],
+        continuity_notes: ["Fritz est un chat fermier"],
       },
     });
   });

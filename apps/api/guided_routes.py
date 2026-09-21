@@ -13,6 +13,7 @@ from engine.generation.comfy.workflow_templates import (
     TemplateStage,
     WorkflowTemplateCatalogue,
 )
+from engine.narrative.example_catalog import ExampleStory, ExampleStoryCatalog
 from engine.narrative.guided_authoring import (
     GuidedAuthoringRegistry,
     GuidedAuthoringState,
@@ -73,6 +74,10 @@ class GuidedTemplateSelectionRequest(StrictGuidedRequest):
     template_id: str = Field(min_length=1, max_length=100)
 
 
+class GuidedExamplesResponse(BaseModel):
+    examples: list[ExampleStory]
+
+
 def create_guided_router(settings_provider: Callable[[], Settings]) -> APIRouter:
     router = APIRouter(prefix="/api/guided", tags=["guided-authoring"])
 
@@ -120,6 +125,11 @@ def create_guided_router(settings_provider: Callable[[], Settings]) -> APIRouter
     @router.get("")
     def get_guided() -> dict[str, object]:
         return response(registry().load())
+
+    @router.get("/examples", response_model=GuidedExamplesResponse)
+    def get_examples() -> GuidedExamplesResponse:
+        """Expose editable story briefs without mutating the current project."""
+        return GuidedExamplesResponse(examples=ExampleStoryCatalog().list())
 
     @router.put("/brief")
     def put_brief(payload: GuidedBriefRequest) -> dict[str, object]:

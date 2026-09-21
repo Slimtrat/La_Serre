@@ -300,11 +300,13 @@ class OllamaNarrativeAuthor:
         bible: ProjectBible,
         model: str,
         custom_prompt: str = "",
+        task_version: int | None = None,
     ) -> EpisodeDraftCandidate:
         execution = await self._execute(
             NarrativeTaskId.SHORT_EPISODE,
             TaskContext({"source": episode, "custom_prompt": custom_prompt, "bible": bible}),
             model=model,
+            task_version=task_version,
         )
         return cast(EpisodeDraftCandidate, execution.result)
 
@@ -315,11 +317,13 @@ class OllamaNarrativeAuthor:
         bible: ProjectBible,
         model: str,
         custom_prompt: str = "",
+        task_version: int | None = None,
     ) -> EpisodeBreakdownCandidate:
         execution = await self._execute(
             NarrativeTaskId.BREAKDOWN,
             TaskContext({"source": episode, "custom_prompt": custom_prompt, "bible": bible}),
             model=model,
+            task_version=task_version,
         )
         return cast(EpisodeBreakdownCandidate, execution.result)
 
@@ -329,8 +333,9 @@ class OllamaNarrativeAuthor:
         context: TaskContext,
         *,
         model: str,
+        task_version: int | None = None,
     ) -> TaskExecution[Any]:
-        spec = DEFAULT_TASK_REGISTRY.get(task_id)
+        spec = DEFAULT_TASK_REGISTRY.get(task_id, 1 if task_version is None else task_version)
         execution = await self.provider.execute(
             spec.compile(context),
             model=model,

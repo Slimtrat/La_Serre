@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import httpx
@@ -22,6 +23,40 @@ def _settings(tmp_path: Path) -> Settings:
         private_content_dir=tmp_path / "private",
         output_dir=tmp_path / "output",
     )
+
+
+def test_old_guided_brief_loads_with_metadata_defaults_and_roundtrips(
+    tmp_path: Path,
+) -> None:
+    registry = GuidedAuthoringRegistry(tmp_path / "private")
+    registry.path.parent.mkdir(parents=True)
+    registry.path.write_text(
+        json.dumps({"schema_version": 1, "revision": 0, "brief": {"idea": "Ancien projet"}}),
+        encoding="utf-8",
+    )
+
+    legacy = registry.load()
+    assert legacy.brief.language == "fr"
+    assert legacy.brief.source_example_id is None
+    assert legacy.brief.learning_goals == []
+    assert legacy.brief.continuity_notes == []
+
+    updated = legacy.model_copy(
+        update={
+            "brief": legacy.brief.model_copy(
+                update={
+                    "source_example_id": "fritz-pizzafest-de",
+                    "learning_goals": ["Compter en allemand"],
+                    "continuity_notes": ["Fritz reste jardinier"],
+                }
+            )
+        }
+    )
+    registry.save(updated, expected_revision=0)
+    persisted = registry.load().brief
+    assert persisted.source_example_id == "fritz-pizzafest-de"
+    assert persisted.learning_goals == ["Compter en allemand"]
+    assert persisted.continuity_notes == ["Fritz reste jardinier"]
 
 
 async def test_guided_drafts_are_persistent_incomplete_and_promotable(

@@ -1062,6 +1062,44 @@ export interface EpisodeStateDelta {
   visual_states?: StateMutation[];
 }
 
+export interface GuidedProjectBrief {
+  /** @maxLength 500 */
+  audience?: string;
+  continuity_notes?: string[];
+  /** @maxLength 50000 */
+  episode_concept?: string;
+  /** @maxLength 180 */
+  episode_title?: string;
+  /** @maxLength 200 */
+  genre?: string;
+  /** @maxLength 50000 */
+  idea?: string;
+  /** @pattern ^[a-z]{2}$ */
+  language?: string;
+  learning_goals?: string[];
+  locked_fields?: string[];
+  source_example_id?: string | null;
+  /** @maxLength 500 */
+  tone?: string;
+  /** @maxLength 180 */
+  working_title?: string;
+}
+
+/**
+ * A reusable story seed; never a pre-written episode or a private project.
+ */
+export interface ExampleStory {
+  brief: GuidedProjectBrief;
+  continuity_notes?: string[];
+  description: string;
+  /** @pattern ^[a-z0-9][a-z0-9-]*$ */
+  id: string;
+  /** @pattern ^[a-z]{2}$ */
+  language: string;
+  learning_goals?: string[];
+  name: string;
+}
+
 export type GeneralValidationVerdict = typeof GeneralValidationVerdict[keyof typeof GeneralValidationVerdict];
 
 
@@ -1294,24 +1332,6 @@ export interface GuidedAutopilotRequest {
   prompt?: string;
 }
 
-export interface GuidedProjectBrief {
-  /** @maxLength 500 */
-  audience?: string;
-  /** @maxLength 50000 */
-  episode_concept?: string;
-  /** @maxLength 180 */
-  episode_title?: string;
-  /** @maxLength 200 */
-  genre?: string;
-  /** @maxLength 50000 */
-  idea?: string;
-  locked_fields?: string[];
-  /** @maxLength 500 */
-  tone?: string;
-  /** @maxLength 180 */
-  working_title?: string;
-}
-
 export interface GuidedBriefRequest {
   brief: GuidedProjectBrief;
   /** @minimum 0 */
@@ -1365,6 +1385,10 @@ export interface GuidedEpisodeLinkRequest {
   episode_id?: string | null;
   /** @minimum 0 */
   expected_revision: number;
+}
+
+export interface GuidedExamplesResponse {
+  examples: ExampleStory[];
 }
 
 export type GuidedProposalAcceptRequestEditedAfter = { [key: string]: unknown } | null;
@@ -5693,6 +5717,31 @@ return orvalFetch<PutEpisodeLinkApiGuidedEpisodeLinkPut200>(getPutEpisodeLinkApi
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(guidedEpisodeLinkRequest)
+  }
+);}
+
+
+
+export const getGetExamplesApiGuidedExamplesGetUrl = () => {
+
+
+
+
+  return `/api/guided/examples`
+}
+
+/**
+ * Expose editable story briefs without mutating the current project.
+ * @summary Get Examples
+ */
+export const getExamplesApiGuidedExamplesGet = async ( options?: Parameters<typeof orvalFetch>[1]): Promise<GuidedExamplesResponse> => {
+
+  return orvalFetch<GuidedExamplesResponse>(getGetExamplesApiGuidedExamplesGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 

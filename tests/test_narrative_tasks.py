@@ -48,6 +48,19 @@ def test_context_compilation_rejects_missing_required_values() -> None:
         spec.compile(TaskContext({"source": "épisode"}))
 
 
+@pytest.mark.parametrize(
+    "task_id", [NarrativeTaskId.SHORT_EPISODE, NarrativeTaskId.BREAKDOWN]
+)
+def test_generic_story_tasks_preserve_legacy_versions(task_id: NarrativeTaskId) -> None:
+    legacy = DEFAULT_TASK_REGISTRY.get(task_id, 1)
+    generic = DEFAULT_TASK_REGISTRY.get(task_id, 2)
+
+    assert "Tentafruit" in legacy.objective
+    assert "Tentafruit" not in generic.objective
+    assert all("Tentafruit" not in rule for rule in generic.rules)
+    assert legacy.contract is generic.contract
+
+
 def test_registry_keeps_old_prompt_versions_addressable() -> None:
     first = TaskSpec(
         task_id="test.director",

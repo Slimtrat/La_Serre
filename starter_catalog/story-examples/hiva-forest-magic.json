@@ -1,0 +1,24 @@
+{
+  "id": "hiva-forest-magic",
+  "name": "Hiva et la maison de la forêt",
+  "description": "Une fantasy douce et originale sur une jeune corneille métamorphosée et un magicien solitaire qui apprennent à vivre ensemble.",
+  "language": "fr",
+  "brief": {
+    "working_title": "Hiva et la maison de la forêt",
+    "language": "fr",
+    "idea": "Créer une fantasy douce, originale et indépendante. Lors d'une nuit de neige, une jeune corneille blessée entre dans la maison d'un magicien solitaire, Miran. Un accident de magie la transforme en enfant dotée d'ailes noires. Elle choisit le nom de Hiva. Tandis qu'elle découvre les mots, les usages humains et ses propres envies, Miran apprend à l'accueillir sans décider de tout à sa place. Leurs aventures dans la forêt révèlent progressivement les règles et les limites de la magie, ainsi que la possibilité d'une famille choisie. Ne pas reprendre de personnage, de nom ou de scène reconnaissable d'une autre franchise.",
+    "genre": "Fantasy jeunesse, famille choisie",
+    "tone": "Merveilleux, tendre, parfois drôle ; une tension légère résolue sans cruauté graphique.",
+    "audience": "Jeunes lecteurs et lecture familiale.",
+    "episode_title": "Une visite dans la neige",
+    "episode_concept": "Après son arrivée inattendue et sa métamorphose, Hiva apprivoise une maison pleine d'objets étranges. Miran soigne son aile, établit avec elle des règles simples de sécurité et découvre que Hiva peut aussi lui apprendre à regarder la forêt autrement.",
+    "locked_fields": []
+  },
+  "learning_goals": [],
+  "continuity_notes": [
+    "Hiva possède des ailes noires et conserve des perceptions et habitudes de corneille après sa métamorphose.",
+    "Miran est un personnage original ; sa magie a des limites et ne résout pas automatiquement chaque difficulté.",
+    "Respecter l'autonomie, les émotions et la sécurité d'Hiva, représentée comme une enfant.",
+    "L'évolution de la blessure à l'aile et de la confiance entre Hiva et Miran doit rester cohérente d'une scène à l'autre."
+  ]
+}
