@@ -203,6 +203,8 @@ class EpisodeDraftApplyRequest(StrictRequest):
 
 class BreakdownApplyRequest(StrictRequest):
     candidate: EpisodeBreakdownCandidate
+    enforce_format: bool = False
+    expected_breakdown_fingerprint: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     mode: Literal["manual", "import", "ai"] = "manual"
     prompt: str = Field(default="", max_length=10_000)
     model: str | None = None

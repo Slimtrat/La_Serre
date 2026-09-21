@@ -511,6 +511,8 @@ export interface EpisodeBreakdownCandidate {
 
 export interface BreakdownApplyRequest {
   candidate: EpisodeBreakdownCandidate;
+  enforce_format?: boolean;
+  expected_breakdown_fingerprint?: string | null;
   input_fingerprint?: string | null;
   mode?: BreakdownApplyRequestMode;
   model?: string | null;

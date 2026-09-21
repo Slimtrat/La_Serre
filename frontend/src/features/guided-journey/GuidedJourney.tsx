@@ -19,6 +19,7 @@ import {
 } from "@/generated/openapi";
 import { ErrorState, Progress, Skeleton } from "@shared";
 import { continuityApi, EpisodeConsequencesPanel } from "@features/continuity";
+import { EpisodeAuthoring } from "@features/episode-authoring";
 import { SeasonPlanBoard, seasonPlanApi } from "@features/season-plan";
 
 import { JourneyContext } from "./JourneyContext";
@@ -71,10 +72,18 @@ export function GuidedJourney({ locale, onNavigate, slots }: GuidedJourneyProps)
   if (journey.error || guidedQuery.error || !journey.data || !guided) return <ErrorState title="Parcours indisponible" description="Recharge le Studio pour retrouver ton brouillon." />;
   const current = journey.data.stages.find((stage) => stage.id === activeStage) ?? journey.data.stages[0];
   const completed = journey.data.stages.filter((stage) => ["approved", "completed"].includes(stage.status)).length;
+  const openEpisode = (episodeId: string) => {
+    const selectEpisode = () => { setSelected(true); setActiveStage("episode"); };
+    if (guided.activeEpisodeId === episodeId) { selectEpisode(); return; }
+    mutation.mutate(() => putEpisodeLinkApiGuidedEpisodeLinkPut({ expected_revision: guided.revision, episode_id: episodeId }), { onSuccess: selectEpisode });
+  };
   const stageSlots = {
     ...slots,
     season: slots?.season ?? <SeasonPlanBoard api={seasonPlanApi} locale={locale}
+      onOpenEpisode={openEpisode}
       renderEpisodeConsequences={(episodeId) => <EpisodeConsequencesPanel api={continuityApi} episodeId={episodeId} locale={locale} />} />,
+    episode: slots?.episode ?? (guided.activeEpisodeId ? <EpisodeAuthoring episodeId={guided.activeEpisodeId} projectId={journey.data.project_id} locale={locale} initialTab="script" onChanged={refresh} /> : undefined),
+    storyboard: slots?.storyboard ?? (guided.activeEpisodeId ? <EpisodeAuthoring episodeId={guided.activeEpisodeId} projectId={journey.data.project_id} locale={locale} initialTab="storyboard" onChanged={refresh} /> : undefined),
   };
 
   const propose = async (target: string) => {

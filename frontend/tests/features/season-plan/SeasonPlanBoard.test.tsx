@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SeasonPlanBoard, type SeasonPlanApi, type SeasonPlanItem, type SeasonPlanProposal, type SeasonPlanSnapshot } from "@features/season-plan";
@@ -42,6 +42,17 @@ function renderBoard(value: SeasonPlanApi) {
 afterEach(() => cleanup());
 
 describe("SeasonPlanBoard", () => {
+  it("opens a materialized episode from its season card without exposing its technical ID", async () => {
+    const onOpenEpisode = vi.fn();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><SeasonPlanBoard api={api()} locale="fr" onOpenEpisode={onOpenEpisode} /></QueryClientProvider>);
+    const card = (await screen.findByDisplayValue("Les racines")).closest("[data-season-item-id]");
+    expect(card).toBeTruthy();
+    fireEvent.click(within(card as HTMLElement).getByRole("button", { name: "Écrire l’épisode" }));
+    expect(onOpenEpisode).toHaveBeenCalledWith("S01E001");
+    expect(within(card as HTMLElement).getByText("S01E001").closest("details")?.open).toBe(false);
+  });
+
   it("edits a stable item while keeping the production code in advanced details", async () => {
     const updateItem = vi.fn(async () => snapshot(4));
     renderBoard(api({ updateItem }));

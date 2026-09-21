@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 import shutil
 import threading
@@ -17,6 +19,10 @@ from engine.world.models import CharacterProfile, LocationProfile
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 EPISODE_ID = re.compile(r"^S\d{2}E\d{3}$")
+
+
+class BreakdownRevisionConflictError(ValueError):
+    """A breakdown changed after the editor loaded it."""
 
 
 class EpisodeCatalog:
@@ -68,6 +74,24 @@ class EpisodeCatalog:
             shots=shots,
         )
 
+    def breakdown_fingerprint(self, episode_id: str) -> str | None:
+        with self._lock:
+            episode = self.get(episode_id)
+            if not episode.shot_order:
+                return None
+            shot_dir = self.episode_dir(episode_id) / "shots"
+            shots = [
+                self._load_model(shot_dir / f"{shot_id}.json", Shot)
+                for shot_id in episode.shot_order
+            ]
+            payload = {
+                "episode": episode.model_dump(mode="json"),
+                "shots": [shot.model_dump(mode="json") for shot in shots],
+            }
+            return hashlib.sha256(
+                json.dumps(payload, ensure_ascii=False, sort_keys=True).encode()
+            ).hexdigest()
+
     def get(self, episode_id: str) -> Episode:
         if not EPISODE_ID.fullmatch(episode_id):
             raise ValueError(f"Invalid episode id: {episode_id}")
@@ -108,13 +132,25 @@ class EpisodeCatalog:
             self._write_episode(path, episode)
         return episode
 
-    def save_breakdown(self, episode: Episode, shots: list[Shot]) -> EpisodePackage:
+    def save_breakdown(
+        self,
+        episode: Episode,
+        shots: list[Shot],
+        *,
+        expected_fingerprint: str | None = None,
+    ) -> EpisodePackage:
         if [shot.id for shot in shots] != episode.shot_order:
             raise ValueError("Breakdown shots must exactly match episode.shot_order")
         with self._lock:
             episode_dir = self.episode_dir(episode.id)
             if not (episode_dir / "episode.json").is_file():
                 raise FileNotFoundError(episode_dir / "episode.json")
+            current = self.get(episode.id)
+            if current.shot_order:
+                if expected_fingerprint != self.breakdown_fingerprint(episode.id):
+                    raise BreakdownRevisionConflictError(
+                        "Le storyboard a changé : recharge-le avant de l’enregistrer"
+                    )
             for shot in shots:
                 write_text_atomic(
                     episode_dir / "shots" / f"{shot.id}.json",

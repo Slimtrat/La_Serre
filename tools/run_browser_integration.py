@@ -63,6 +63,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     scenarios = args.scenario or [
         Path("tests/browser/guided_casting_integration.mjs"),
         Path("tests/browser/season_board_smoke.mjs"),
+        Path("tests/browser/episode_authoring_smoke.mjs"),
     ]
     scenario_paths = [
         (root / item).resolve() if not item.is_absolute() else item.resolve()

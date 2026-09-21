@@ -50,6 +50,13 @@ La gate de cohérence vérifie au minimum la présence d’une promesse narrativ
 résolution des identifiants de casting et de lieux dans la Bible. Son empreinte est conservée :
 si le texte change, l’approbation est refusée jusqu’à une nouvelle validation.
 
+Dans le parcours React, sélectionner **Écrire l’épisode** depuis une carte matérialisée du plan
+de saison lie cet épisode au parcours. Les onglets Résumé, Scénario, Storyboard et Cohérence
+permettent ensuite de travailler sans éditer de JSON. Le scénario peut être saisi manuellement
+ou proposé par l’IA locale ; la proposition reste modifiable avant **Soumettre à relecture**.
+Une sauvegarde de brouillon ne vaut pas approbation. Après la relecture, seul un rapport encore
+valide déverrouille **Approuver le scénario**.
+
 ## Découpage
 
 Le découpage IA ou importé est rendu sous forme de cartes de plans éditables. `Appliquer le
@@ -59,6 +66,13 @@ découpage` vérifie les références canoniques puis crée atomiquement :
 - un contrat `Shot` par plan ;
 - trois `visual_beats` début / milieu / fin pour guider les trois images de continuité ;
 - la provenance (manuel, import ou IA, prompt et modèle).
+
+Dans l’atelier React, chaque plan peut être modifié, déplacé, ajouté ou retiré avant application.
+Le nombre de plans et la durée sont vérifiés selon le format actif, et la somme des durées des
+plans doit égaler la durée cible. Le découpage déjà appliqué se recharge dans les cartes : une
+empreinte de version empêche alors d’écraser un changement concurrent et invite à recharger.
+Les références de personnages et lieux sont choisies par nom dans la Bible ; les identifiants
+techniques ne sont pas nécessaires dans ce parcours.
 
 ## API principale
 
