@@ -13263,8 +13263,8 @@ function ia(e) {
 			shot_order: Zi(n.shot_order),
 			shot_sources: Object.fromEntries(Object.entries(Ji(n.shot_sources)).filter((e) => typeof e[1] == "string"))
 		},
-		characters: Xi(t.characters).map(na),
-		locations: Xi(t.locations).map(na),
+		characters: Xi(t.available_characters ?? t.characters).map(na),
+		locations: Xi(t.available_locations ?? t.locations).map(na),
 		shots: Xi(t.shots).map(ra),
 		breakdown_fingerprint: typeof t.breakdown_fingerprint == "string" ? t.breakdown_fingerprint : typeof n.breakdown_fingerprint == "string" ? n.breakdown_fingerprint : null,
 		format_output: ea(t.format_output)
@@ -13524,7 +13524,9 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 			t,
 			e
 		],
-		queryFn: () => da.get(e)
+		queryFn: () => da.get(e),
+		refetchOnWindowFocus: !1,
+		refetchOnReconnect: !1
 	}), [o, s] = (0, _.useState)(r), [c, l] = (0, _.useState)(null), [u, d] = (0, _.useState)(null), [f, p] = (0, _.useState)([]), [m, h] = (0, _.useState)(30), [g, v] = (0, _.useState)(), [y, x] = (0, _.useState)(), [S, C] = (0, _.useState)(null), [w, E] = (0, _.useState)(!1), [ee, D] = (0, _.useState)(!1), [te, ne] = (0, _.useState)(""), [re, ie] = (0, _.useState)(""), [ae, oe] = (0, _.useState)(""), [se, O] = (0, _.useState)("");
 	(0, _.useEffect)(() => s(r), [r]), (0, _.useEffect)(() => {
 		a.data && (l(ga(a.data)), d(fa(a.data)), p([...a.data.episode.shot_order]), h(a.data.episode.duration_target), v(void 0), x(void 0), C(null), E(!1), D(!1));
@@ -13559,22 +13561,22 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 		"breakdown",
 		"production",
 		"final"
-	].includes(ce.status), j = de && A.locations.length > 0, fe = u.shots.reduce((e, t) => e + Number(t.duration || 0), 0), pe = Math.abs(fe - m) <= .01, me = u.shots.length >= le.shot_count_min && u.shots.length <= le.shot_count_max, ge = m >= le.duration_seconds_min && m <= le.duration_seconds_max, _e = pe && me && ge, ve = (e) => {
+	].includes(ce.status), j = de && A.locations.length > 0, fe = u.shots.reduce((e, t) => e + Number(t.duration || 0), 0), pe = Math.abs(fe - m) <= .01, me = u.shots.length >= le.shot_count_min && u.shots.length <= le.shot_count_max, ge = m >= le.duration_seconds_min && m <= le.duration_seconds_max, _e = u.shots.every((e) => !e.dialogue || e.dialogue.speaker_id && (e.dialogue.mode !== "on_screen" || e.character_ids.includes(e.dialogue.speaker_id))), ve = pe && me && ge && _e, ye = (e) => {
 		l({
 			...c,
 			...e
 		}), E(!0), C(null);
-	}, ye = (e, t) => {
+	}, be = (e, t) => {
 		d({ shots: u.shots.map((n, r) => r === e ? {
 			...n,
 			...t
 		} : n) }), D(!0);
-	}, be = (e, t, n) => {
-		t.dialogue && ye(e, { dialogue: {
+	}, xe = (e, t, n) => {
+		t.dialogue && be(e, { dialogue: {
 			...t.dialogue,
 			...n
 		} });
-	}, xe = (e, t) => {
+	}, M = (e, t) => {
 		let n = e + t;
 		if (n < 0 || n >= u.shots.length) return;
 		let r = [...u.shots];
@@ -13666,7 +13668,7 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 							className: V.grid,
 							children: [/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Titre", /* @__PURE__ */ (0, b.jsx)("input", {
 								maxLength: 180,
-								onChange: (e) => ve({ title: e.target.value }),
+								onChange: (e) => ye({ title: e.target.value }),
 								value: c.title
 							})] }), /* @__PURE__ */ (0, b.jsxs)("label", { children: ["Durée cible (secondes)", /* @__PURE__ */ (0, b.jsx)("input", {
 								max: le.duration_seconds_max,
@@ -13681,19 +13683,19 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 						}),
 						/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Promesse / logline", /* @__PURE__ */ (0, b.jsx)("input", {
 							maxLength: 1e3,
-							onChange: (e) => ve({ logline: e.target.value }),
+							onChange: (e) => ye({ logline: e.target.value }),
 							value: c.logline
 						})] }),
 						/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Scénario", /* @__PURE__ */ (0, b.jsx)("textarea", {
 							minLength: 20,
-							onChange: (e) => ve({ narrative_source: e.target.value }),
+							onChange: (e) => ye({ narrative_source: e.target.value }),
 							rows: 8,
 							value: c.narrative_source
 						})] }),
 						/* @__PURE__ */ (0, b.jsx)("div", {
 							className: V.grid,
 							children: ma.map((e) => /* @__PURE__ */ (0, b.jsxs)("label", { children: [ha[n][e], /* @__PURE__ */ (0, b.jsx)("textarea", {
-								onChange: (t) => ve({ story: {
+								onChange: (t) => ye({ story: {
 									...c.story,
 									[e]: t.target.value
 								} }),
@@ -13704,7 +13706,7 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 							className: V.checks,
 							children: A.characters.map((e) => /* @__PURE__ */ (0, b.jsxs)("label", { children: [/* @__PURE__ */ (0, b.jsx)("input", {
 								checked: c.character_ids.includes(e.id),
-								onChange: (t) => ve({ character_ids: t.target.checked ? [...c.character_ids, e.id] : c.character_ids.filter((t) => t !== e.id) }),
+								onChange: (t) => ye({ character_ids: t.target.checked ? [...c.character_ids, e.id] : c.character_ids.filter((t) => t !== e.id) }),
 								type: "checkbox"
 							}), e.name] }, e.id))
 						})] }),
@@ -13712,7 +13714,7 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 							className: V.checks,
 							children: A.locations.map((e) => /* @__PURE__ */ (0, b.jsxs)("label", { children: [/* @__PURE__ */ (0, b.jsx)("input", {
 								checked: c.location_ids.includes(e.id),
-								onChange: (t) => ve({ location_ids: t.target.checked ? [...c.location_ids, e.id] : c.location_ids.filter((t) => t !== e.id) }),
+								onChange: (t) => ye({ location_ids: t.target.checked ? [...c.location_ids, e.id] : c.location_ids.filter((t) => t !== e.id) }),
 								type: "checkbox"
 							}), e.name] }, e.id))
 						})] }),
@@ -13785,7 +13787,7 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 				children: de ? /* @__PURE__ */ (0, b.jsxs)(b.Fragment, { children: [
 					/* @__PURE__ */ (0, b.jsxs)("div", {
 						className: V.budget,
-						"data-valid": _e,
+						"data-valid": ve,
 						children: [
 							/* @__PURE__ */ (0, b.jsxs)("strong", { children: [u.shots.length, " plans"] }),
 							/* @__PURE__ */ (0, b.jsxs)("span", { children: [
@@ -13794,8 +13796,19 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 								m.toFixed(2),
 								" s"
 							] }),
-							/* @__PURE__ */ (0, b.jsx)("span", { children: _e ? "Budget prêt" : `Il faut ${le.shot_count_min} à ${le.shot_count_max} plans, ${le.duration_seconds_min} à ${le.duration_seconds_max} s et une somme égale à la cible.` })
+							/* @__PURE__ */ (0, b.jsx)("span", { children: ve ? "Budget prêt" : `Il faut ${le.shot_count_min} à ${le.shot_count_max} plans, ${le.duration_seconds_min} à ${le.duration_seconds_max} s et une somme égale à la cible.` })
 						]
+					}),
+					/* @__PURE__ */ (0, b.jsxs)("p", { children: [
+						"Repères éditoriaux : le premier plan porte l’accroche « ",
+						ce.story.hook || "à écrire",
+						" » ; le dernier prépare la sortie « ",
+						ce.story.cliffhanger || "à écrire",
+						" ». Ces cartes restent libres et modifiables."
+					] }),
+					_e ? null : /* @__PURE__ */ (0, b.jsx)("p", {
+						role: "alert",
+						children: "Choisis un locuteur pour chaque dialogue ; s’il est à l’image, ajoute-le aux personnages du plan."
 					}),
 					A.locations.length ? null : /* @__PURE__ */ (0, b.jsx)("div", {
 						className: V.empty,
@@ -13818,7 +13831,7 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 								children: [
 									/* @__PURE__ */ (0, b.jsx)(T, {
 										disabled: t === 0 || !!re,
-										onClick: () => xe(t, -1),
+										onClick: () => M(t, -1),
 										size: "small",
 										type: "button",
 										variant: "ghost",
@@ -13826,7 +13839,7 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 									}),
 									/* @__PURE__ */ (0, b.jsx)(T, {
 										disabled: t === u.shots.length - 1 || !!re,
-										onClick: () => xe(t, 1),
+										onClick: () => M(t, 1),
 										size: "small",
 										type: "button",
 										variant: "ghost",
@@ -13848,20 +13861,20 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 								children: [
 									/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Action narrative", /* @__PURE__ */ (0, b.jsx)("textarea", {
 										minLength: 10,
-										onChange: (e) => ye(t, { source_text: e.target.value }),
+										onChange: (e) => be(t, { source_text: e.target.value }),
 										value: e.source_text
 									})] }),
 									/* @__PURE__ */ (0, b.jsxs)("div", {
 										className: V.grid,
 										children: [/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Durée (s)", /* @__PURE__ */ (0, b.jsx)("input", {
-											max: 12,
+											max: le.duration_seconds_max,
 											min: .1,
-											onChange: (e) => ye(t, { duration: Number(e.target.value) }),
+											onChange: (e) => be(t, { duration: Number(e.target.value) }),
 											step: "0.01",
 											type: "number",
 											value: e.duration
 										})] }), /* @__PURE__ */ (0, b.jsxs)("label", { children: ["Lieu", /* @__PURE__ */ (0, b.jsx)("select", {
-											onChange: (e) => ye(t, { location_id: e.target.value }),
+											onChange: (e) => be(t, { location_id: e.target.value }),
 											value: e.location_id,
 											children: A.locations.map((e) => /* @__PURE__ */ (0, b.jsx)("option", {
 												value: e.id,
@@ -13870,7 +13883,7 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 										})] })]
 									}),
 									/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Action visible", /* @__PURE__ */ (0, b.jsx)("textarea", {
-										onChange: (e) => ye(t, { action: e.target.value }),
+										onChange: (e) => be(t, { action: e.target.value }),
 										value: e.action
 									})] }),
 									/* @__PURE__ */ (0, b.jsxs)("details", { children: [/* @__PURE__ */ (0, b.jsx)("summary", { children: "Personnages, dialogue et direction visuelle" }), /* @__PURE__ */ (0, b.jsxs)("div", { children: [
@@ -13879,7 +13892,7 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 											children: A.characters.map((n) => /* @__PURE__ */ (0, b.jsxs)("label", { children: [/* @__PURE__ */ (0, b.jsx)("input", {
 												checked: e.character_ids.includes(n.id),
 												disabled: !e.character_ids.includes(n.id) && e.character_ids.length >= 3,
-												onChange: (r) => ye(t, {
+												onChange: (r) => be(t, {
 													character_ids: r.target.checked ? [...e.character_ids, n.id] : e.character_ids.filter((e) => e !== n.id),
 													dialogue: !r.target.checked && e.dialogue?.speaker_id === n.id && e.dialogue.mode === "on_screen" ? null : e.dialogue
 												}),
@@ -13890,33 +13903,33 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 											className: V.grid,
 											children: [
 												/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Type de plan", /* @__PURE__ */ (0, b.jsx)("input", {
-													onChange: (e) => ye(t, { shot_type: e.target.value }),
+													onChange: (e) => be(t, { shot_type: e.target.value }),
 													value: e.shot_type
 												})] }),
 												/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Mouvement caméra", /* @__PURE__ */ (0, b.jsx)("input", {
-													onChange: (e) => ye(t, { camera_movement: e.target.value }),
+													onChange: (e) => be(t, { camera_movement: e.target.value }),
 													value: e.camera_movement
 												})] }),
 												/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Objectif", /* @__PURE__ */ (0, b.jsx)("input", {
-													onChange: (e) => ye(t, { lens: e.target.value }),
+													onChange: (e) => be(t, { lens: e.target.value }),
 													value: e.lens
 												})] }),
 												/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Lumière", /* @__PURE__ */ (0, b.jsx)("input", {
-													onChange: (e) => ye(t, { lighting: e.target.value }),
+													onChange: (e) => be(t, { lighting: e.target.value }),
 													value: e.lighting
 												})] }),
 												/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Ambiance", /* @__PURE__ */ (0, b.jsx)("input", {
-													onChange: (e) => ye(t, { mood: e.target.value }),
+													onChange: (e) => be(t, { mood: e.target.value }),
 													value: e.mood
 												})] }),
 												/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Style (séparé par virgules)", /* @__PURE__ */ (0, b.jsx)("input", {
-													onChange: (e) => ye(t, { style: e.target.value.split(",").map((e) => e.trim()).filter(Boolean) }),
+													onChange: (e) => be(t, { style: e.target.value.split(",").map((e) => e.trim()).filter(Boolean) }),
 													value: e.style.join(", ")
 												})] })
 											]
 										}),
 										/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Dialogue", /* @__PURE__ */ (0, b.jsx)("textarea", {
-											onChange: (n) => ye(t, { dialogue: n.target.value ? {
+											onChange: (n) => be(t, { dialogue: n.target.value ? {
 												...e.dialogue ?? {
 													speaker_id: "",
 													mode: "voice_over",
@@ -13931,7 +13944,7 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 											className: V.grid,
 											children: [
 												/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Locuteur", /* @__PURE__ */ (0, b.jsxs)("select", {
-													onChange: (n) => be(t, e, { speaker_id: n.target.value }),
+													onChange: (n) => xe(t, e, { speaker_id: n.target.value }),
 													value: e.dialogue.speaker_id,
 													children: [/* @__PURE__ */ (0, b.jsx)("option", {
 														value: "",
@@ -13942,7 +13955,7 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 													}, e.id))]
 												})] }),
 												/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Présence de la voix", /* @__PURE__ */ (0, b.jsxs)("select", {
-													onChange: (n) => be(t, e, { mode: n.target.value }),
+													onChange: (n) => xe(t, e, { mode: n.target.value }),
 													value: e.dialogue.mode,
 													children: [
 														/* @__PURE__ */ (0, b.jsx)("option", {
@@ -13960,11 +13973,11 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 													]
 												})] }),
 												/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Intention", /* @__PURE__ */ (0, b.jsx)("input", {
-													onChange: (n) => be(t, e, { intention: n.target.value }),
+													onChange: (n) => xe(t, e, { intention: n.target.value }),
 													value: e.dialogue.intention
 												})] }),
 												/* @__PURE__ */ (0, b.jsxs)("label", { children: ["Émotion", /* @__PURE__ */ (0, b.jsx)("input", {
-													onChange: (n) => be(t, e, { emotion: n.target.value }),
+													onChange: (n) => xe(t, e, { emotion: n.target.value }),
 													value: e.dialogue.emotion
 												})] })
 											]
@@ -13997,7 +14010,7 @@ function ya({ episodeId: e, projectId: t, locale: n, initialTab: r = "summary", 
 								children: "Proposer le storyboard avec l’IA locale"
 							}),
 							/* @__PURE__ */ (0, b.jsx)(T, {
-								disabled: !!re || !_e || !j,
+								disabled: !!re || !ve || !j,
 								onClick: () => k("apply-shots", async () => {
 									await da.applyBreakdown(e, u, y, A.breakdown_fingerprint);
 								}, "Storyboard appliqué et prêt pour la production."),

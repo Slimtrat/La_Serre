@@ -96,4 +96,21 @@ describe("EpisodeAuthoring", () => {
     expect(screen.getByText("Budget prêt")).toBeTruthy();
     expect(screen.queryByText("shot-0")).toBeNull();
   });
+
+  it("blocks an on-screen speaker until the character is included in the shot", async () => {
+    const approved = snapshot("approved", 6);
+    api.get.mockResolvedValue({ ...approved, shots: approved.shots.map((item) => ({ ...item, characters: [] })) });
+    renderAuthoring("storyboard");
+    await screen.findByText("Budget prêt");
+    const first = screen.getAllByRole("listitem").filter((element) => element.textContent?.includes("Plan "))[0];
+    fireEvent.click(within(first).getByText("Personnages, dialogue et direction visuelle"));
+    fireEvent.change(within(first).getByRole("textbox", { name: "Dialogue" }), { target: { value: "Les pâtes sont à moi !" } });
+    expect(screen.getByRole("button", { name: "Appliquer le storyboard" }).hasAttribute("disabled")).toBe(true);
+    fireEvent.change(within(first).getByRole("combobox", { name: "Locuteur" }), { target: { value: "person-1" } });
+    fireEvent.change(within(first).getByRole("combobox", { name: "Présence de la voix" }), { target: { value: "on_screen" } });
+    expect(screen.getByRole("button", { name: "Appliquer le storyboard" }).hasAttribute("disabled")).toBe(true);
+    fireEvent.click(within(first).getByRole("checkbox", { name: "Chita" }));
+    expect(screen.queryByText(/Choisis un locuteur pour chaque dialogue/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Appliquer le storyboard" }).hasAttribute("disabled")).toBe(false);
+  });
 });

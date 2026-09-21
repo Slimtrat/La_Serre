@@ -79,7 +79,9 @@ export function decodeEpisodeSnapshot(value: unknown): EpisodeSnapshot {
     shot_order: strings(source.shot_order), shot_sources: Object.fromEntries(Object.entries(object(source.shot_sources)).filter((entry): entry is [string, string] => typeof entry[1] === "string")),
   };
   return {
-    episode, characters: list(packageSource.characters).map(entity), locations: list(packageSource.locations).map(entity),
+    episode,
+    characters: list(packageSource.available_characters ?? packageSource.characters).map(entity),
+    locations: list(packageSource.available_locations ?? packageSource.locations).map(entity),
     shots: list(packageSource.shots).map(shot),
     breakdown_fingerprint: typeof packageSource.breakdown_fingerprint === "string" ? packageSource.breakdown_fingerprint
       : typeof source.breakdown_fingerprint === "string" ? source.breakdown_fingerprint : null,

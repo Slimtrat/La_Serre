@@ -62,6 +62,7 @@ def create_episode_router(
         try:
             package = catalog.load(episode_id)
             fingerprint = catalog.breakdown_fingerprint(episode_id)
+            bible = BibleRegistry(catalog.root).load()
             format_output = load_format_profile(
                 catalog.root, fallback_template_id="custom"
             ).output
@@ -72,6 +73,12 @@ def create_episode_router(
         return {
             **package.model_dump(mode="json"),
             "breakdown_fingerprint": fingerprint,
+            "available_characters": [
+                character.model_dump(mode="json") for character in bible.characters
+            ],
+            "available_locations": [
+                location.model_dump(mode="json") for location in bible.locations
+            ],
             "format_output": {
                 "shot_count_min": format_output.shot_count_min,
                 "shot_count_max": format_output.shot_count_max,

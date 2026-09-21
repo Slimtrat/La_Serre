@@ -77,6 +77,13 @@ async def test_episode_get_exposes_active_project_format(tmp_path: Path) -> None
         created = await client.post("/api/episodes", json={"title": "La salle"})
         episode_id = created.json()["id"]
         custom = await client.get(f"/api/episodes/{episode_id}")
+        assert custom.status_code == 200
+        assert custom.json()["episode"]["characters"] == []
+        assert custom.json()["episode"]["locations"] == []
+        assert custom.json()["characters"] == []
+        assert custom.json()["locations"] == []
+        assert [item["id"] for item in custom.json()["available_characters"]] == ["iris"]
+        assert [item["id"] for item in custom.json()["available_locations"]] == ["glass_room"]
         assert custom.json()["format_output"] == {
             "shot_count_min": 1,
             "shot_count_max": 999,

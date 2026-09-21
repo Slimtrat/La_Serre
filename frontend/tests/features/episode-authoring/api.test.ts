@@ -53,6 +53,18 @@ describe("episode authoring adapter", () => {
     });
   });
 
+  it("offers every Bible entity when the GET includes available lists", () => {
+    const snapshot = decodeEpisodeSnapshot({
+      ...packageResult,
+      available_characters: [{ id: "fritz", name: "Fritz" }, { id: "drek", name: "Drek" }],
+      available_locations: [{ id: "farm", name: "Farm" }, { id: "restaurant", name: "Restaurant" }],
+    });
+    expect(snapshot.episode.characters).toEqual(["fritz"]);
+    expect(snapshot.characters.map((item) => item.id)).toEqual(["fritz", "drek"]);
+    expect(snapshot.locations.map((item) => item.id)).toEqual(["farm", "restaurant"]);
+    expect(decodeEpisodeSnapshot(packageResult).characters.map((item) => item.id)).toEqual(["fritz"]);
+  });
+
   it("rejects a malformed episode and invalid review instead of silently applying defaults", () => {
     expect(() => decodeEpisodeSnapshot({ episode: { title: "Missing id" } })).toThrow(/episode.id/);
     expect(() => decodeEpisodeSnapshot({ ...packageResult, format_output: { ...packageResult.format_output, shot_count_min: 20 } })).toThrow(/format_output/);
