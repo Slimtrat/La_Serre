@@ -20,6 +20,7 @@ from typing import BinaryIO, Protocol
 from urllib.parse import urljoin, urlsplit
 
 from engine.config import Settings
+from engine.runtime.installers.comfy import COMFY_CLI_VERSION, UV_WINDOWS_X64
 from engine.runtime.installers.ollama import OLLAMA_WINDOWS_X64
 from engine.runtime.managed_tools import resolve_managed_tool
 
@@ -551,6 +552,7 @@ def _comfyui_spec(
     configured = _service_override(overrides, "comfyui")
     command = _configured_command(configured, runtime_root)
     working_directory = _configured_directory(configured, runtime_root)
+    managed_environment: dict[str, str] = {}
     if command is None:
         executable = _first_executable(
             environ.get("SERRE_COMFYUI_EXECUTABLE"),
@@ -578,6 +580,28 @@ def _comfyui_spec(
                     extra_model_paths=extra_paths,
                 )
                 working_directory = install_root
+            else:
+                managed_root = runtime_root / ".la-serre-runtime"
+                workspace = managed_root / "comfyui"
+                uv = resolve_managed_tool(managed_root, UV_WINDOWS_X64)
+                if uv is not None and (workspace / "ComfyUI" / "main.py").is_file():
+                    parsed = urlsplit(url)
+                    command = (
+                        str(uv),
+                        "tool", "run", "--offline", "--from",
+                        f"comfy-cli=={COMFY_CLI_VERSION}",
+                        "comfy", f"--workspace={workspace}", "launch", "--",
+                        "--listen", parsed.hostname or "127.0.0.1",
+                        "--port", str(parsed.port or 8188),
+                    )
+                    working_directory = workspace
+                    tools_root = managed_root / "tools"
+                    managed_environment = {
+                        "UV_CACHE_DIR": str(tools_root / "uv-cache"),
+                        "UV_TOOL_DIR": str(tools_root / "uv-tools"),
+                        "UV_PYTHON_INSTALL_DIR": str(tools_root / "uv-python"),
+                        "UV_PYTHON_PREFERENCE": "only-managed",
+                    }
     return LocalServiceSpec(
         name="comfyui",
         display_name="ComfyUI",
@@ -585,6 +609,7 @@ def _comfyui_spec(
         health_path="/system_stats",
         command=command,
         working_directory=working_directory,
+        environment=managed_environment,
         auto_start=_configured_bool(configured, "auto_start", True),
         startup_timeout_seconds=_configured_float(configured, "startup_timeout_seconds", 240.0),
     )

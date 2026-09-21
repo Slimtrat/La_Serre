@@ -12,6 +12,8 @@ Le parcours supporté part de `SerreStudio.exe`. Node.js est requis uniquement p
 | Ollama | archive Windows x64 officielle 0.34.0 vérifiée par SHA-256, exécutable et modèles isolés | `.la-serre-runtime/tools/ollama`, sans installateur système |
 | FFmpeg + FFprobe | build Windows essentials 9.0.1 recommandé depuis ffmpeg.org, archive Gyan vérifiée par SHA-256 | `.la-serre-runtime/tools/ffmpeg`, sans modification du `PATH` |
 
+Après une installation de ComfyUI dans l’espace géré, fermer puis rouvrir La Serre permet au superviseur de découvrir le nouveau workspace. Il utilise alors le `uv.exe` vérifié par reçu et SHA-256 pour lancer `comfy-cli==1.20.0` sur ce workspace, avec le cache et Python dans `.la-serre-runtime/tools`. Le lancement est hors ligne : une dépendance absente du cache échoue visiblement, sans téléchargement implicite au démarrage. Une installation ComfyUI personnelle configurée garde la priorité ; aucun dossier personnel n’est modifié par cette découverte.
+
 Le wizard expose avant consentement la version, la source, la licence, le checksum et la destination de chaque prérequis géré. Un refus ne crée aucun job et ne déclenche aucun téléchargement.
 
 ## Reprise et intégrité
@@ -22,7 +24,7 @@ Après la première installation d’Ollama, le wizard demande de fermer puis ro
 
 Les tests CI utilisent des archives et processus factices : aucun outil, modèle ou poids réel n’y est téléchargé.
 
-Dans le binaire, l’essai final réinspecte les composants requis avec les adaptateurs embarqués. Il n’appelle jamais les commandes de développement `python`, `pytest` ou `node`. Hors binaire, ces contrôles de développement restent exécutés en complément.
+Dans le binaire, l’essai final réinspecte les composants requis avec les adaptateurs embarqués. Il n’appelle jamais les commandes de développement `python`, `pytest` ou `node`. Hors binaire, ces contrôles de développement restent exécutés en complément. La présence du fichier `ComfyUI/main.py` est nécessaire pour reconnaître un workspace installé ; un dossier vide ne suffit pas.
 
 ## Rapport d’essai Windows propre
 

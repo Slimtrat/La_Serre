@@ -19,6 +19,7 @@ from apps.desktop.service_launcher import (
     set_active_service_supervisor,
 )
 from engine.config import Settings
+from engine.runtime.installers.comfy import COMFY_CLI_VERSION, UV_WINDOWS_X64
 from engine.runtime.installers.ollama import OLLAMA_WINDOWS_X64
 
 
@@ -289,6 +290,54 @@ def test_discovery_uses_verified_managed_ollama_after_restart(tmp_path: Path) ->
 
     ollama = next(service for service in services if service.name == "ollama")
     assert ollama.command == (str(executable.resolve()), "serve")
+
+
+def test_discovery_launches_verified_managed_comfy_without_system_tools(
+    tmp_path: Path,
+) -> None:
+    managed_root = tmp_path / ".la-serre-runtime"
+    tool_root = managed_root / "tools" / UV_WINDOWS_X64.name / UV_WINDOWS_X64.version
+    tool_root.mkdir(parents=True)
+    uv = tool_root / UV_WINDOWS_X64.executable
+    uv.write_bytes(b"verified uv")
+    (tool_root / ".la-serre-tool.json").write_text(
+        json.dumps(
+            {
+                "name": UV_WINDOWS_X64.name,
+                "version": UV_WINDOWS_X64.version,
+                "source": UV_WINDOWS_X64.source,
+                "archive_sha256": UV_WINDOWS_X64.archive_sha256,
+                "executable_sha256": hashlib.sha256(uv.read_bytes()).hexdigest(),
+            }
+        ),
+        encoding="utf-8",
+    )
+    workspace = managed_root / "comfyui"
+    (workspace / "ComfyUI").mkdir(parents=True)
+    (workspace / "ComfyUI" / "main.py").write_text("", encoding="utf-8")
+    settings = Settings(_env_file=None, comfyui_url="http://127.0.0.1:8199")
+
+    services = discover_local_services(settings, tmp_path, environ={"PATH": ""})
+    comfyui = next(service for service in services if service.name == "comfyui")
+
+    assert comfyui.command == (
+        str(uv.resolve()),
+        "tool", "run", "--offline", "--from", f"comfy-cli=={COMFY_CLI_VERSION}",
+        "comfy", f"--workspace={workspace}", "launch", "--",
+        "--listen", "127.0.0.1", "--port", "8199",
+    )
+    assert comfyui.working_directory == workspace
+    assert comfyui.environment == {
+        "UV_CACHE_DIR": str(managed_root / "tools" / "uv-cache"),
+        "UV_TOOL_DIR": str(managed_root / "tools" / "uv-tools"),
+        "UV_PYTHON_INSTALL_DIR": str(managed_root / "tools" / "uv-python"),
+        "UV_PYTHON_PREFERENCE": "only-managed",
+    }
+
+    uv.write_bytes(b"tampered")
+    services = discover_local_services(settings, tmp_path, environ={"PATH": ""})
+    comfyui = next(service for service in services if service.name == "comfyui")
+    assert comfyui.command is None
 
 
 def test_discovery_supports_comfyui_desktop_installation(tmp_path: Path) -> None:
