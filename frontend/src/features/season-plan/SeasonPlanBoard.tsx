@@ -16,13 +16,14 @@ export interface SeasonPlanBoardProps {
   readonly api: SeasonPlanApi;
   readonly locale: SeasonPlanLocale;
   readonly renderEpisodeConsequences?: (episodeId: string) => ReactNode;
+  readonly onOpenEpisode?: (episodeId: string) => void;
 }
 const STATUS_TONE: Record<SeasonPlanStatus, "neutral" | "success" | "warning" | "info"> = {
   draft: "neutral", validated: "success", materialized: "info", produced: "success", obsolete: "warning",
 };
 const lines = (value: string) => value.split("\n").map((item) => item.trim()).filter(Boolean);
 
-export function SeasonPlanBoard({ api, locale, renderEpisodeConsequences }: SeasonPlanBoardProps) {
+export function SeasonPlanBoard({ api, locale, renderEpisodeConsequences, onOpenEpisode }: SeasonPlanBoardProps) {
   const labels = getSeasonPlanMessages(locale);
   const queryClient = useQueryClient();
   const planQuery = useQuery({ queryKey: QUERY_KEY, queryFn: api.getPlan });
@@ -88,6 +89,7 @@ export function SeasonPlanBoard({ api, locale, renderEpisodeConsequences }: Seas
           onDrop={(event) => { event.preventDefault(); if (draggedId) void reorder(draggedId, item.id); setDraggedId(null); }}>
           <SeasonPlanCard busy={busyItem === item.id}
             consequences={item.episode_id && renderEpisodeConsequences ? renderEpisodeConsequences(item.episode_id) : null}
+            onOpenEpisode={item.episode_id && onOpenEpisode ? () => onOpenEpisode(item.episode_id as string) : undefined}
             index={index} item={item} labels={labels}
             moveDown={() => moveBy(item.id, 1)} moveUp={() => moveBy(item.id, -1)}
             onDelete={() => item.status === "produced" ? setConfirmDelete(item) : void perform(item.id, () => api.deleteItem(item.id, { expected_revision: plan.revision }), labels.removed)}
@@ -108,6 +110,7 @@ export function SeasonPlanBoard({ api, locale, renderEpisodeConsequences }: Seas
 type Labels = ReturnType<typeof getSeasonPlanMessages>;
 interface CardProps {
   readonly busy: boolean; readonly consequences?: ReactNode; readonly index: number; readonly item: SeasonPlanItem; readonly labels: Labels;
+  readonly onOpenEpisode?: () => void;
   readonly moveDown: () => void; readonly moveUp: () => void; readonly onDelete: () => void; readonly onDragEnd: () => void;
   readonly onDragStart: (event: DragEvent<HTMLButtonElement>) => void; readonly onDuplicate: () => void;
   readonly onMaterialize: () => void; readonly onRestore: () => void; readonly onSave: (fields: SeasonPlanItemFields) => void;
@@ -115,7 +118,7 @@ interface CardProps {
   readonly registerHandle: (node: HTMLButtonElement | null) => void; readonly total: number;
 }
 
-function SeasonPlanCard({ busy, consequences, index, item, labels, moveDown, moveUp, onDelete, onDragEnd, onDragStart, onDuplicate, onMaterialize, onRestore, onSave, onValidate, registerHandle, total }: CardProps) {
+function SeasonPlanCard({ busy, consequences, index, item, labels, moveDown, moveUp, onOpenEpisode, onDelete, onDragEnd, onDragStart, onDuplicate, onMaterialize, onRestore, onSave, onValidate, registerHandle, total }: CardProps) {
   const [draft, setDraft] = useState(() => editableFields(item));
   useEffect(() => setDraft(editableFields(item)), [item]);
   const deleted = Boolean(item.deleted_at);
@@ -144,6 +147,7 @@ function SeasonPlanCard({ busy, consequences, index, item, labels, moveDown, mov
       </details>
       <div className={styles.actions}>{deleted ? <Button disabled={busy} onClick={onRestore}>{labels.restore}</Button> : <>
         <Button loading={busy} loadingLabel={labels.saving} type="submit">{labels.save}</Button>{item.status === "draft" ? <Button disabled={busy} onClick={onValidate} variant="secondary">{labels.validate}</Button> : null}<Button disabled={busy} onClick={onDuplicate} variant="secondary">{labels.duplicate}</Button>
+        {onOpenEpisode ? <Button disabled={busy} onClick={onOpenEpisode} type="button" variant="secondary">Écrire l’épisode</Button> : null}
         <Button disabled={busy || item.episode_id !== null || item.status !== "validated"} onClick={onMaterialize} variant="secondary">{labels.materialize}</Button><Button disabled={busy} onClick={onDelete} variant="danger">{labels.remove}</Button>
       </>}</div>
     </form>
