@@ -41,6 +41,24 @@ def test_context_compilation_is_deterministic_and_inlines_contract_schema() -> N
     assert "custom_prompt" in left.messages[1]["content"]
 
 
+def test_ollama_schemas_keep_required_fields_named_title() -> None:
+    for spec in DEFAULT_TASK_REGISTRY.list():
+        schema = spec.contract.ollama_schema()
+        _assert_required_properties_exist(schema)
+
+
+def _assert_required_properties_exist(value: object) -> None:
+    if isinstance(value, list):
+        for item in value:
+            _assert_required_properties_exist(item)
+    elif isinstance(value, dict):
+        required = value.get("required", [])
+        if required:
+            assert set(required) <= set(value.get("properties", {}))
+        for item in value.values():
+            _assert_required_properties_exist(item)
+
+
 def test_context_compilation_rejects_missing_required_values() -> None:
     spec = DEFAULT_TASK_REGISTRY.get(NarrativeTaskId.SHORT_EPISODE)
 
@@ -48,9 +66,7 @@ def test_context_compilation_rejects_missing_required_values() -> None:
         spec.compile(TaskContext({"source": "épisode"}))
 
 
-@pytest.mark.parametrize(
-    "task_id", [NarrativeTaskId.SHORT_EPISODE, NarrativeTaskId.BREAKDOWN]
-)
+@pytest.mark.parametrize("task_id", [NarrativeTaskId.SHORT_EPISODE, NarrativeTaskId.BREAKDOWN])
 def test_generic_story_tasks_preserve_legacy_versions(task_id: NarrativeTaskId) -> None:
     legacy = DEFAULT_TASK_REGISTRY.get(task_id, 1)
     generic = DEFAULT_TASK_REGISTRY.get(task_id, 2)

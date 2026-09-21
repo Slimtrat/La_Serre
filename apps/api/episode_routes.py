@@ -27,7 +27,7 @@ from engine.narrative.episode_models import (
 from engine.narrative.narrative_workflow import OllamaNarrativeAuthor, build_shots
 from engine.narrative.ollama import OllamaClient
 from engine.production.artifacts import write_text_atomic
-from engine.templates.catalog import load_format_profile
+from engine.templates.catalog import TENTAFRUIT_TEMPLATE_ID, load_format_profile
 from engine.world.bible import BibleRegistry
 from engine.world.catalog import BreakdownRevisionConflictError, EpisodeCatalog
 from engine.world.models import ProjectBible
@@ -63,9 +63,7 @@ def create_episode_router(
             package = catalog.load(episode_id)
             fingerprint = catalog.breakdown_fingerprint(episode_id)
             bible = BibleRegistry(catalog.root).load()
-            format_output = load_format_profile(
-                catalog.root, fallback_template_id="custom"
-            ).output
+            format_output = load_format_profile(catalog.root, fallback_template_id="custom").output
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=f"Episode not found: {episode_id}") from exc
         except ValueError as exc:
@@ -180,6 +178,7 @@ def create_episode_router(
                 bible=bible,
                 model=selected,
                 custom_prompt=payload.prompt,
+                task_version=_story_task_version(settings_provider),
             ),
         )
         return {
@@ -270,6 +269,7 @@ def create_episode_router(
                 bible=bible,
                 model=selected,
                 custom_prompt=payload.prompt,
+                task_version=_story_task_version(settings_provider),
             ),
         )
         return {
@@ -453,6 +453,13 @@ def _episode_review(episode: Episode, bible: ProjectBible) -> dict[str, object]:
         "can_approve": status != "fail",
         "findings": findings,
     }
+
+
+def _story_task_version(settings_provider: Callable[[], Settings]) -> int:
+    profile = load_format_profile(
+        settings_provider().private_content_dir, fallback_template_id="custom"
+    )
+    return 1 if profile.id == TENTAFRUIT_TEMPLATE_ID else 2
 
 
 async def _episode_candidate[CandidateT: BaseModel](
