@@ -6,6 +6,7 @@ from pathlib import Path
 
 import httpx
 
+from apps.api.episode_routes import _story_task_version
 from apps.api.main import create_app
 from engine.config import Settings
 from engine.narrative.episode_models import Episode, EpisodeStatus
@@ -101,6 +102,17 @@ async def test_episode_get_exposes_active_project_format(tmp_path: Path) -> None
             "duration_seconds_min": 30,
             "duration_seconds_max": 60,
         }
+
+
+def test_story_task_version_follows_project_format(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    assert _story_task_version(lambda: settings) == 2
+    settings.private_content_dir.mkdir(parents=True)
+    shutil.copyfile(
+        Path("starter_catalog/series-format.json"),
+        settings.private_content_dir / "series-format.json",
+    )
+    assert _story_task_version(lambda: settings) == 1
 
 
 async def test_director_ai_returns_a_non_canonical_structured_candidate() -> None:

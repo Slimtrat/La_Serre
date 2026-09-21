@@ -169,7 +169,7 @@ class EpisodeBreakdownCandidate(StrictWorkflowModel):
     shots: list[ShotBlueprint] = Field(min_length=1, max_length=99)
 
 
-def _inline_schema(value: Any, definitions: dict[str, Any]) -> Any:
+def _inline_schema(value: Any, definitions: dict[str, Any], *, property_map: bool = False) -> Any:
     if isinstance(value, list):
         return [_inline_schema(item, definitions) for item in value]
     if not isinstance(value, dict):
@@ -178,7 +178,9 @@ def _inline_schema(value: Any, definitions: dict[str, Any]) -> Any:
     if isinstance(reference, str):
         return _inline_schema(definitions[reference.rsplit("/", 1)[-1]], definitions)
     return {
-        key: _inline_schema(item, definitions)
+        key: _inline_schema(
+            item, definitions, property_map=key in {"properties", "patternProperties"}
+        )
         for key, item in value.items()
-        if key not in {"title", "default"}
+        if property_map or key not in {"title", "default"}
     }
