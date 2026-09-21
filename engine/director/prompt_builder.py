@@ -18,7 +18,8 @@ class PromptBuilder:
 
     default_negative = (
         "identity drift, face change, inconsistent anatomy, extra fingers, extra limbs, "
-        "duplicate person, costume change, text, logo, watermark, low detail, oversaturated"
+        "duplicate person, costume change, text, logo, watermark, low detail, oversaturated, "
+        "triptych, comic panels, split screen, collage, multiple frames"
     )
 
     def build(self, shot: Shot) -> PromptPackage:
@@ -48,7 +49,7 @@ class PromptBuilder:
                 DialogueMode.VOICE_OVER: "delivers voice-over narration",
             }[shot.dialogue.mode]
             dialogue = (
-                f'{shot.dialogue.speaker} {delivery}. Exact spoken line: '
+                f"{shot.dialogue.speaker} {delivery}. Exact spoken line: "
                 f'"{shot.dialogue.text}". Do not make the speaker visible unless the cast '
                 "section explicitly places them in frame"
             )
@@ -62,8 +63,7 @@ class PromptBuilder:
         timeline = "No explicit visual timeline supplied."
         if shot.visual_beats:
             timeline = "\n".join(
-                f"{round(beat.at * 100)}% — {beat.description}"
-                for beat in shot.visual_beats
+                f"{round(beat.at * 100)}% — {beat.description}" for beat in shot.visual_beats
             )
 
         editorial = "No additional series-level editorial direction."
@@ -71,9 +71,10 @@ class PromptBuilder:
         if shot.canonical_context:
             context = shot.canonical_context
             editorial = "; ".join(context.tone) or editorial
-            visual_direction = "; ".join(
-                [*context.art_direction, *context.world_rules, *context.constraints]
-            ) or visual_direction
+            visual_direction = (
+                "; ".join([*context.art_direction, *context.world_rules, *context.constraints])
+                or visual_direction
+            )
 
         positive = "\n\n".join(
             [
@@ -124,10 +125,16 @@ class PromptBuilder:
 
     @staticmethod
     def visual_beat_prompt(prompt: PromptPackage, description: str) -> str:
+        positive = prompt.positive
+        if "\n\nSHOT TIMELINE:\n" in positive:
+            before, remaining = positive.split("\n\nSHOT TIMELINE:\n", 1)
+            _, after = remaining.split("\n\nDIALOGUE:\n", 1)
+            positive = before + "\n\nDIALOGUE:\n" + after
         return (
-            "PRIMARY FRAME INSTRUCTION — render this exact instant before anything else:\n"
+            "PRIMARY FRAME INSTRUCTION — render one single full-frame image of this "
+            "exact instant, never a storyboard or multiple panels:\n"
             f"{description}.\nDo not include actions that happen earlier or later. "
             "Keep the same declared character identity, anatomy, set geometry, props, "
             "palette and light direction as the adjacent frame.\n\n"
-            f"{prompt.positive}"
+            f"{positive}"
         )

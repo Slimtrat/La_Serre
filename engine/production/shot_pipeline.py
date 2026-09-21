@@ -42,6 +42,8 @@ class ShotPipelineOptions:
     guide_keyframes: tuple[Path, ...] = ()
     force: bool = False
     timeout_seconds: float = 1800
+    keyframe_width: int | None = None
+    keyframe_height: int | None = None
 
 
 class ShotPipeline:
@@ -59,6 +61,12 @@ class ShotPipeline:
 
     async def run(self, options: ShotPipelineOptions) -> GenerationRecord:
         shot = Shot.model_validate_json(options.shot_path.read_text(encoding="utf-8"))
+        for label, dimension in (
+            ("keyframe_width", options.keyframe_width),
+            ("keyframe_height", options.keyframe_height),
+        ):
+            if dimension is not None and (dimension < 256 or dimension % 8):
+                raise ValueError(f"{label} must be at least 256 and divisible by 8")
         if len(options.guide_keyframes) > 2:
             raise ValueError("LTX accepte au maximum deux poses guides en plus de l'image initiale")
         self._notify("input", "completed", f"{shot.id} validé")
@@ -131,6 +139,8 @@ class ShotPipeline:
                         )
                 for index, (target, stage_name, beat_description) in enumerate(targets, start=1):
                     keyframe_context = dict(context)
+                    keyframe_context["width"] = options.keyframe_width or shot.render.width
+                    keyframe_context["height"] = options.keyframe_height or shot.render.height
                     if beat_description:
                         keyframe_context["prompt"] = self.prompt_builder.visual_beat_prompt(
                             prompt, beat_description
@@ -151,9 +161,7 @@ class ShotPipeline:
                     )
                     await self.client.download_output(image_output, target)
                     record.stages.append(
-                        self._stage_from_image(
-                            shot, image_execution, target, stage_name=stage_name
-                        )
+                        self._stage_from_image(shot, image_execution, target, stage_name=stage_name)
                     )
                     self._notify(
                         "keyframe",
@@ -165,12 +173,8 @@ class ShotPipeline:
                     previous_pose = target
                 if scripted_beats:
                     frames = shot.render.frames or 9
-                    context["guide_frame_1"] = self._ltx_frame(
-                        frames, scripted_beats[1].at
-                    )
-                    context["guide_frame_2"] = self._ltx_frame(
-                        frames, scripted_beats[2].at
-                    )
+                    context["guide_frame_1"] = self._ltx_frame(frames, scripted_beats[1].at)
+                    context["guide_frame_2"] = self._ltx_frame(frames, scripted_beats[2].at)
                 self._notify("keyframe", "completed", f"{len(targets)} pose(s) téléchargée(s)")
 
             for index, guide in enumerate(options.guide_keyframes, start=1):
@@ -245,6 +249,8 @@ class ShotPipeline:
                 "render": shot.render.model_dump(mode="json"),
                 "keyframe_profile": str(options.keyframe_profile.resolve()),
                 "video_profile": str(options.video_profile.resolve()),
+                "keyframe_width": options.keyframe_width or shot.render.width,
+                "keyframe_height": options.keyframe_height or shot.render.height,
                 "from_keyframe": str(options.from_keyframe.resolve())
                 if options.from_keyframe
                 else None,

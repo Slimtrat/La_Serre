@@ -16,11 +16,14 @@ def _write_profile(tmp_path: Path, name: str, video: bool) -> Path:
         "3": {"class_type": "Sampler", "inputs": {"seed": 0}},
         "6": {"class_type": "Text", "inputs": {"text": ""}},
         "9": {"class_type": "Save", "inputs": {"filename_prefix": ""}},
+        "12": {"class_type": "Canvas", "inputs": {"width": 0, "height": 0}},
     }
     bindings = [
         {"source": "seed", "node_id": "3", "input": "seed"},
         {"source": "prompt", "node_id": "6", "input": "text"},
         {"source": "output_prefix", "node_id": "9", "input": "filename_prefix"},
+        {"source": "width", "node_id": "12", "input": "width"},
+        {"source": "height", "node_id": "12", "input": "height"},
     ]
     if video:
         nodes["10"] = {"class_type": "LoadImage", "inputs": {"image": ""}}
@@ -47,9 +50,12 @@ async def test_pipeline_produces_traceable_keyframe_and_clip(tmp_path: Path) -> 
     prompt_ids = iter(
         ("keyframe-start-job", "keyframe-middle-job", "keyframe-end-job", "video-job")
     )
+    canvas_widths: list[int] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.method == "POST" and request.url.path == "/prompt":
+            payload = json.loads(request.content)
+            canvas_widths.append(payload["prompt"]["12"]["inputs"]["width"])
             return httpx.Response(200, json={"prompt_id": next(prompt_ids)})
         if request.method == "POST" and request.url.path == "/upload/image":
             return httpx.Response(200, json={"name": "keyframe.png", "type": "input"})
@@ -75,9 +81,7 @@ async def test_pipeline_produces_traceable_keyframe_and_clip(tmp_path: Path) -> 
             )
         raise AssertionError(f"Unexpected request: {request.method} {request.url}")
 
-    shot_text = await asyncio.to_thread(
-        Path("examples/shot.json").read_text, encoding="utf-8"
-    )
+    shot_text = await asyncio.to_thread(Path("examples/shot.json").read_text, encoding="utf-8")
     shot_payload = json.loads(shot_text)
     shot_payload["visual_beats"] = [
         {"id": "start", "at": 0, "description": "Belladone reaches toward the lock"},
@@ -100,9 +104,7 @@ async def test_pipeline_produces_traceable_keyframe_and_clip(tmp_path: Path) -> 
     ) as client:
         record = await ShotPipeline(
             client,
-            on_progress=lambda stage, status, message: progress.append(
-                (stage, status, message)
-            ),
+            on_progress=lambda stage, status, message: progress.append((stage, status, message)),
         ).run(
             ShotPipelineOptions(
                 shot_path=shot_path,
@@ -110,11 +112,14 @@ async def test_pipeline_produces_traceable_keyframe_and_clip(tmp_path: Path) -> 
                 keyframe_profile=keyframe_profile,
                 keyframe_guide_profile=keyframe_guide_profile,
                 video_profile=video_profile,
+                keyframe_width=768,
+                keyframe_height=1024,
             )
         )
 
     destination = tmp_path / "output" / "S01E001-S01"
     assert record.status is GenerationState.GENERATED
+    assert canvas_widths == [768, 768, 768, 576]
     assert (destination / "keyframe.png").read_bytes() == b"png-bytes"
     assert (destination / "keyframe-guide-1.png").read_bytes() == b"png-bytes"
     assert (destination / "keyframe-guide-2.png").read_bytes() == b"png-bytes"

@@ -32,3 +32,5 @@ def test_visual_beat_prompt_puts_the_exact_pose_first() -> None:
     assert result.index("Belladone catches the black ring") < result.index(
         "CHARACTERS VISIBLE IN FRAME:"
     )
+    assert "SHOT TIMELINE" not in result
+    assert "multiple panels" in result
