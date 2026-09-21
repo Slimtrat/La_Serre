@@ -274,6 +274,23 @@
           "candidate": {
             "$ref": "#/components/schemas/EpisodeBreakdownCandidate"
           },
+          "enforce_format": {
+            "default": false,
+            "title": "Enforce Format",
+            "type": "boolean"
+          },
+          "expected_breakdown_fingerprint": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Breakdown Fingerprint"
+          },
           "input_fingerprint": {
             "anyOf": [
               {

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import httpx
@@ -65,6 +66,34 @@ def test_episode_model_can_exist_before_casting_and_shots() -> None:
     assert episode.status is EpisodeStatus.IDEA
     assert episode.characters == []
     assert episode.shot_order == []
+
+
+async def test_episode_get_exposes_active_project_format(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    _seed_bible(settings.private_content_dir)
+    app = create_app(settings)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        created = await client.post("/api/episodes", json={"title": "La salle"})
+        episode_id = created.json()["id"]
+        custom = await client.get(f"/api/episodes/{episode_id}")
+        assert custom.json()["format_output"] == {
+            "shot_count_min": 1,
+            "shot_count_max": 999,
+            "duration_seconds_min": 1,
+            "duration_seconds_max": 3600,
+        }
+        shutil.copyfile(
+            Path("starter_catalog/series-format.json"),
+            settings.private_content_dir / "series-format.json",
+        )
+        tentafruit = await client.get(f"/api/episodes/{episode_id}")
+        assert tentafruit.json()["format_output"] == {
+            "shot_count_min": 6,
+            "shot_count_max": 10,
+            "duration_seconds_min": 30,
+            "duration_seconds_max": 60,
+        }
 
 
 async def test_director_ai_returns_a_non_canonical_structured_candidate() -> None:
@@ -275,6 +304,141 @@ async def test_episode_authoring_review_gate_and_manual_breakdown(tmp_path: Path
         "end",
     ]
     assert payload["episode"]["provenance"][-1]["stage"] == "breakdown"
+
+
+async def test_episode_approval_rejects_review_after_bible_change(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    _seed_bible(settings.private_content_dir)
+    app = create_app(settings)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        created = await client.post(
+            "/api/episodes",
+            json={
+                "title": "La salle",
+                "concept": "Iris entre dans la salle de verre et découvre une porte cachée.",
+            },
+        )
+        episode_id = created.json()["id"]
+        await client.put(
+            f"/api/episodes/{episode_id}",
+            json={"logline": "Iris découvre la porte cachée derrière les vitres."},
+        )
+        review = await client.post(f"/api/episodes/{episode_id}/review")
+        assert review.json()["can_approve"] is True
+        _seed_bible(settings.private_content_dir)
+        stale = await client.post(f"/api/episodes/{episode_id}/approve")
+        assert stale.status_code == 409
+        assert "Bible" in stale.json()["detail"]
+        await client.post(f"/api/episodes/{episode_id}/review")
+        approved = await client.post(f"/api/episodes/{episode_id}/approve")
+        assert approved.json()["status"] == "approved"
+
+
+async def test_guided_breakdown_enforces_project_format_before_writing(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    _seed_bible(settings.private_content_dir)
+    settings.private_content_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(
+        Path("starter_catalog/series-format.json"),
+        settings.private_content_dir / "series-format.json",
+    )
+    app = create_app(settings)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        created = await client.post(
+            "/api/episodes",
+            json={
+                "title": "La salle",
+                "concept": "Iris entre dans la salle de verre et découvre une porte cachée.",
+                "duration_target": 30,
+            },
+        )
+        episode_id = created.json()["id"]
+        await client.put(
+            f"/api/episodes/{episode_id}",
+            json={"logline": "Iris découvre la porte cachée derrière les vitres."},
+        )
+        await client.post(f"/api/episodes/{episode_id}/review")
+        await client.post(f"/api/episodes/{episode_id}/approve")
+
+        def card(index: int, duration: float = 5) -> dict[str, object]:
+            return {
+                "source_text": f"Iris explore la salle de verre, mouvement narratif {index}.",
+                "duration": duration,
+                "location_id": "glass_room",
+                "character_ids": ["iris"],
+                "shot_type": "medium",
+                "camera_movement": "slow push-in",
+                "action": f"Iris observe le détail numéro {index} et avance.",
+                "lighting": "lumière de lune froide",
+                "mood": "suspicion silencieuse",
+                "style": ["fantasy cinématique"],
+            }
+
+        too_few = await client.post(
+            f"/api/episodes/{episode_id}/breakdown/apply",
+            json={"candidate": {"shots": [card(1)]}, "enforce_format": True},
+        )
+        assert too_few.status_code == 422
+        assert "6" in too_few.json()["detail"]
+        wrong_budget = await client.post(
+            f"/api/episodes/{episode_id}/breakdown/apply",
+            json={
+                "candidate": {"shots": [card(index, 4) for index in range(6)]},
+                "enforce_format": True,
+            },
+        )
+        assert wrong_budget.status_code == 422
+        assert "somme" in wrong_budget.json()["detail"]
+        before = await client.get(f"/api/episodes/{episode_id}")
+        assert before.json()["episode"]["status"] == "approved"
+        assert before.json()["shots"] == []
+
+        applied = await client.post(
+            f"/api/episodes/{episode_id}/breakdown/apply",
+            json={
+                "candidate": {"shots": [card(index) for index in reversed(range(6))]},
+                "enforce_format": True,
+                "mode": "manual",
+            },
+        )
+        assert applied.status_code == 200
+        package = applied.json()
+        assert package["episode"]["duration_target"] == 30
+        assert len(package["shots"]) == 6
+        assert package["shots"][0]["id"] == f"{episode_id}-S01"
+        assert "numéro 5" in package["shots"][0]["action"]
+        assert package["episode"]["provenance"][-1]["mode"] == "manual"
+
+        original_fingerprint = package["breakdown_fingerprint"]
+        assert isinstance(original_fingerprint, str)
+        reloaded = await client.get(f"/api/episodes/{episode_id}")
+        assert reloaded.json()["breakdown_fingerprint"] == original_fingerprint
+        revised_cards = [card(index) for index in range(6)]
+        revised_cards[0]["action"] = "Iris reprend le premier plan après rechargement."
+        revision = {
+            "candidate": {"shots": revised_cards},
+            "enforce_format": True,
+            "expected_breakdown_fingerprint": original_fingerprint,
+            "mode": "manual",
+        }
+        saved_again = await client.post(
+            f"/api/episodes/{episode_id}/breakdown/apply", json=revision
+        )
+        assert saved_again.status_code == 200
+        assert saved_again.json()["shots"][0]["action"] == revised_cards[0]["action"]
+        assert saved_again.json()["breakdown_fingerprint"] != original_fingerprint
+
+        stale = await client.post(f"/api/episodes/{episode_id}/breakdown/apply", json=revision)
+        assert stale.status_code == 409
+        missing_token = await client.post(
+            f"/api/episodes/{episode_id}/breakdown/apply",
+            json={"candidate": {"shots": revised_cards}, "enforce_format": True},
+        )
+        assert missing_token.status_code == 409
+        persisted = await client.get(f"/api/episodes/{episode_id}")
+        assert persisted.json()["shots"][0]["action"] == revised_cards[0]["action"]
 
 
 async def test_ai_task_identity_is_persisted_when_episode_candidate_is_applied(

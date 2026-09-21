@@ -27,8 +27,9 @@ from engine.narrative.episode_models import (
 from engine.narrative.narrative_workflow import OllamaNarrativeAuthor, build_shots
 from engine.narrative.ollama import OllamaClient
 from engine.production.artifacts import write_text_atomic
+from engine.templates.catalog import load_format_profile
 from engine.world.bible import BibleRegistry
-from engine.world.catalog import EpisodeCatalog
+from engine.world.catalog import BreakdownRevisionConflictError, EpisodeCatalog
 from engine.world.models import ProjectBible
 from engine.world.visual_identity import VisualIdentityRegistry
 
@@ -57,13 +58,27 @@ def create_episode_router(
 
     @router.get("/{episode_id}")
     def get_episode(episode_id: str) -> dict[str, object]:
+        catalog = catalog_provider()
         try:
-            package = catalog_provider().load(episode_id)
+            package = catalog.load(episode_id)
+            fingerprint = catalog.breakdown_fingerprint(episode_id)
+            format_output = load_format_profile(
+                catalog.root, fallback_template_id="custom"
+            ).output
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=f"Episode not found: {episode_id}") from exc
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
-        return package.model_dump(mode="json")
+        return {
+            **package.model_dump(mode="json"),
+            "breakdown_fingerprint": fingerprint,
+            "format_output": {
+                "shot_count_min": format_output.shot_count_min,
+                "shot_count_max": format_output.shot_count_max,
+                "duration_seconds_min": format_output.duration_seconds_min,
+                "duration_seconds_max": format_output.duration_seconds_max,
+            },
+        }
 
     @router.post("", status_code=201)
     def create_episode(payload: EpisodeCreateRequest) -> dict[str, object]:
@@ -223,6 +238,10 @@ def create_episode_router(
         report = json.loads(review_path.read_text(encoding="utf-8"))
         if report.get("fingerprint") != _episode_fingerprint(episode):
             raise HTTPException(status_code=409, detail="Le texte a changé : relance la validation")
+        if report.get("bible_fingerprint") != _bible_fingerprint(
+            BibleRegistry(catalog.root).load()
+        ):
+            raise HTTPException(status_code=409, detail="La Bible a changé : relance la validation")
         if report.get("status") == "fail":
             raise HTTPException(status_code=409, detail="Corrige les blocages avant d’approuver")
         saved = catalog.save(episode.model_copy(update={"status": EpisodeStatus.APPROVED}))
@@ -234,7 +253,7 @@ def create_episode_router(
         payload: NarrativeGenerateRequest,
     ) -> dict[str, object]:
         episode = _episode_or_404(catalog_provider(), episode_id)
-        if episode.status is not EpisodeStatus.APPROVED:
+        if episode.status not in {EpisodeStatus.APPROVED, EpisodeStatus.BREAKDOWN}:
             raise HTTPException(status_code=409, detail="Approuve l’épisode avant son découpage")
         candidate, model, execution = await _episode_candidate(
             settings_provider,
@@ -260,8 +279,39 @@ def create_episode_router(
     ) -> dict[str, object]:
         catalog = catalog_provider()
         episode = _episode_or_404(catalog, episode_id)
-        if episode.status is not EpisodeStatus.APPROVED:
+        if episode.status not in {EpisodeStatus.APPROVED, EpisodeStatus.BREAKDOWN}:
             raise HTTPException(status_code=409, detail="Approuve l’épisode avant son découpage")
+        if payload.enforce_format:
+            profile = load_format_profile(catalog.root, fallback_template_id="custom")
+            criteria = profile.output
+            count = len(payload.candidate.shots)
+            if not criteria.shot_count_min <= count <= criteria.shot_count_max:
+                raise HTTPException(
+                    status_code=422,
+                    detail=(
+                        f"Le format {profile.name} exige entre {criteria.shot_count_min} "
+                        f"et {criteria.shot_count_max} plans (reçu : {count})"
+                    ),
+                )
+            target = episode.duration_target
+            if not criteria.duration_seconds_min <= target <= criteria.duration_seconds_max:
+                raise HTTPException(
+                    status_code=422,
+                    detail=(
+                        f"Le format {profile.name} exige une durée cible entre "
+                        f"{criteria.duration_seconds_min} et {criteria.duration_seconds_max} s "
+                        f"(reçu : {target:g} s)"
+                    ),
+                )
+            total = sum(shot.duration for shot in payload.candidate.shots)
+            if abs(total - target) > 0.01:
+                raise HTTPException(
+                    status_code=422,
+                    detail=(
+                        f"La somme des plans ({total:g} s) doit correspondre "
+                        f"à la durée cible ({target:g} s), tolérance 0,01 s"
+                    ),
+                )
         try:
             updated, shots = build_shots(
                 episode,
@@ -277,10 +327,19 @@ def create_episode_router(
                     ]
                 }
             )
-            package = catalog.save_breakdown(updated, shots)
+            package = catalog.save_breakdown(
+                updated,
+                shots,
+                expected_fingerprint=payload.expected_breakdown_fingerprint,
+            )
+        except BreakdownRevisionConflictError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
-        return package.model_dump(mode="json")
+        return {
+            **package.model_dump(mode="json"),
+            "breakdown_fingerprint": catalog.breakdown_fingerprint(episode_id),
+        }
 
     return router
 
@@ -313,6 +372,12 @@ def _episode_fingerprint(episode: Episode) -> str:
     payload = episode.model_dump(mode="json", exclude={"status", "provenance"})
     return hashlib.sha256(
         json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str).encode()
+    ).hexdigest()
+
+
+def _bible_fingerprint(bible: ProjectBible) -> str:
+    return hashlib.sha256(
+        json.dumps(bible.model_dump(mode="json"), ensure_ascii=False, sort_keys=True).encode()
     ).hexdigest()
 
 
@@ -376,6 +441,7 @@ def _episode_review(episode: Episode, bible: ProjectBible) -> dict[str, object]:
         "episode_id": episode.id,
         "created_at": datetime.now(UTC).isoformat(),
         "fingerprint": _episode_fingerprint(episode),
+        "bible_fingerprint": _bible_fingerprint(bible),
         "status": status,
         "can_approve": status != "fail",
         "findings": findings,
