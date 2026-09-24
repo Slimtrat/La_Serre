@@ -22,16 +22,16 @@
   "models": [
     {
       "role": "Référence personnage FLUX",
+      "capability_role": "character.flux-dev-fp8",
       "filename": "flux1-dev-fp8.safetensors",
       "folder": "checkpoints",
-      "url": null,
       "source_note": "Télécharger un checkpoint FLUX.1-dev FP8 compatible avec CheckpointLoaderSimple."
     },
     {
       "role": "Style 3D cartoon",
+      "capability_role": "character.cartoon-lora",
       "filename": "FLUX_3Dcartoon.safetensors",
       "folder": "loras",
-      "url": null,
       "source_note": "LoRA utilisée par le workflow de référence fourni."
     }
   ],

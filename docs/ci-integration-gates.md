@@ -1,38 +1,59 @@
-# Contrôles d’intégration et preuves CI
+# CI integration gates and evidence
 
-Le workflow `Windows desktop CI` s’exécute sur toutes les pull requests vers `develop` et `main`. Il n’utilise pas de filtre de chemins, afin qu’un check configuré comme obligatoire ne reste jamais indéfiniment en attente.
+The `Windows desktop CI` workflow runs on every pull request targeting `develop` or `main`. It deliberately has no path filter, so a required check can never remain pending because a revision did not match a file pattern.
 
-## Checks stables
+## Stable checks
 
-| Nom du check | Preuve | Exécution |
+| Check name | Evidence | Runs on |
 | --- | --- | --- |
-| `Frontend quality and build` | lint, typecheck, tests composants, frontières et bundle | toute PR |
-| `Python quality and tests` | Ruff, mypy, OpenAPI, pytest et génération mockée | toute PR |
-| `Browser integration (FastAPI + persistence)` | Edge réel, FastAPI isolé, stockage temporaire, trace et logs | toute PR |
-| `Build release candidates` | PyInstaller, version, lancement du binaire, santé API et assets React | dispatch, tag ou push sur `main` |
+| `Frontend quality and build` | frontend linting, type checks, component tests, boundary tests, and bundle | every pull request |
+| `Python quality and tests` | Ruff, mypy, OpenAPI drift, pytest, and mocked generation | every pull request |
+| `Browser integration (FastAPI + persistence)` | real Edge, isolated FastAPI, temporary persistence, traces, and logs | every pull request |
+| `Feature readiness report` | Gherkin feature catalog reconciled with Python, frontend, and browser evidence | every pull request, even after an upstream failure |
+| `Build release candidates` | PyInstaller, version metadata, executable launch, API health, and React assets | dispatch, tag, or push to `main` |
 
-Le benchmark GPU réel n’est pas exécuté dans GitHub Actions. Il doit rester signalé comme absent, jamais assimilé aux doubles de ComfyUI/TTS/FFmpeg.
+The real GPU benchmark is not executed in GitHub Actions. It must remain explicitly reported as absent and must never be confused with the ComfyUI, TTS, or FFmpeg test doubles.
 
-Le commentaire persistant de PR interroge les check-runs du SHA courant. Il affiche `queued`, `in_progress`, la conclusion réelle, ou `en attente` si aucun check n’existe encore. Le packaging apparaît donc explicitement `skipped` sur une PR ordinaire.
+The persistent pull-request comment reads check runs for the current head SHA. It displays `queued`, `in_progress`, the actual conclusion, or `pending` when a check does not exist yet. `Feature readiness report` is listed directly, while release packaging is explicitly `skipped` on an ordinary pull request.
 
-## Harnais navigateur
+## Feature readiness report
 
-`python -m tools.run_browser_integration` choisit un port loopback libre, démarre le vrai FastAPI avec des répertoires privés/output/downloads temporaires, attend `/health`, lance chaque scénario Node avec un délai maximal et arrête toujours le serveur. Il publie :
+Product capabilities are documented as English Gherkin files under `features/**/*.feature`. Each scenario links to its implementation or documentation and to one or more automated evidence sources. The report job waits for the frontend, Python, and browser jobs with `if: always()`, downloads all available evidence, and evaluates the catalog with:
 
-- `fastapi.log` ;
-- `playwright.log` ;
-- une trace Playwright ;
-- une capture plein écran en cas d’échec.
+```powershell
+python -m tools.feature_report --features features `
+  --python-junit artifacts/evidence/python/test-results.xml `
+  --frontend-junit artifacts/evidence/frontend/frontend-test-results.xml `
+  --browser-results artifacts/evidence/browser/browser-results.json `
+  --gate "python=<quality-result>" `
+  --gate "frontend=<frontend-result>" `
+  --gate "browser=<browser-result>" `
+  --markdown artifacts/feature-readiness/feature-readiness.md `
+  --json artifacts/feature-readiness/feature-readiness.json `
+  --strict
+```
 
-Le scénario `guided_casting_integration.mjs` ne route ni ne remplace aucune API métier. Il part d’une Bible vide, édite et promeut une fiche, importe une vraie image, approuve le maître et vérifie la persistance après rechargement. Les moteurs externes ne sont pas appelés.
+The generated Markdown is appended to the GitHub Actions step summary. Both Markdown and machine-readable JSON are uploaded even when readiness fails. Release packaging requires this check to succeed, so missing, failed, or unexecuted feature evidence cannot produce a release candidate.
 
-## État administratif configuré le 14 septembre 2026
+## Browser harness
 
-Les rulesets actifs `develop branch` et `main branch` imposent désormais :
+`python -m tools.run_browser_integration` chooses a free loopback port, starts the real FastAPI application with temporary private/output/download directories, waits for `/health`, runs each Node scenario with a maximum duration, and always stops the server. It publishes:
 
-- une pull request, sans acteur de contournement ;
-- l’interdiction de supprimer la branche ou d’y effectuer un force-push ;
-- une branche à jour avant fusion (`strict_required_status_checks_policy`) ;
-- les trois checks GitHub Actions `Frontend quality and build`, `Python quality and tests` et `Browser integration (FastAPI + persistence)`.
+- `fastapi.log`;
+- `playwright.log`;
+- `browser-results.json`, consumed by the feature report;
+- a Playwright trace;
+- a full-page screenshot on failure.
 
-Chaque check requis est lié à l’application officielle GitHub Actions (`integration_id` 15368), afin qu’un check homonyme émis par une autre application ne satisfasse pas la protection. `Build release candidates` n’est pas obligatoire sur une PR ordinaire puisqu’il est volontairement sauté hors release.
+The `guided_casting_integration.mjs` scenario neither routes nor replaces business APIs. It starts from an empty Bible, edits and promotes a character sheet, imports a real image, approves the master, and verifies persistence after reload. External engines are not called.
+
+## Administrative state configured on September 14, 2026
+
+The active `develop branch` and `main branch` rulesets require:
+
+- a pull request, with no bypass actor;
+- deletion and force-push protection;
+- an up-to-date branch before merge (`strict_required_status_checks_policy`);
+- the official GitHub Actions checks `Frontend quality and build`, `Python quality and tests`, and `Browser integration (FastAPI + persistence)`.
+
+Each required check is bound to the official GitHub Actions application (`integration_id` 15368), so a same-named check emitted by another application cannot satisfy branch protection. `Feature readiness report` is an explicit release gate and should be added to the branch rulesets once the workflow has produced its first stable check run. `Build release candidates` is not required for ordinary pull requests because it is intentionally skipped outside release events.

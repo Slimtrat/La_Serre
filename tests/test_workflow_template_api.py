@@ -1,9 +1,11 @@
 from pathlib import Path
 
 import httpx
+import pytest
 
 from apps.api.main import create_app
 from engine.config import Settings
+from engine.generation.comfy.model_installer import ModelInstaller
 
 
 def _settings(tmp_path: Path) -> Settings:
@@ -17,24 +19,25 @@ def _settings(tmp_path: Path) -> Settings:
 
 
 async def test_template_catalogue_exposes_readiness_and_real_comfy_graphs(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr(ModelInstaller, "detect_model_roots", staticmethod(lambda: ()))
     app = create_app(_settings(tmp_path))
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.get("/api/workflow-templates")
-        graph = await client.get(
-            "/api/workflow-templates/ltx-triptych-animation-v1/graph"
-        )
+        graph = await client.get("/api/workflow-templates/ltx-triptych-animation-v1/graph")
 
     assert response.status_code == 200
     payload = response.json()
     assert len(payload["continuity_chain"]) == 4
-    assert [item["id"] for item in payload["templates"]] == payload["continuity_chain"]
+    assert [
+        item["id"] for item in payload["templates"] if item["id"] in payload["continuity_chain"]
+    ] == payload["continuity_chain"]
     assert all("models_ready" in item for item in payload["templates"])
     flux = payload["templates"][0]
     assert flux["models_ready"] is False
-    assert flux["models"][0]["destination"].endswith("flux1-dev-fp8.safetensors")
+    assert flux["models"][0]["destination"].endswith("flux1-schnell-fp8.safetensors")
     assert graph.status_code == 200
     assert graph.json()["nodes"]
     assert graph.json()["profile_id"] == "template-ltx-triptych-animation-v1"

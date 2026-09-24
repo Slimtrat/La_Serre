@@ -48,6 +48,7 @@ class Dialogue(StrictModel):
     text: str = Field(min_length=1)
     mode: DialogueMode = DialogueMode.ON_SCREEN
     performance: DialoguePerformance | None = None
+    offset_seconds: float = Field(default=0, ge=0, le=12)
 
 
 class ShotCharacter(StrictModel):
@@ -102,6 +103,7 @@ class Shot(StrictModel):
     action: str = Field(min_length=1)
     visual_beats: list[VisualBeat] = Field(default_factory=list, max_length=3)
     dialogue: Dialogue | None = None
+    dialogue_cues: list[Dialogue] = Field(default_factory=list, max_length=5)
     lighting: str = Field(min_length=1)
     mood: str = Field(min_length=1)
     style: list[str] = Field(min_length=1)
@@ -113,12 +115,19 @@ class Shot(StrictModel):
         character_ids = {character.id for character in self.characters}
         if len(character_ids) != len(self.characters):
             raise ValueError("character ids must be unique within a shot")
-        if (
-            self.dialogue
-            and self.dialogue.mode is DialogueMode.ON_SCREEN
-            and self.dialogue.speaker not in character_ids
-        ):
-            raise ValueError("on-screen dialogue speaker must be visible in the shot")
+        for dialogue in self.dialogues:
+            if (
+                dialogue.mode is DialogueMode.ON_SCREEN
+                and dialogue.speaker not in character_ids
+            ):
+                raise ValueError("on-screen dialogue speaker must be visible in the shot")
+            pause_before = (
+                dialogue.performance.pause_before_seconds
+                if dialogue.performance is not None
+                else 0
+            )
+            if dialogue.offset_seconds + pause_before >= self.duration:
+                raise ValueError("dialogue cue must start before the end of the shot")
         if self.visual_beats:
             if len(self.visual_beats) != 3:
                 raise ValueError("visual_beats must contain start, middle and end")
@@ -132,3 +141,9 @@ class Shot(StrictModel):
             target = max(9, round(self.duration * self.render.fps))
             self.render.frames = max(9, 1 + 8 * round((target - 1) / 8))
         return self
+
+    @property
+    def dialogues(self) -> list[Dialogue]:
+        """Return the primary line followed by timed supplemental cues."""
+
+        return [*([self.dialogue] if self.dialogue is not None else []), *self.dialogue_cues]

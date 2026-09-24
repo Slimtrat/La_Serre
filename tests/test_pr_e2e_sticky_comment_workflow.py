@@ -75,6 +75,14 @@ def test_sticky_comment_publishes_the_exact_maintainer_command_as_text_only() ->
     assert not re.search(rf"(?m)^\s*{re.escape(E2E_COMMAND)}\s*$", source)
 
 
+def test_sticky_comment_lists_feature_readiness_as_a_direct_check() -> None:
+    source = workflow_text()
+
+    assert '"Feature readiness report": "Feature readiness report"' in source
+    assert source.count('"Feature readiness report"') == 2
+    assert "observed.get(name, {}).get('html_url', checks_url)" in source
+
+
 def test_embedded_summary_script_is_valid_python() -> None:
     source = workflow_text()
     match = re.search(r"python - <<'PY'\n(?P<body>.*?)\n\s+PY", source, re.DOTALL)

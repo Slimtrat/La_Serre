@@ -45,6 +45,7 @@ const studioGraph = (() => {
   let activityNodeId = null;
   let outputs = {};
   let liveJobId = null;
+  let activityNavigationKey = null;
   let draggingNode = null;
   let panning = null;
   let loadRevision = 0;
@@ -895,8 +896,9 @@ const studioGraph = (() => {
     });
   }
 
-  function focusActivityStage(stageId) {
-    activityNodeId = nodeForStage(stageId);
+  function focusActivityNode(nodeId) {
+    const previous = activityNodeId;
+    activityNodeId = nodeId && nodeById[nodeId] ? nodeId : null;
     const propagation = propagationFrom(activityNodeId);
     nodes.forEach((node) => {
       const id = node.dataset.nodeId;
@@ -907,6 +909,14 @@ const studioGraph = (() => {
       );
     });
     drawEdges();
+    if (activityNodeId && activityNodeId !== previous) {
+      selectNode(activityNodeId);
+      centerNode(activityNodeId);
+    }
+  }
+
+  function focusActivityStage(stageId) {
+    focusActivityNode(stageId ? nodeForStage(stageId) : null);
   }
 
   function cacheBusted(url, jobId, suffix = "") {
@@ -1197,6 +1207,35 @@ const studioGraph = (() => {
     if (job.status === "GENERATED") {
       nodeState("master:" + graphDefinition.id, "done", "Épisode finalisé");
     }
+  });
+  window.addEventListener("studio:activity", (event) => {
+    const activity = event.detail?.activity;
+    const target = activity?.graph;
+    if (!activity || !target?.scope || !target?.id || !target?.node_id) return;
+    const apply = async () => {
+      if (
+        graphDefinition?.scope !== target.scope
+        || graphDefinition?.id !== target.id
+      ) {
+        const key = activity.id + ":" + target.scope + ":" + target.id;
+        if (activityNavigationKey === key) return;
+        activityNavigationKey = key;
+        await loadGraph(target.scope, target.id);
+      }
+      if (!nodeById[target.node_id]) return;
+      const status = String(activity.status || "GENERATING").toUpperCase();
+      const state = status === "FAILED"
+        ? "error"
+        : status === "COMPLETED"
+          ? "done"
+          : "active";
+      nodeState(target.node_id, state, activity.message || "Traitement en cours");
+      focusActivityNode(target.node_id);
+      if (status === "COMPLETED" || status === "FAILED") {
+        activityNavigationKey = null;
+      }
+    };
+    apply().catch(reportError);
   });
   window.addEventListener("studio:status", (event) => {
     if (graphDefinition?.scope !== "shot") return;

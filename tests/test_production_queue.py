@@ -327,6 +327,7 @@ async def test_job_manager_cancel_marks_job_and_stops_task(
         output_dir=tmp_path / "output",
         keyframe_workflow_profile=profile,
         keyframe_guide_workflow_profile=profile,
+        keyframe_reference_guide_workflow_profile=profile,
         video_workflow_profile=profile,
     )
     monkeypatch.setattr("apps.api.job_manager.ComfyClient", FakeComfyClient)

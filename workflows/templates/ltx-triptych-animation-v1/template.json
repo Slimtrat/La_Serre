@@ -26,18 +26,18 @@
   ],
   "models": [
     {
-      "role": "Animation LTX 2B",
+      "role": "Animation verticale LTX 2B",
+      "capability_role": "video.ltx-2b",
       "filename": "ltx-video-2b-v0.9.5.safetensors",
       "folder": "checkpoints",
-      "url": "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.5.safetensors",
-      "source_note": null
+      "source_note": "Composant du pack : video-ltx-2b"
     },
     {
-      "role": "Encodeur texte T5 FP8",
+      "role": "Encodage texte vidéo T5 FP8",
+      "capability_role": "text-encoder.t5-fp8",
       "filename": "t5xxl_fp8_e4m3fn_scaled.safetensors",
       "folder": "text_encoders",
-      "url": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn_scaled.safetensors",
-      "source_note": null
+      "source_note": "Composant du pack : text-encoder-t5-fp8"
     }
   ],
   "defaults": {

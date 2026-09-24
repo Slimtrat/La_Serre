@@ -273,7 +273,9 @@ async def test_complete_mocked_generation_journey_persists_real_studio_outputs(
         private_content_dir=private_root,
         output_dir=default_output,
         keyframe_workflow_profile=keyframe_profile,
+        keyframe_reference_workflow_profile=None,
         keyframe_guide_workflow_profile=guide_profile,
+        keyframe_reference_guide_workflow_profile=guide_profile,
         video_workflow_profile=video_profile,
         comfyui_poll_interval_seconds=0.01,
     )
@@ -445,7 +447,7 @@ async def test_complete_mocked_generation_journey_persists_real_studio_outputs(
             "has_subtitles": True,
         }
         inputs = master_manifest["inputs"]
-        assert inputs["shots"][0]["visual"]["source"] == "model"
+        assert inputs["shots"][0]["visual"]["source"] == "model-video"
         assert inputs["shots"][0]["audio"]["source"] == "studio-voice"
         assert inputs["music"]["path"].endswith("music.wav")
         assert inputs["ambience"]["path"].endswith("ambience.wav")

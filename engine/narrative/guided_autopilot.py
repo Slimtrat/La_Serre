@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import re
 import threading
+import unicodedata
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
@@ -15,6 +17,8 @@ from engine.narrative.episode_models import Episode, EpisodeStatus, EpisodeStory
 from engine.narrative.guided_authoring import GuidedAuthoringRegistry, GuidedProjectBrief
 from engine.narrative.narrative_workflow import OllamaNarrativeAuthor
 from engine.narrative.ollama import OllamaClient
+from engine.narrative.story_contract import compile_story_contract, reconcile_storyboard
+from engine.narrative.visual_gate import build_visual_proof_gate
 from engine.production.artifacts import write_text_atomic
 from engine.world.bible import BibleRegistry
 
@@ -185,6 +189,8 @@ async def execute_guided_autopilot(run_id: str, settings: Settings) -> None:
         )
         return
     bible = BibleRegistry(settings.private_content_dir).load()
+    contract_source = guided.brief.episode_concept.strip() or source
+    story_contract = compile_story_contract(contract_source)
     generation_prompt = _generation_prompt(guided.brief, run.custom_prompt)
     try:
         async with OllamaClient(str(settings.ollama_url)) as client:
@@ -244,8 +250,8 @@ async def execute_guided_autopilot(run_id: str, settings: Settings) -> None:
                 logline=proposal.logline,
                 duration_target=direction.target_episode_duration,
                 status=EpisodeStatus.WRITING,
-                characters=proposal.character_ids,
-                locations=proposal.location_ids,
+                characters=_unique(proposal.character_ids),
+                locations=_unique(proposal.location_ids),
                 story=EpisodeStory(
                     hook=proposal.logline,
                     setup=proposal.synopsis,
@@ -261,6 +267,10 @@ async def execute_guided_autopilot(run_id: str, settings: Settings) -> None:
                 custom_prompt=generation_prompt,
                 task_version=2,
             )
+            if story_contract is not None:
+                episode_draft = episode_draft.model_copy(
+                    update={"narrative_source": story_contract.source}
+                )
             registry.complete_stage(
                 run_id,
                 "episode",
@@ -274,8 +284,8 @@ async def execute_guided_autopilot(run_id: str, settings: Settings) -> None:
                     "logline": episode_draft.logline,
                     "story": episode_draft.story,
                     "narrative_source": episode_draft.narrative_source,
-                    "characters": episode_draft.character_ids,
-                    "locations": episode_draft.location_ids,
+                    "characters": _unique(episode_draft.character_ids),
+                    "locations": _unique(episode_draft.location_ids),
                 }
             )
             registry.start_stage(run_id, "storyboard")
@@ -286,20 +296,93 @@ async def execute_guided_autopilot(run_id: str, settings: Settings) -> None:
                 custom_prompt=generation_prompt,
                 task_version=2,
             )
+            if story_contract is not None:
+                storyboard = reconcile_storyboard(story_contract, storyboard)
             registry.complete_stage(
                 run_id,
                 "storyboard",
                 storyboard.model_dump(mode="json"),
                 f"{len(storyboard.shots)} plan(s) proposé(s)",
             )
+            quality_issues = _production_quality_issues(
+                guided.brief,
+                episode_draft.narrative_source,
+                storyboard,
+            )
+            for attempt in range(2, 4):
+                if not quality_issues:
+                    break
+                repair_prompt = _repair_prompt(
+                    generation_prompt,
+                    quality_issues,
+                    attempt,
+                )
+                registry.start_stage(run_id, "episode")
+                episode_draft = await author.episode_draft(
+                    episode,
+                    bible=bible,
+                    model=selected,
+                    custom_prompt=repair_prompt,
+                    task_version=2,
+                )
+                if story_contract is not None:
+                    episode_draft = episode_draft.model_copy(
+                        update={"narrative_source": story_contract.source}
+                    )
+                registry.complete_stage(
+                    run_id,
+                    "episode",
+                    episode_draft.model_dump(mode="json"),
+                    f"Réécriture qualité {attempt}/3 · {episode_draft.logline}",
+                )
+                episode = episode.model_copy(
+                    update={
+                        "title": episode_draft.title,
+                        "logline": episode_draft.logline,
+                        "story": episode_draft.story,
+                        "narrative_source": episode_draft.narrative_source,
+                        "characters": _unique(episode_draft.character_ids),
+                        "locations": _unique(episode_draft.location_ids),
+                    }
+                )
+                registry.start_stage(run_id, "storyboard")
+                storyboard = await author.breakdown(
+                    episode,
+                    bible=bible,
+                    model=selected,
+                    custom_prompt=repair_prompt,
+                    task_version=2,
+                )
+                if story_contract is not None:
+                    storyboard = reconcile_storyboard(story_contract, storyboard)
+                registry.complete_stage(
+                    run_id,
+                    "storyboard",
+                    storyboard.model_dump(mode="json"),
+                    f"Réécriture qualité {attempt}/3 · {len(storyboard.shots)} plan(s)",
+                )
+                quality_issues = _production_quality_issues(
+                    guided.brief,
+                    episode_draft.narrative_source,
+                    storyboard,
+                )
+            if quality_issues:
+                registry.fail_stage(
+                    run_id,
+                    "storyboard",
+                    "Gate narrative refusée : " + " ".join(quality_issues),
+                )
+                return
 
             registry.start_stage(run_id, "visual_pipeline")
             templates = WorkflowTemplateCatalogue().build()
+            visual_gate = build_visual_proof_gate(episode.id, storyboard)
             registry.complete_stage(
                 run_id,
                 "visual_pipeline",
                 {
-                    "continuity_chain": [template.spec.id for template in templates],
+                    "continuity_chain": list(WorkflowTemplateCatalogue.chain),
+                    "visual_gate": visual_gate.model_dump(mode="json"),
                     "recipes": [
                         {
                             "label": template.spec.label,
@@ -309,7 +392,8 @@ async def execute_guided_autopilot(run_id: str, settings: Settings) -> None:
                         for template in templates
                     ],
                 },
-                f"{len(templates)} recettes visuelles préparées",
+                f"{len(visual_gate.witnesses)} plans témoins sélectionnés · "
+                "production complète verrouillée",
             )
     except Exception as exc:  # noqa: BLE001 - persisted boundary for background work
         current = registry.get(run_id)
@@ -323,6 +407,72 @@ async def execute_guided_autopilot(run_id: str, settings: Settings) -> None:
 
 def _guided_source(payload: dict[str, object]) -> str:
     return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
+
+
+def _unique(values: list[str]) -> list[str]:
+    """Keep model order while removing duplicate canonical identifiers."""
+    return list(dict.fromkeys(values))
+
+
+def _production_quality_issues(
+    brief: GuidedProjectBrief,
+    narrative_source: str,
+    storyboard: object,
+) -> list[str]:
+    """Reject lossy adaptations before any expensive visual generation."""
+    from engine.narrative.workflow_models import EpisodeBreakdownCandidate
+
+    breakdown = EpisodeBreakdownCandidate.model_validate(storyboard)
+    source = brief.episode_concept.strip() or brief.idea.strip()
+    issues: list[str] = []
+    expected_shots = len(re.findall(r"(?m)^\s*\d+\.\s+\d", source))
+    if expected_shots and len(breakdown.shots) != expected_shots:
+        issues.append(
+            f"{len(breakdown.shots)} plans produits au lieu des {expected_shots} imposés."
+        )
+    duration_match = re.search(r"\b(\d{2,3})\s*secondes\b", source, re.IGNORECASE)
+    if duration_match:
+        expected_duration = float(duration_match.group(1))
+        actual_duration = sum(shot.duration for shot in breakdown.shots)
+        if abs(actual_duration - expected_duration) > 1:
+            issues.append(
+                f"Durée proposée {actual_duration:g} s au lieu de {expected_duration:g} s."
+            )
+    minimum_length = min(2_000, round(len(source) * 0.35))
+    if len(narrative_source.strip()) < minimum_length:
+        issues.append(
+            f"Scénario appauvri à {len(narrative_source.strip())} caractères "
+            f"(minimum {minimum_length})."
+        )
+    required_dialogue = re.findall(r"[«“]([^»”]{3,})[»”]", source)
+    if required_dialogue:
+        rendered = _normalized_text(narrative_source)
+        preserved = sum(
+            _normalized_text(line) in rendered for line in required_dialogue
+        )
+        if preserved / len(required_dialogue) < 0.6:
+            issues.append(
+                f"Seulement {preserved}/{len(required_dialogue)} dialogues verrouillés conservés."
+            )
+    return issues
+
+
+def _normalized_text(value: str) -> str:
+    decomposed = unicodedata.normalize("NFKD", value.casefold())
+    without_accents = "".join(
+        character for character in decomposed if not unicodedata.combining(character)
+    )
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", without_accents).split())
+
+
+def _repair_prompt(base_prompt: str, issues: list[str], attempt: int) -> str:
+    failures = " ".join(f"- {issue}" for issue in issues)
+    return (
+        f"{base_prompt}\n\nRÉÉCRITURE OBLIGATOIRE {attempt}/3. "
+        "La proposition précédente a été refusée par la gate de production. "
+        f"Corrige tous les défauts sans appauvrir la source verrouillée : {failures} "
+        "Ne discute pas le diagnostic ; rends directement un candidat conforme au schéma."
+    )
 
 
 def _generation_prompt(brief: GuidedProjectBrief, custom_prompt: str) -> str:
@@ -346,6 +496,21 @@ def _generation_prompt(brief: GuidedProjectBrief, custom_prompt: str) -> str:
         "Les notes de continuité contraignent les scènes et les personnages. "
         "L’identifiant d’exemple indique la provenance du brief, pas un élément de fiction."
     )
+    source_contract = (
+        "SOURCE NARRATIVE VERROUILLÉE — elle doit être relue et respectée intégralement "
+        "à chaque étape, même si la sortie d’une étape précédente la résume ou l’appauvrit. "
+        "Les dialogues, événements, durées, nombre de plans et règles explicitement indiqués "
+        "dans cette source sont des contraintes de production, pas des suggestions.\n\n"
+        f"IDÉE / SOURCE PRINCIPALE :\n{brief.idea.strip()}\n\n"
+        f"CONCEPT D’ÉPISODE :\n{brief.episode_concept.strip()}"
+    )
     return "\n\n".join(
-        part for part in (custom_prompt.strip(), directive, metadata_directive) if part
+        part
+        for part in (
+            custom_prompt.strip(),
+            directive,
+            metadata_directive,
+            source_contract,
+        )
+        if part
     )

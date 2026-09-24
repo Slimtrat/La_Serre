@@ -24,7 +24,7 @@ que le Studio, les tests et ComfyUI utilisent exactement la même recette.
 Bible personnage + plante réelle
         │
         ▼
-flux-character-master-v1
+flux-schnell-character-master-v1
 Référence maître approuvée
         │
         ▼
@@ -45,9 +45,35 @@ La première image d'une scène reprend ces invariants. Les deux poses suivantes
 réinjectent l'image précédente avec un débruitage modéré. LTX reçoit enfin les
 trois poses aux images 0, 48 et 96.
 
-## Recette FLUX adaptée
+## Référence FLUX Schnell (parcours recommandé)
 
-Le template `flux-character-master-v1` reprend les idées utiles du workflow
+Le parcours utilise désormais le checkpoint unique
+[FLUX.1-schnell FP8 de Comfy-Org](https://huggingface.co/Comfy-Org/flux1-schnell/blob/main/flux1-schnell-fp8.safetensors)
+dans `models/checkpoints/`. Le fichier fait 17,2 Go et son empreinte SHA-256
+est exposée dans le catalogue. Les poids sont sous licence Apache 2.0. La
+recette suit le workflow officiel ComfyUI : 4 étapes, Euler/simple et CFG 1.
+Elle produit une référence à approuver, pas un verrouillage automatique
+d'identité sur tout un épisode.
+
+Le Studio affiche la taille, la licence et le lien de téléchargement dans
+**Réglages → Recettes visuelles**. Les poids ne sont jamais téléchargés
+silencieusement.
+
+Une fois le checkpoint installé et visible dans ComfyUI, une référence à
+relire peut aussi être produite en CLI :
+
+```powershell
+python -m tools.generate_character_master --prompt "Description visuelle du personnage" --output artifacts/character-master.png --seed 42
+```
+
+La commande refuse d'écraser un fichier existant sans `--force`. L'image
+obtenue reste un candidat : elle doit être contrôlée avant d'être ajoutée à la
+Bible visuelle du projet.
+
+## Ancienne recette FLUX dev
+
+Le template `flux-character-master-v1` reste disponible pour les projets existants,
+mais il n'est plus le premier nœud du parcours recommandé. Il reprend les idées utiles du workflow
 fourni dans `COMFYUI.rar`, sans reprendre son personnage ni son prompt privé :
 
 - `flux1-dev-fp8.safetensors` avec `CheckpointLoaderSimple` ;
@@ -61,7 +87,10 @@ un visage de mascotte trop enfantin. Les valeurs LoRA, guidance, étapes,
 résolution et seed peuvent être remplacées par le profil sans modifier le
 graphe.
 
-Ce template produit une bonne référence, mais il ne constitue pas à lui seul un
+Les poids FLUX.1-dev sont soumis à une licence non commerciale : cette recette
+ne convient pas au chemin produit commercial par défaut.
+
+Ce template produit une référence, mais il ne constitue pas à lui seul un
 verrouillage d'identité : il ne contient ni IP-Adapter, ni PuLID, ni FLUX Redux.
 La continuité actuelle repose donc sur une référence maître approuvée, une
 description d'identité stable et l'enchaînement img2img des poses. Un futur
