@@ -10,7 +10,7 @@ from typing import Literal, cast
 from pydantic import BaseModel, ConfigDict, Field
 
 from engine.director.models import Shot
-from engine.narrative.episode_models import Episode
+from engine.narrative.episode_models import Episode, EpisodeStatus
 from engine.narrative.guided_authoring import (
     GuidedAuthoringRegistry,
     GuidedAuthoringState,
@@ -253,11 +253,13 @@ class StudioJourneyService:
                 for service in services
             )
 
+        declared = runtime.get("capabilities")
+        capability_evidence = declared if isinstance(declared, Mapping) else {}
         comfyui = ready("comfyui")
         return RuntimeCapabilities(
-            narrative=ready("ollama"),
-            image=comfyui,
-            video=comfyui,
+            narrative=ready("ollama") and capability_evidence.get("narrative") is True,
+            image=comfyui and capability_evidence.get("image") is True,
+            video=comfyui and capability_evidence.get("video") is True,
         )
 
     @staticmethod
@@ -349,7 +351,10 @@ class StudioJourneyService:
             complete += int(shot_complete)
         master_path = self.output_root / episode_id / "episode.mp4" if episode_id else None
         master = bool(
-            master_path is not None and master_path.is_file() and master_path.stat().st_size > 0
+            master_path is not None
+            and master_path.is_file()
+            and master_path.stat().st_size > 0
+            and self._master_status(episode_id) == "FINAL"
         )
         return ProductionReadiness(
             required_media=required,
@@ -368,9 +373,40 @@ class StudioJourneyService:
         if imported_video is not None:
             return True, True
         if clip.is_file() and clip.stat().st_size > 0:
-            return True, self._approved_keyframe(shot_id)
-        keyframe = self._keyframe_path(shot_id)
-        return (True, self._approved_keyframe(shot_id)) if keyframe is not None else (False, False)
+            return True, (
+                self._approved_keyframe(shot_id)
+                and self._generated_clip_verified(shot_id, clip)
+            )
+        return False, False
+
+    def _generated_clip_verified(self, shot_id: str, clip: Path) -> bool:
+        manifest_path = self.output_root / shot_id / "generation.json"
+        try:
+            payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return False
+        if not isinstance(payload, dict) or str(payload.get("status", "")).upper() != "GENERATED":
+            return False
+        outputs = payload.get("outputs")
+        if not isinstance(outputs, list):
+            return False
+        digest = hashlib.sha256(clip.read_bytes()).hexdigest()
+        return any(
+            isinstance(item, dict)
+            and Path(str(item.get("path", ""))).name == clip.name
+            and item.get("sha256") == digest
+            for item in outputs
+        )
+
+    def _master_status(self, episode_id: str | None) -> str | None:
+        if episode_id is None:
+            return None
+        manifest = self.output_root / episode_id / "episode-generation.json"
+        try:
+            payload = json.loads(manifest.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        return str(payload.get("status")) if isinstance(payload, dict) else None
 
     def _voice_present(self, shot_id: str) -> bool:
         directory = self.output_root / shot_id
@@ -581,11 +617,21 @@ class StudioJourneyService:
             production_status = JourneyStatus.EMPTY
 
         release_stale = bool(stale)
+        episode_approved = bool(
+            episode is not None
+            and episode.status
+            in {
+                EpisodeStatus.APPROVED,
+                EpisodeStatus.BREAKDOWN,
+                EpisodeStatus.PRODUCTION,
+                EpisodeStatus.FINAL,
+            }
+        )
         release_status = (
             JourneyStatus.STALE
             if release_stale
             else JourneyStatus.READY
-            if production.master_available and production.assemblable
+            if production.master_available and production.assemblable and episode_approved
             else JourneyStatus.BLOCKED
             if episode is not None
             else JourneyStatus.EMPTY
@@ -593,12 +639,19 @@ class StudioJourneyService:
 
         release_blockers: list[Blocker] = []
         if release_status is JourneyStatus.BLOCKED:
-            release_code = "MASTER_REQUIRED" if production.assemblable else "PRODUCTION_INCOMPLETE"
-            release_message = (
-                "Un master assemblé et vérifiable est requis avant la validation de release."
-                if production.assemblable
-                else "Tous les médias requis doivent être présents et validés avant l’assemblage."
-            )
+            if not episode_approved:
+                release_code = "EPISODE_APPROVAL_REQUIRED"
+                release_message = "L’épisode narratif doit être approuvé avant toute release."
+            elif production.assemblable:
+                release_code = "MASTER_REQUIRED"
+                release_message = (
+                    "Un master FINAL assemblé et vérifiable est requis avant la release."
+                )
+            else:
+                release_code = "PRODUCTION_INCOMPLETE"
+                release_message = (
+                    "Tous les clips requis doivent être présents et validés avant l’assemblage."
+                )
             release_blockers.append(
                 blocker(
                     release_code,

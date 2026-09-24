@@ -12,11 +12,21 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     comfyui_url: AnyHttpUrl = AnyHttpUrl("http://127.0.0.1:8188")
+    ace_step_url: AnyHttpUrl = AnyHttpUrl("http://127.0.0.1:8001")
     comfyui_timeout_seconds: float = Field(default=1800, gt=0)
     comfyui_poll_interval_seconds: float = Field(default=1, gt=0)
+    character_master_workflow_profile: Path | None = Path(
+        "workflows/templates/flux-schnell-character-master-v1/profile.json"
+    )
     keyframe_workflow_profile: Path | None = Path("workflows/local/keyframe.profile.json")
+    keyframe_reference_workflow_profile: Path | None = Path(
+        "workflows/local/keyframe-reference.profile.json"
+    )
     keyframe_guide_workflow_profile: Path | None = Path(
         "workflows/local/keyframe-guide.profile.json"
+    )
+    keyframe_reference_guide_workflow_profile: Path | None = Path(
+        "workflows/local/keyframe-reference-guide.profile.json"
     )
     video_workflow_profile: Path | None = Path("workflows/local/video.profile.json")
     output_dir: Path = Path("output")
@@ -49,11 +59,26 @@ class Settings(BaseSettings):
             "private_content_dir": str(self.private_content_dir),
             "comfyui_models_dir": str(self.comfyui_models_dir) if self.comfyui_models_dir else None,
             "downloads_dir": str(self.downloads_dir),
+            "character_master_workflow_profile": str(
+                self.character_master_workflow_profile
+            )
+            if self.character_master_workflow_profile
+            else None,
             "keyframe_workflow_profile": str(self.keyframe_workflow_profile)
             if self.keyframe_workflow_profile
             else None,
+            "keyframe_reference_workflow_profile": str(
+                self.keyframe_reference_workflow_profile
+            )
+            if self.keyframe_reference_workflow_profile
+            else None,
             "keyframe_guide_workflow_profile": str(self.keyframe_guide_workflow_profile)
             if self.keyframe_guide_workflow_profile
+            else None,
+            "keyframe_reference_guide_workflow_profile": str(
+                self.keyframe_reference_guide_workflow_profile
+            )
+            if self.keyframe_reference_guide_workflow_profile
             else None,
             "video_workflow_profile": str(self.video_workflow_profile)
             if self.video_workflow_profile
@@ -71,6 +96,8 @@ class Settings(BaseSettings):
             and self.keyframe_workflow_profile.is_file()
             and self.keyframe_guide_workflow_profile
             and self.keyframe_guide_workflow_profile.is_file()
+            and self.keyframe_reference_guide_workflow_profile
+            and self.keyframe_reference_guide_workflow_profile.is_file()
             and self.video_workflow_profile
             and self.video_workflow_profile.is_file()
         )

@@ -80,6 +80,32 @@ async def test_runtime_pack_job_api_start_status_repair_and_logs(tmp_path: Path)
 
 
 @pytest.mark.asyncio
+async def test_latest_personal_job_is_optional_when_no_personal_comfy_folder_exists(
+    tmp_path: Path,
+) -> None:
+    app = FastAPI()
+    app.include_router(
+        create_runtime_pack_router(
+            lambda: Settings(
+                _env_file=None,
+                output_dir=tmp_path / "output",
+                comfyui_models_dir=None,
+            )
+        )
+    )
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.get(
+            "/api/runtime-packs/jobs/latest?use_personal_comfy_models=true"
+        )
+
+    assert response.status_code == 200
+    assert response.json() == {"job": None}
+
+
+@pytest.mark.asyncio
 async def test_runtime_pack_api_rejects_unknown_pack(tmp_path: Path) -> None:
     app = FastAPI()
     app.include_router(

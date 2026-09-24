@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -16,6 +17,7 @@ from apps.api.studio_snapshot import (
     StudioJourneySnapshot,
 )
 from engine.config import Settings
+from engine.narrative.episode_models import EpisodeStatus
 from engine.world.bible import BibleRegistry
 from engine.world.catalog import EpisodeCatalog
 from engine.world.visual_identity import (
@@ -195,7 +197,16 @@ async def test_journey_api_returns_the_active_project_read_model(tmp_path: Path)
 
 
 def image_video_runtime() -> dict[str, object]:
-    return {"services": [{"name": "comfyui", "state": "ready"}]}
+    return {
+        "services": [{"name": "comfyui", "state": "ready"}],
+        "capabilities": {"image": True, "video": True},
+    }
+
+
+def approve_episode(private_root: Path) -> None:
+    catalog = EpisodeCatalog(private_root)
+    package = catalog.load("S01E001")
+    catalog.save(package.episode.model_copy(update={"status": EpisodeStatus.APPROVED}))
 
 
 def import_complete_episode(private_root: Path, output_root: Path) -> None:
@@ -219,7 +230,7 @@ def test_one_keyframe_does_not_complete_ten_shots(tmp_path: Path) -> None:
     assert snapshot.production.total_shots == 10
     assert snapshot.production.complete_shots == 0
     assert snapshot.production.assemblable is False
-    assert stage(snapshot, "production").status is JourneyStatus.BLOCKED
+    assert stage(snapshot, "production").status is JourneyStatus.READY
     assert stage(snapshot, "release").status is JourneyStatus.BLOCKED
 
 
@@ -228,7 +239,10 @@ def test_ollama_alone_does_not_unlock_image_or_video(tmp_path: Path) -> None:
     snapshot = build_service(
         private_root,
         output_root,
-        runtime={"services": [{"name": "ollama", "state": "ready"}]},
+        runtime={
+            "services": [{"name": "ollama", "state": "ready"}],
+            "capabilities": {"narrative": True},
+        },
     ).build()
 
     assert snapshot.capabilities.narrative is True
@@ -239,8 +253,27 @@ def test_ollama_alone_does_not_unlock_image_or_video(tmp_path: Path) -> None:
     assert production.blockers[0].code == "IMAGE_VIDEO_RUNTIME_UNAVAILABLE"
 
 
+def test_comfyui_reachability_without_capability_evidence_unlocks_nothing(
+    tmp_path: Path,
+) -> None:
+    private_root, output_root = starter_project(tmp_path)
+
+    snapshot = build_service(
+        private_root,
+        output_root,
+        runtime={"services": [{"name": "comfyui", "state": "ready"}]},
+    ).build()
+
+    assert snapshot.capabilities.image is False
+    assert snapshot.capabilities.video is False
+    assert stage(snapshot, "production").blockers[0].code == (
+        "IMAGE_VIDEO_RUNTIME_UNAVAILABLE"
+    )
+
+
 def test_complete_manual_imports_remain_assemblable_without_runtime(tmp_path: Path) -> None:
     private_root, output_root = starter_project(tmp_path)
+    approve_episode(private_root)
     import_complete_episode(private_root, output_root)
 
     snapshot = build_service(private_root, output_root).build()
@@ -256,10 +289,15 @@ def test_complete_manual_imports_remain_assemblable_without_runtime(tmp_path: Pa
 
 def test_non_empty_master_is_ready_for_review_but_not_exported(tmp_path: Path) -> None:
     private_root, output_root = starter_project(tmp_path)
+    approve_episode(private_root)
     import_complete_episode(private_root, output_root)
     master = output_root / "S01E001" / "episode.mp4"
     master.parent.mkdir(parents=True)
     master.write_bytes(b"master")
+    (master.parent / "episode-generation.json").write_text(
+        json.dumps({"status": "FINAL"}),
+        encoding="utf-8",
+    )
 
     snapshot = build_service(private_root, output_root).build()
 
@@ -296,8 +334,19 @@ def test_present_generated_clip_requires_current_human_approval(tmp_path: Path) 
     private_root, output_root = starter_project(tmp_path)
     shot_dir = output_root / "S01E001-S01"
     shot_dir.mkdir(parents=True)
-    (shot_dir / "keyframe.png").write_bytes(b"keyframe")
+    keyframe = shot_dir / "keyframe.png"
+    keyframe.write_bytes(b"keyframe")
     (shot_dir / "clip.mp4").write_bytes(b"clip")
+    (shot_dir / "keyframe-approval.json").write_text(
+        json.dumps(
+            {
+                "shot_id": "S01E001-S01",
+                "source": "model",
+                "sha256": hashlib.sha256(keyframe.read_bytes()).hexdigest(),
+            }
+        ),
+        encoding="utf-8",
+    )
 
     snapshot = build_service(private_root, output_root, runtime=image_video_runtime()).build()
 
@@ -306,6 +355,64 @@ def test_present_generated_clip_requires_current_human_approval(tmp_path: Path) 
     production = stage(snapshot, "production")
     assert production.status is JourneyStatus.BLOCKED
     assert production.blockers[0].code == "HUMAN_APPROVAL_REQUIRED"
+
+
+def test_generated_clip_needs_matching_generated_manifest(tmp_path: Path) -> None:
+    private_root, output_root = starter_project(tmp_path)
+    shot_dir = output_root / "S01E001-S01"
+    shot_dir.mkdir(parents=True)
+    keyframe = shot_dir / "keyframe.png"
+    keyframe.write_bytes(b"keyframe")
+    clip = shot_dir / "clip.mp4"
+    clip.write_bytes(b"clip")
+    (shot_dir / "keyframe-approval.json").write_text(
+        json.dumps(
+            {
+                "shot_id": "S01E001-S01",
+                "source": "model",
+                "sha256": hashlib.sha256(keyframe.read_bytes()).hexdigest(),
+            }
+        ),
+        encoding="utf-8",
+    )
+    (shot_dir / "generation.json").write_text(
+        json.dumps(
+            {
+                "status": "GENERATED",
+                "outputs": [
+                    {
+                        "path": "clip.mp4",
+                        "sha256": hashlib.sha256(clip.read_bytes()).hexdigest(),
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    snapshot = build_service(private_root, output_root, runtime=image_video_runtime()).build()
+
+    assert snapshot.production.present_media == 1
+    assert snapshot.production.approved_media == 1
+
+
+def test_animatic_master_is_not_release_ready(tmp_path: Path) -> None:
+    private_root, output_root = starter_project(tmp_path)
+    approve_episode(private_root)
+    import_complete_episode(private_root, output_root)
+    master = output_root / "S01E001" / "episode.mp4"
+    master.parent.mkdir(parents=True)
+    master.write_bytes(b"animatic")
+    (master.parent / "episode-generation.json").write_text(
+        json.dumps({"status": "ANIMATIC"}),
+        encoding="utf-8",
+    )
+
+    snapshot = build_service(private_root, output_root).build()
+
+    assert snapshot.production.master_available is False
+    assert stage(snapshot, "release").status is JourneyStatus.BLOCKED
+    assert stage(snapshot, "release").blockers[0].code == "MASTER_REQUIRED"
 
 
 def test_visual_master_change_persists_stale_cause_after_reload(tmp_path: Path) -> None:

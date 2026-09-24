@@ -16,7 +16,7 @@ class SuccessfulEpisodePipeline:
 
     def run(self, _options: object) -> SimpleNamespace:
         self.on_progress("export", "completed", "Export prêt")
-        return SimpleNamespace(subtitles=Path("subtitles.fr.srt"))
+        return SimpleNamespace(subtitles=Path("subtitles.fr.srt"), status="FINAL")
 
 
 class FailingEpisodePipeline(SuccessfulEpisodePipeline):

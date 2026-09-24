@@ -50,6 +50,19 @@ def test_dialogue_accepts_actor_direction() -> None:
     assert shot.dialogue.performance.intention.startswith("masquer")
 
 
+def test_shot_accepts_timed_supplemental_dialogue_cues() -> None:
+    data = json.loads(Path("examples/shot.json").read_text(encoding="utf-8"))
+    data["dialogue"] = {"speaker": "belladone", "text": "Première."}
+    data["dialogue_cues"] = [
+        {"speaker": "belladone", "text": "Seconde.", "offset_seconds": 2.5}
+    ]
+
+    shot = Shot.model_validate(data)
+
+    assert [cue.text for cue in shot.dialogues] == ["Première.", "Seconde."]
+    assert shot.dialogues[1].offset_seconds == 2.5
+
+
 def test_shot_accepts_three_ordered_visual_beats() -> None:
     data = json.loads(Path("examples/shot.json").read_text(encoding="utf-8"))
     data["visual_beats"] = [

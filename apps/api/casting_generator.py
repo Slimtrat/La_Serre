@@ -18,6 +18,11 @@ from engine.generation.comfy.errors import (
     WorkflowConfigurationError,
 )
 from engine.generation.comfy.executor import ComfyWorkflowExecutor
+from engine.observability.studio_activity import (
+    ActivityGraphTarget,
+    StageStatus,
+    StudioActivityStore,
+)
 
 
 class CastingGeneratorUnavailable(RuntimeError):
@@ -25,7 +30,7 @@ class CastingGeneratorUnavailable(RuntimeError):
 
 
 class ComfyCastingGenerator:
-    """Runs the configured keyframe profile as a portrait/full-body casting workflow."""
+    """Runs the configured character-master workflow for visual casting."""
 
     def __init__(self, settings_provider: Callable[[], Settings]) -> None:
         self.settings_provider = settings_provider
@@ -36,11 +41,29 @@ class ComfyCastingGenerator:
         payload: CastingGenerateRequest,
     ) -> GeneratedIdentityImage:
         settings = self.settings_provider()
-        profile = settings.keyframe_workflow_profile
+        profile = settings.character_master_workflow_profile
         if profile is None or not profile.is_file():
             raise CastingGeneratorUnavailable(
-                "No keyframe workflow is configured; import remains available"
+                "No character-master workflow is configured; import remains available"
             )
+        activity_store = StudioActivityStore(settings.output_dir)
+        activity = activity_store.start(
+            title=f"Casting · {character_id}",
+            message="Préparation du master personnage",
+            graph=ActivityGraphTarget(
+                scope="series",
+                id="series",
+                node_id="series:cast",
+            ),
+            stages=["prepare", "generate", "download"],
+        )
+        active_stage = "prepare"
+        activity_store.update(
+            activity.id,
+            stage=active_stage,
+            status=StageStatus.RUNNING,
+            message="Chargement du workflow de casting",
+        )
         width, height = (768, 1024) if payload.kind.value == "portrait" else (768, 1344)
         prompt = ", ".join(
             part
@@ -50,9 +73,16 @@ class ComfyCastingGenerator:
                 payload.outfit.strip(),
                 payload.transient_state.strip(),
                 (
-                    "single character portrait, neutral background"
+                    "one subject, one view, single character portrait, simple painted background"
                     if payload.kind.value == "portrait"
-                    else "single character full body turnaround, neutral background"
+                    else (
+                        "one subject, one view, complete character visible from head to feet, "
+                        "full body standing pose, simple painted background"
+                    )
+                ),
+                (
+                    "hand-painted 2D animated film, expressive cartoon design, "
+                    "clean readable silhouette, coherent anatomy, production character master"
                 ),
             )
             if part
@@ -67,6 +97,13 @@ class ComfyCastingGenerator:
                     raise CastingGeneratorUnavailable(
                         "ComfyUI is unavailable; import remains available"
                     )
+                active_stage = "generate"
+                activity_store.update(
+                    activity.id,
+                    stage=active_stage,
+                    status=StageStatus.RUNNING,
+                    message="ComfyUI calcule le master cartoon",
+                )
                 execution = await ComfyWorkflowExecutor(client).execute(
                     profile,
                     {
@@ -77,6 +114,7 @@ class ComfyCastingGenerator:
                         "seed": payload.seed,
                         "width": width,
                         "height": height,
+                        "steps": 4,
                         "output_prefix": f"Serre/casting/{character_id}",
                     },
                     timeout_seconds=settings.comfyui_timeout_seconds,
@@ -93,6 +131,13 @@ class ComfyCastingGenerator:
                     raise CastingGeneratorUnavailable(
                         "The casting workflow produced no supported image"
                     )
+                active_stage = "download"
+                activity_store.update(
+                    activity.id,
+                    stage=active_stage,
+                    status=StageStatus.RUNNING,
+                    message="Récupération du candidat dans le Studio",
+                )
                 with tempfile.TemporaryDirectory(prefix="la-serre-casting-") as folder:
                     destination = Path(folder) / ("candidate" + output.suffix)
                     await client.download_output(output, destination)
@@ -107,7 +152,7 @@ class ComfyCastingGenerator:
                     ),
                     payload.model,
                 )
-                return GeneratedIdentityImage(
+                generated = GeneratedIdentityImage(
                     content=content,
                     media_type={
                         ".png": "image/png",
@@ -120,7 +165,10 @@ class ComfyCastingGenerator:
                     workflow=execution.loaded.profile.id,
                     revision=execution.loaded.sha256,
                 )
-        except CastingGeneratorUnavailable:
+                activity_store.complete(activity.id, "Candidat visuel prêt à valider")
+                return generated
+        except CastingGeneratorUnavailable as exc:
+            activity_store.fail(activity.id, stage=active_stage, message=str(exc))
             raise
         except (
             httpx.HTTPError,
@@ -129,6 +177,8 @@ class ComfyCastingGenerator:
             ComfyTimeoutError,
             WorkflowConfigurationError,
         ) as exc:
+            message = f"Casting generation failed: {exc}; import remains available"
+            activity_store.fail(activity.id, stage=active_stage, message=message)
             raise CastingGeneratorUnavailable(
-                f"Casting generation failed: {exc}; import remains available"
+                message
             ) from exc

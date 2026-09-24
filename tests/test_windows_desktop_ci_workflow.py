@@ -75,14 +75,44 @@ def test_browser_gate_runs_real_fastapi_and_publishes_failure_evidence() -> None
     assert 'Path("tests/browser/season_board_smoke.mjs")' in harness
 
 
+def test_feature_readiness_aggregates_all_evidence_even_after_failures() -> None:
+    source = workflow_text()
+    readiness = source.split("\n  feature-readiness:\n", maxsplit=1)[1].split(
+        "\n  build:\n", maxsplit=1
+    )[0]
+
+    assert "name: Feature readiness report" in readiness
+    assert "needs: [frontend, quality, browser-integration]" in readiness
+    assert "if: always()" in readiness
+    assert readiness.count("actions/download-artifact@v4") == 3
+    assert "frontend-evidence-${{ github.run_id }}" in readiness
+    assert "quality-evidence-${{ github.run_id }}" in readiness
+    assert "browser-integration-evidence-${{ github.run_id }}" in readiness
+    assert "python -m tools.feature_report" in readiness
+    assert "--features features" in readiness
+    assert "--python-junit artifacts/evidence/python/test-results.xml" in readiness
+    assert "--frontend-junit artifacts/evidence/frontend/frontend-test-results.xml" in readiness
+    assert (
+        "--browser-results artifacts/evidence/browser/browser-results.json" in readiness
+    )
+    assert '--gate "python=${{ needs.quality.result }}"' in readiness
+    assert '--gate "frontend=${{ needs.frontend.result }}"' in readiness
+    assert '--gate "browser=${{ needs.browser-integration.result }}"' in readiness
+    assert "$env:GITHUB_STEP_SUMMARY" in readiness
+    assert "artifacts/feature-readiness/feature-readiness.md" in readiness
+    assert "artifacts/feature-readiness/feature-readiness.json" in readiness
+    assert "Publish feature readiness report\n        if: always()" in readiness
+
+
 def test_packaging_waits_for_quality_and_skips_pull_requests() -> None:
     source = workflow_text()
 
     build = source.split("\n  build:\n", maxsplit=1)[1]
-    assert "needs: [frontend, quality, browser-integration]" in build
+    assert "needs: [frontend, quality, browser-integration, feature-readiness]" in build
     assert "needs.frontend.result == 'success'" in build
     assert "needs.quality.result == 'success'" in build
     assert "needs.browser-integration.result == 'success'" in build
+    assert "needs.feature-readiness.result == 'success'" in build
     assert "github.event_name == 'pull_request'" not in build
     assert "github.ref == 'refs/heads/main'" in build
     assert "python -m tools.build_desktop" in build

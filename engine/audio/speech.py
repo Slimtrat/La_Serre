@@ -8,6 +8,7 @@ import sys
 import wave
 from array import array
 from collections.abc import Callable, Sequence
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Protocol
 
@@ -47,16 +48,17 @@ class WindowsSapiSpeechSynthesizer:
             "$s.Volume=[int]$p.volume",
             "$s.SetOutputToWaveFile([string]$p.output)",
             "$escaped=[System.Security.SecurityElement]::Escape([string]$p.text)",
-            (
-                "$escaped=$escaped.Replace([string][char]0x2026, "
-                "'<break time=\"350ms\"/>')"
-            ),
+            ("$escaped=$escaped.Replace([string][char]0x2026, '<break time=\"350ms\"/>')"),
             "$ratePercent=[int]$p.rate*5",
+            (
+                'if ($ratePercent -ge 0) {$rateValue="+$($ratePercent)%"} '
+                'else {$rateValue="$($ratePercent)%"}'
+            ),
             "$pitchHz=[int]$p.pitch_hz",
             (
                 "$ssml=\"<speak version='1.0' xml:lang='fr-FR'>"
-                "<prosody rate='$($ratePercent)%' pitch='$($pitchHz)Hz'>"
-                "$escaped</prosody></speak>\""
+                "<prosody rate='$rateValue' pitch='$($pitchHz)Hz'>"
+                '$escaped</prosody></speak>"'
             ),
             "$s.SpeakSsml($ssml)",
             "$s.Dispose()",
@@ -136,13 +138,22 @@ class EdgeNeuralSpeechSynthesizer:
         binary: str | Path | None = None,
         *,
         runner: ProcessRunner = subprocess.run,
+        module_available: bool | None = None,
     ) -> None:
         resolved = str(binary) if binary else shutil.which("edge-tts")
-        if not resolved:
+        available = (
+            find_spec("edge_tts") is not None if module_available is None else module_available
+        )
+        self.command: tuple[str, ...]
+        if resolved:
+            self.command = (resolved,)
+        elif available:
+            self.command = (sys.executable, "-m", "edge_tts")
+        else:
             raise RuntimeError(
                 "edge-tts est introuvable. Installe l'extra voice ou sélectionne SAPI."
             )
-        self.binary = resolved
+        self.binary = self.command[0]
         self._runner = runner
 
     def synthesize(self, text: str, destination: Path, preset: VoicePreset) -> None:
@@ -151,7 +162,7 @@ class EdgeNeuralSpeechSynthesizer:
         destination.parent.mkdir(parents=True, exist_ok=True)
         voice = preset.voice or "fr-FR-VivienneMultilingualNeural"
         arguments: Sequence[str] = (
-            self.binary,
+            *self.command,
             "--voice",
             voice,
             f"--rate={preset.rate * 5:+d}%",
@@ -195,7 +206,10 @@ def voice_preset_for_performance(
         return preset
     return preset.model_copy(
         update={
-            "rate": min(10, max(-10, preset.rate + round(performance.pace * 4))),
+            # Acting direction may nuance a delivery, but must not turn it into
+            # time compression. Episode timing owns retiming and applies its
+            # own stricter quality gate.
+            "rate": min(4, max(-4, preset.rate + round(performance.pace * 2))),
             "pitch_hz": min(
                 100,
                 max(-100, preset.pitch_hz + round(performance.pitch * 40)),

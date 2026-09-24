@@ -238,12 +238,12 @@ class BibleRegistry:
             raise ValueError(f"{shot.id} duplicates a divergent location {location.id}")
 
         character_ids = {character.id for character in resolved_characters}
-        if shot.dialogue:
-            if shot.dialogue.speaker not in character_by_id:
+        for dialogue in shot.dialogues:
+            if dialogue.speaker not in character_by_id:
                 raise ValueError(
-                    f"{shot.id} references unknown canonical speaker {shot.dialogue.speaker}"
+                    f"{shot.id} references unknown canonical speaker {dialogue.speaker}"
                 )
-            character_ids.add(shot.dialogue.speaker)
+            character_ids.add(dialogue.speaker)
         context = self._context(bible, character_ids, location.id)
         return shot.model_copy(
             update={

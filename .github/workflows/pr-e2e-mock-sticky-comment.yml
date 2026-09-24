@@ -62,39 +62,43 @@ jobs:
               check_runs = json.load(response).get("check_runs", [])
 
           expected = {
-              "Frontend quality and build": "Composants front",
-              "Python quality and tests": "Python + génération mockée",
-              "Browser integration (FastAPI + persistence)": "Playwright + vrai backend",
-              "Build release candidates": "Packaging + lancement binaire",
+              "Frontend quality and build": "Frontend product surface",
+              "Python quality and tests": "Python + mocked generation",
+              "Browser integration (FastAPI + persistence)": "Playwright + real backend",
+              "Feature readiness report": "Feature readiness report",
+              "Build release candidates": "Packaging + executable launch",
           }
           observed = {item.get("name"): item for item in check_runs}
+          checks_url = f"https://github.com/{repository}/commit/{head_sha}/checks"
 
           def state(name):
               check = observed.get(name)
               if not check:
-                  return "en attente"
-              return check.get("conclusion") or check.get("status") or "inconnu"
+                  return "pending"
+              return check.get("conclusion") or check.get("status") or "unknown"
 
           rows = "\n".join(
-              f"| {label} | `{state(name)}` |"
+              (
+                  f"| [{label}]({observed.get(name, {}).get('html_url', checks_url)}) "
+                  f"| `{state(name)}` |"
+              )
               for name, label in expected.items()
           )
-          checks_url = f"https://github.com/{repository}/commit/{head_sha}/checks"
           body = textwrap.dedent(f"""{marker}
-          ## 🌿 Preuves d’intégration observées
+          ## 🌿 Observed integration evidence
 
-          **Révision :** [`{head_sha[:7]}`]({checks_url})
+          **Revision:** [`{head_sha[:7]}`]({checks_url})
 
-          | Frontière | Résultat observé |
+          | Boundary | Observed result |
           | --- | --- |
           {rows}
-          | Benchmark GPU réel | `non exécuté en CI` |
+          | Real GPU benchmark | `not run in CI` |
 
-          Le scénario navigateur lance réellement Edge contre FastAPI et une persistance temporaire. Seuls les moteurs externes restent hors de cette frontière. Les traces, captures et logs sont publiés par le job navigateur ; le packaging est explicitement `skipped` sur une PR ordinaire.
+          Browser scenarios run Edge against FastAPI with real temporary persistence. Only external generation engines remain outside this boundary. Browser traces, screenshots, and logs are published by the browser job; packaging is explicitly `skipped` on an ordinary pull request.
 
-          Reproduction ciblée de la génération mockée : `python -m pytest -q tests/test_e2e_mock_generation.py tests/test_production_queue.py tests/test_episode_pipeline.py`.
+          Targeted mocked-generation reproduction: `python -m pytest -q tests/test_e2e_mock_generation.py tests/test_production_queue.py tests/test_episode_pipeline.py`.
 
-          Ce résumé reflète les checks présents pour cette révision. Il est remis à jour à la fin de **Windows desktop CI** et ne transforme jamais une checklist anticipée en preuve.
+          This summary reflects checks observed for this revision. It is refreshed when **Windows desktop CI** completes and never presents an anticipated checklist as evidence.
           """).strip()
 
           comments = []

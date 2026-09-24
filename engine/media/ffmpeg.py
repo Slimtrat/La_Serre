@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -8,6 +9,13 @@ from pathlib import Path
 from typing import Literal, Protocol
 
 from engine.runtime.installers.ffmpeg import resolve_managed_ffmpeg
+
+
+@dataclass(frozen=True, slots=True)
+class AudioTrack:
+    source: Path
+    offset_seconds: float = 0
+    gain_db: float = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,6 +58,10 @@ class MediaToolchain(Protocol):
     def duration(self, path: Path) -> float: ...
 
     def fit_audio(self, source: Path, destination: Path, duration: float) -> float: ...
+
+    def mix_audio_tracks(
+        self, tracks: list[AudioTrack], destination: Path, duration: float
+    ) -> None: ...
 
     def assemble(self, request: AssemblyRequest) -> None: ...
 
@@ -122,6 +134,53 @@ class FFmpegToolchain:
         destination.parent.mkdir(parents=True, exist_ok=True)
         self._run(self.build_audio_fit_command(source, destination, duration, speed))
         return speed
+
+    def mix_audio_tracks(
+        self, tracks: list[AudioTrack], destination: Path, duration: float
+    ) -> None:
+        if not tracks:
+            raise ValueError("Impossible de mixer une liste de voix vide")
+        if duration <= 0:
+            raise ValueError("La durée du mix voix doit être positive")
+        command = [self.ffmpeg, "-hide_banner", "-loglevel", "error", "-y"]
+        for track in tracks:
+            command.extend(["-i", str(track.source)])
+        filters: list[str] = []
+        labels: list[str] = []
+        for index, track in enumerate(tracks):
+            delay = max(0, round(track.offset_seconds * 1000))
+            label = f"voice{index}"
+            filters.append(
+                f"[{index}:a:0]aresample=48000,"
+                "aformat=sample_fmts=fltp:channel_layouts=stereo,"
+                f"volume={self._number(track.gain_db)}dB,adelay={delay}|{delay},"
+                f"apad,atrim=duration={self._number(duration)}[{label}]"
+            )
+            labels.append(f"[{label}]")
+        filters.append(
+            "".join(labels)
+            + f"amix=inputs={len(labels)}:duration=longest:normalize=0,"
+            "alimiter=limit=0.95[mixed]"
+        )
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        command.extend(
+            [
+                "-filter_complex",
+                ";".join(filters),
+                "-map",
+                "[mixed]",
+                "-ar",
+                "48000",
+                "-ac",
+                "2",
+                "-c:a",
+                "pcm_s16le",
+                str(destination),
+            ]
+        )
+        self._run(command)
+        if not destination.is_file() or destination.stat().st_size == 0:
+            raise RuntimeError("FFmpeg n'a produit aucun mix de dialogue")
 
     def build_audio_fit_command(
         self,
@@ -400,6 +459,7 @@ class FFmpegToolchain:
             raise RuntimeError(
                 f"Durée finale inattendue : {actual_duration:.3f}s au lieu de {duration:.3f}s"
             )
+        freeze = self._freeze_report(path, actual_duration)
         return {
             "duration": actual_duration,
             "width": width,
@@ -409,6 +469,37 @@ class FFmpegToolchain:
             "has_subtitles": any(
                 isinstance(item, dict) and item.get("codec_type") == "subtitle" for item in streams
             ),
+            **freeze,
+        }
+
+    def _freeze_report(self, path: Path, duration: float) -> dict[str, float]:
+        completed = self._run(
+            [
+                self.ffmpeg,
+                "-nostdin",
+                "-v",
+                "info",
+                "-i",
+                str(path),
+                "-map",
+                "0:v:0",
+                "-vf",
+                "freezedetect=n=-50dB:d=0.75",
+                "-an",
+                "-f",
+                "null",
+                "-",
+            ]
+        )
+        log = "\n".join((completed.stdout, completed.stderr))
+        frozen_seconds = sum(
+            float(value)
+            for value in re.findall(r"freeze_duration:\s*([0-9]+(?:\.[0-9]+)?)", log)
+        )
+        frozen_seconds = min(max(frozen_seconds, 0.0), max(duration, 0.0))
+        return {
+            "frozen_seconds": round(frozen_seconds, 3),
+            "frozen_ratio": round(frozen_seconds / duration, 4) if duration > 0 else 0.0,
         }
 
     @staticmethod

@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from engine.director.models import Shot
+from engine.director.models import Shot, ShotCharacter
 from engine.director.prompt_builder import PromptBuilder, PromptPackage
 from engine.generation.comfy.client import ComfyClient, ComfyOutput
 from engine.generation.comfy.errors import ComfyProtocolError
@@ -23,6 +23,7 @@ from engine.generation.models import (
 from engine.generation.video.base import VideoGenerationRequest, VideoGenerationResult
 from engine.generation.video.ltx import LTXVideoGenerator
 from engine.production.artifacts import artifact, sha256_file, write_record, write_text_atomic
+from engine.world.visual_identity import VisualIdentityRegistry
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
 VIDEO_SUFFIXES = {".mp4", ".webm", ".mov", ".mkv"}
@@ -35,7 +36,9 @@ class ShotPipelineOptions:
     output_root: Path
     keyframe_profile: Path
     video_profile: Path
+    keyframe_reference_profile: Path | None = None
     keyframe_guide_profile: Path | None = None
+    keyframe_reference_guide_profile: Path | None = None
     keyframe_only: bool = False
     from_keyframe: Path | None = None
     continuity_keyframe: Path | None = None
@@ -60,7 +63,14 @@ class ShotPipeline:
         self.video = LTXVideoGenerator(client, self.executor)
 
     async def run(self, options: ShotPipelineOptions) -> GenerationRecord:
-        shot = Shot.model_validate_json(options.shot_path.read_text(encoding="utf-8"))
+        shot_path = options.shot_path.resolve()
+        shot = Shot.model_validate_json(shot_path.read_text(encoding="utf-8"))
+        episodes_dir = next(
+            (parent for parent in shot_path.parents if parent.name == "episodes"),
+            None,
+        )
+        if episodes_dir is not None:
+            shot = VisualIdentityRegistry(episodes_dir.parent).resolve_shot_references(shot)
         for label, dimension in (
             ("keyframe_width", options.keyframe_width),
             ("keyframe_height", options.keyframe_height),
@@ -89,7 +99,9 @@ class ShotPipeline:
         write_record(manifest_path, record)
         try:
             self._notify("references", "running", "Préparation des références visuelles")
-            reference_context, references = await self._upload_references(shot, options.shot_path)
+            reference_context, references, character_references = await self._upload_references(
+                shot, options.shot_path, destination
+            )
             self._notify(
                 "references",
                 "completed",
@@ -97,6 +109,9 @@ class ShotPipeline:
             )
             record.input["references"] = [item.model_dump(mode="json") for item in references]
             context = self._context(shot, prompt, reference_context)
+            if character_references:
+                # Compatibility with user-supplied single-reference profiles.
+                context["reference_image"] = character_references[0]
             keyframe_path = destination / "keyframe.png"
             guide_paths: list[Path] = []
 
@@ -141,13 +156,37 @@ class ShotPipeline:
                     keyframe_context = dict(context)
                     keyframe_context["width"] = options.keyframe_width or shot.render.width
                     keyframe_context["height"] = options.keyframe_height or shot.render.height
+                    if character_references:
+                        self._apply_reference_layout(
+                            keyframe_context, len(character_references)
+                        )
                     if beat_description:
                         keyframe_context["prompt"] = self.prompt_builder.visual_beat_prompt(
                             prompt, beat_description
                         )
                         keyframe_context["output_prefix"] = f"{shot.id}-{stage_name}"
                     profile = options.keyframe_profile
-                    if previous_pose is not None and options.keyframe_guide_profile is not None:
+                    if (
+                        index == 1
+                        and character_references
+                        and options.keyframe_reference_profile is not None
+                    ):
+                        keyframe_context["prompt"] = self.prompt_builder.regional_scene_prompt(
+                            shot, beat_description
+                        )
+                        profile = options.keyframe_reference_profile
+                    elif (
+                        previous_pose is not None
+                        and character_references
+                        and options.keyframe_reference_guide_profile is not None
+                    ):
+                        uploaded_pose = await self.client.upload_image(previous_pose)
+                        keyframe_context["reference_image"] = uploaded_pose.workflow_reference
+                        keyframe_context["prompt"] = self.prompt_builder.regional_scene_prompt(
+                            shot, beat_description
+                        )
+                        profile = options.keyframe_reference_guide_profile
+                    elif previous_pose is not None and options.keyframe_guide_profile is not None:
                         uploaded_pose = await self.client.upload_image(previous_pose)
                         keyframe_context["reference_image"] = uploaded_pose.workflow_reference
                         profile = options.keyframe_guide_profile
@@ -248,6 +287,16 @@ class ShotPipeline:
                 "prompt": prompt.model_dump(mode="json"),
                 "render": shot.render.model_dump(mode="json"),
                 "keyframe_profile": str(options.keyframe_profile.resolve()),
+                "keyframe_reference_profile": (
+                    str(options.keyframe_reference_profile.resolve())
+                    if options.keyframe_reference_profile
+                    else None
+                ),
+                "keyframe_reference_guide_profile": (
+                    str(options.keyframe_reference_guide_profile.resolve())
+                    if options.keyframe_reference_guide_profile
+                    else None
+                ),
                 "video_profile": str(options.video_profile.resolve()),
                 "keyframe_width": options.keyframe_width or shot.render.width,
                 "keyframe_height": options.keyframe_height or shot.render.height,
@@ -264,17 +313,21 @@ class ShotPipeline:
         )
 
     async def _upload_references(
-        self, shot: Shot, shot_path: Path
-    ) -> tuple[dict[str, list[str]], list[ReferenceRecord]]:
-        uploaded_context: dict[str, list[str]] = {}
+        self, shot: Shot, shot_path: Path, destination: Path
+    ) -> tuple[dict[str, Any], list[ReferenceRecord], tuple[str, ...]]:
+        del destination
+        uploaded_context: dict[str, Any] = {}
         records: list[ReferenceRecord] = []
+        character_slots: list[tuple[ShotCharacter, str]] = []
         for character in shot.characters:
             uploaded_context[character.id] = []
+            primary_for_character: str | None = None
             for reference in character.reference_images:
                 source = reference if reference.is_absolute() else shot_path.parent / reference
                 source = source.resolve()
                 uploaded = await self.client.upload_image(source)
                 uploaded_context[character.id].append(uploaded.workflow_reference)
+                primary_for_character = primary_for_character or uploaded.workflow_reference
                 records.append(
                     ReferenceRecord(
                         character_id=character.id,
@@ -283,13 +336,78 @@ class ShotPipeline:
                         comfyui_name=uploaded.workflow_reference,
                     )
                 )
-        return uploaded_context, records
+            if primary_for_character is not None:
+                character_slots.append((character, primary_for_character))
+
+        limited_slots = character_slots[:3]
+        limited = tuple(reference for _character, reference in limited_slots)
+        if limited_slots:
+            fallback_character, fallback_reference = limited_slots[0]
+            padded_slots = limited_slots + [
+                (fallback_character, fallback_reference)
+            ] * (3 - len(limited_slots))
+            for index, (slot_character, slot_reference) in enumerate(
+                padded_slots, start=1
+            ):
+                uploaded_context[f"character_reference_image_{index}"] = slot_reference
+                details = ", ".join(slot_character.signature_details)
+                uploaded_context[f"character_reference_prompt_{index}"] = (
+                    f"{slot_character.name}, exactly one separate full botanical body in this "
+                    f"assigned region. {slot_character.visual_description}. "
+                    f"{slot_character.wardrobe}. Signature details: {details}. "
+                    f"Position: {slot_character.position}. Expression: "
+                    f"{slot_character.emotion}. Never merge with another character."
+                )
+                cast_count = len(limited_slots)
+                prompt_strength = {1: 1.0, 2: 0.72, 3: 0.58}[cast_count]
+                uploaded_context[f"character_reference_prompt_strength_{index}"] = (
+                    prompt_strength if index <= cast_count else 0.0
+                )
+            cast_count = len(limited)
+            identity_weight = {1: 0.64, 2: 0.52, 3: 0.42}[cast_count]
+            uploaded_context.update(
+                {
+                    "character_reference_weight_1": identity_weight,
+                    "character_reference_weight_2": (
+                        identity_weight if cast_count >= 2 else 0.0
+                    ),
+                    "character_reference_weight_3": (
+                        identity_weight if cast_count >= 3 else 0.0
+                    ),
+                }
+            )
+        return uploaded_context, records, limited
+
+    @staticmethod
+    def _apply_reference_layout(context: dict[str, Any], count: int) -> None:
+        width = int(context["width"])
+        if count <= 1:
+            regions = ((width, 0), (1, 0), (1, 0))
+        elif count == 2:
+            gap = max(24, width // 16)
+            region_width = (width - gap) // 2
+            regions = (
+                (region_width, 0),
+                (region_width, region_width + gap),
+                (1, 0),
+            )
+        else:
+            gap = max(16, width // 24)
+            region_width = (width - 2 * gap) // 3
+            regions = (
+                (region_width, 0),
+                (region_width, region_width + gap),
+                (region_width, 2 * (region_width + gap)),
+            )
+        for index, (region_width, x) in enumerate(regions, start=1):
+            context[f"character_reference_mask_width_{index}"] = region_width
+            context[f"character_reference_mask_x_{index}"] = x
 
     @staticmethod
     def _context(
         shot: Shot,
         prompt: PromptPackage,
-        reference_images: dict[str, list[str]],
+        reference_images: dict[str, Any],
     ) -> dict[str, Any]:
         frames = shot.render.frames or 9
         return {
@@ -303,7 +421,16 @@ class ShotPipeline:
             "guide_frame_2": frames - 1,
             "fps": shot.render.fps,
             "output_prefix": shot.id,
-            "reference_images": reference_images,
+            "reference_images": {
+                key: value
+                for key, value in reference_images.items()
+                if not key.startswith("character_reference_")
+            },
+            **{
+                key: value
+                for key, value in reference_images.items()
+                if key.startswith("character_reference_")
+            },
         }
 
     @staticmethod
