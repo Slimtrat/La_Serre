@@ -3,17 +3,81 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import wave
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from engine.audio.ace_step import AceStepClient
 from engine.audio.score import ProceduralScoreComposer
 from engine.production.artifacts import sha256_file, write_text_atomic
+from engine.runtime.installers.ffmpeg import resolve_managed_ffmpeg
+
+
+class AudioNormalizer(Protocol):
+    def normalize(self, source: Path, destination: Path) -> None: ...
+
+
+class AudioNormalizerUnavailableError(RuntimeError):
+    """Raised when the configured audio normalizer cannot be started."""
+
+
+class FFmpegAudioNormalizer:
+    def __init__(self, executable: str | Path | None = None) -> None:
+        self.executable = executable
+
+    def normalize(self, source: Path, destination: Path) -> None:
+        executable = self._resolve_executable()
+        try:
+            completed = subprocess.run(
+                [
+                    executable,
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-nostdin",
+                    "-y",
+                    "-i",
+                    str(source),
+                    "-vn",
+                    "-ar",
+                    "48000",
+                    "-ac",
+                    "2",
+                    "-c:a",
+                    "pcm_s16le",
+                    str(destination),
+                ],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                check=False,
+            )
+        except OSError as exc:
+            raise AudioNormalizerUnavailableError(
+                "FFmpeg est introuvable. Installe le pack FFmpeg dans Réglages."
+            ) from exc
+        if completed.returncode != 0 or not destination.is_file():
+            detail = (completed.stderr or completed.stdout or "erreur inconnue").strip()
+            raise ValueError(f"FFmpeg n'a pas pu importer la piste : {detail[-500:]}")
+
+    def _resolve_executable(self) -> str:
+        if self.executable is not None:
+            return str(self.executable)
+        managed = resolve_managed_ffmpeg(Path.cwd() / ".la-serre-runtime")
+        if managed is not None:
+            return str(managed[0])
+        executable = shutil.which("ffmpeg")
+        if executable is None:
+            raise AudioNormalizerUnavailableError(
+                "FFmpeg est introuvable. Installe le pack FFmpeg dans Réglages."
+            )
+        return executable
 
 
 class MusicRecord(BaseModel):
@@ -33,8 +97,13 @@ class MusicRecord(BaseModel):
 
 
 class EpisodeMusicStore:
-    def __init__(self, output_root: Path) -> None:
+    def __init__(
+        self,
+        output_root: Path,
+        normalizer: AudioNormalizer | None = None,
+    ) -> None:
         self.output_root = output_root
+        self.normalizer = normalizer or FFmpegAudioNormalizer()
 
     def track(self, episode_id: str) -> Path:
         self._validate_id(episode_id)
@@ -138,19 +207,7 @@ class EpisodeMusicStore:
         if candidate.exists():
             raise FileExistsError("Une piste candidate existe déjà ; termine ou retire-la d'abord")
         try:
-            completed = subprocess.run(
-                [
-                    "ffmpeg", "-hide_banner", "-loglevel", "error", "-i", str(source),
-                    "-vn", "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le",
-                    str(candidate),
-                ],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            if completed.returncode != 0 or not candidate.is_file():
-                detail = completed.stderr[-500:]
-                raise RuntimeError(f"FFmpeg n'a pas pu importer la piste : {detail}")
+            self.normalizer.normalize(source, candidate)
             with wave.open(str(candidate), "rb") as reader:
                 if reader.getnframes() == 0:
                     raise ValueError("La piste importée est vide")

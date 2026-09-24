@@ -9,6 +9,7 @@ import pytest
 from fastapi import FastAPI
 
 from apps.api.episode_music_routes import create_episode_music_router
+from engine.audio.music_assets import AudioNormalizerUnavailableError, EpisodeMusicStore
 from engine.config import Settings
 from engine.narrative.episode_models import Episode
 from engine.world.catalog import EpisodeCatalog
@@ -45,6 +46,17 @@ class FakeAceClient:
         return "task-seven"
 
 
+class FakeAudioNormalizer:
+    def __init__(self) -> None:
+        self.available = True
+
+    def normalize(self, source: Path, destination: Path) -> None:
+        assert source.suffix == ".wav"
+        if not self.available:
+            raise AudioNormalizerUnavailableError("FFmpeg est introuvable")
+        destination.write_bytes(_wav())
+
+
 @pytest.mark.asyncio
 async def test_music_generate_import_and_rights(tmp_path: Path) -> None:
     settings = Settings(
@@ -54,8 +66,14 @@ async def test_music_generate_import_and_rights(tmp_path: Path) -> None:
     catalog = EpisodeCatalog(settings.private_content_dir)
     catalog.create(Episode(id="S01E001", season=1, episode=1, duration_target=12))
     app = FastAPI()
+    normalizer = FakeAudioNormalizer()
     app.include_router(
-        create_episode_music_router(lambda: catalog, lambda: settings, FakeAceClient)  # type: ignore[arg-type]
+        create_episode_music_router(
+            lambda: catalog,
+            lambda: settings,
+            FakeAceClient,  # type: ignore[arg-type]
+            lambda output_root: EpisodeMusicStore(output_root, normalizer=normalizer),
+        )
     )
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
@@ -90,3 +108,12 @@ async def test_music_generate_import_and_rights(tmp_path: Path) -> None:
         assert imported.json()["record"]["source"] == "imported"
         persisted = await client.get(path)
         assert persisted.json()["record"]["license_id"] == "Commande"
+        catalog.create(Episode(id="S01E002", season=1, episode=2, duration_target=12))
+        normalizer.available = False
+        unavailable = await client.post(
+            "/api/episodes/S01E002/music/import"
+            "?filename=music.wav&license_id=Commande&rights_confirmed=true",
+            content=_wav(),
+        )
+        assert unavailable.status_code == 503
+        assert unavailable.json()["detail"] == "FFmpeg est introuvable"

@@ -5,7 +5,24 @@ from pathlib import Path
 
 import pytest
 
-from engine.audio.music_assets import EpisodeMusicStore
+from engine.audio.music_assets import (
+    AudioNormalizerUnavailableError,
+    EpisodeMusicStore,
+    FFmpegAudioNormalizer,
+)
+
+
+class FakeAudioNormalizer:
+    def normalize(self, source: Path, destination: Path) -> None:
+        assert source.name == "source.wav"
+        with wave.open(str(source), "rb") as input_audio:
+            assert input_audio.getframerate() == 8_000
+            assert input_audio.getnchannels() == 1
+        with wave.open(str(destination), "wb") as output:
+            output.setnchannels(2)
+            output.setsampwidth(2)
+            output.setframerate(48_000)
+            output.writeframes(b"\0\0\0\0" * 48_000)
 
 
 class FakeAceStep:
@@ -54,7 +71,7 @@ def test_import_requires_rights_and_normalizes_audio(tmp_path: Path) -> None:
         output.setsampwidth(2)
         output.setframerate(8_000)
         output.writeframes(b"\0\0" * 8_000)
-    store = EpisodeMusicStore(tmp_path / "output")
+    store = EpisodeMusicStore(tmp_path / "output", normalizer=FakeAudioNormalizer())
     with pytest.raises(ValueError, match="droits commerciaux"):
         store.import_track(
             "S01E002", source, license_id="Commande originale", rights_confirmed=False
@@ -67,6 +84,22 @@ def test_import_requires_rights_and_normalizes_audio(tmp_path: Path) -> None:
         assert output.getnchannels() == 2
     assert record.source == "imported"
     assert record.source_label == "source.wav"
+
+
+def test_import_reports_missing_ffmpeg_without_leaking_file_not_found(tmp_path: Path) -> None:
+    source = tmp_path / "source.wav"
+    source.write_bytes(b"RIFF")
+    store = EpisodeMusicStore(
+        tmp_path / "output",
+        normalizer=FFmpegAudioNormalizer(tmp_path / "missing-ffmpeg"),
+    )
+
+    with pytest.raises(AudioNormalizerUnavailableError, match="FFmpeg est introuvable"):
+        store.import_track(
+            "S01E002", source, license_id="Commande originale", rights_confirmed=True
+        )
+
+    assert not store.track("S01E002").exists()
 
 
 def test_episode_id_is_confined_to_its_output_directory(tmp_path: Path) -> None:

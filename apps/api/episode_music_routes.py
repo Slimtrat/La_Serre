@@ -13,7 +13,11 @@ from pydantic import BaseModel, Field
 
 from apps.api.run_history import RunHistory
 from engine.audio.ace_step import AceStepClient, AceStepError
-from engine.audio.music_assets import EpisodeMusicStore, MusicRecord
+from engine.audio.music_assets import (
+    AudioNormalizerUnavailableError,
+    EpisodeMusicStore,
+    MusicRecord,
+)
 from engine.config import Settings
 from engine.world.catalog import EpisodeCatalog
 
@@ -31,6 +35,7 @@ def create_episode_music_router(
     catalog_provider: Callable[[], EpisodeCatalog],
     settings_provider: Callable[[], Settings],
     client_factory: Callable[[str], AceStepClient] = AceStepClient,
+    store_factory: Callable[[Path], EpisodeMusicStore] = EpisodeMusicStore,
 ) -> APIRouter:
     router = APIRouter(prefix="/api/episodes/{episode_id}/music", tags=["music"])
     lock = threading.Lock()
@@ -43,7 +48,7 @@ def create_episode_music_router(
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         settings = settings_provider()
-        return settings, EpisodeMusicStore(settings.output_dir), episode.duration_target
+        return settings, store_factory(settings.output_dir), episode.duration_target
 
     def response(episode_id: str, record: MusicRecord) -> dict[str, object]:
         return {
@@ -140,6 +145,8 @@ def create_episode_music_router(
             return response(episode_id, record)
         except FileExistsError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except AudioNormalizerUnavailableError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         finally:
