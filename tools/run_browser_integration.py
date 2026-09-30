@@ -14,6 +14,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal, TypedDict
 
+from engine.runtime.installers.ffmpeg import resolve_managed_ffmpeg
+
 ScenarioStatus = Literal["passed", "failed", "timeout"]
 OverallStatus = Literal["passed", "failed", "timeout"]
 
@@ -108,6 +110,16 @@ def _playwright_module(root: Path) -> str | None:
     return str(local_entry.resolve()) if local_entry.is_file() else None
 
 
+def _managed_ffmpeg_environment(root: Path) -> dict[str, str]:
+    resolved = resolve_managed_ffmpeg(root / ".la-serre-runtime")
+    if resolved is None:
+        return {}
+    return {
+        "SERRE_E2E_FFMPEG": str(resolved[0].resolve()),
+        "SERRE_E2E_FFPROBE": str(resolved[1].resolve()),
+    }
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = parser().parse_args(argv)
     root = Path(__file__).resolve().parents[1]
@@ -151,6 +163,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             path.mkdir(parents=True, exist_ok=True)
         environment = {
             **os.environ,
+            **_managed_ffmpeg_environment(root),
             "PYTHONUNBUFFERED": "1",
             "SERRE_E2E_PRIVATE_DIR": str(private),
             "SERRE_E2E_OUTPUT_DIR": str(output),

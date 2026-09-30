@@ -14,6 +14,8 @@ const baseUrl = process.env.SERRE_STUDIO_URL;
 const python = process.env.SERRE_E2E_PYTHON;
 const outputDir = process.env.SERRE_E2E_OUTPUT_DIR;
 const privateDir = process.env.SERRE_E2E_PRIVATE_DIR;
+const ffmpeg = process.env.SERRE_E2E_FFMPEG || "ffmpeg";
+const ffprobe = process.env.SERRE_E2E_FFPROBE || "ffprobe";
 if (!baseUrl || !python || !outputDir || !privateDir) {
   throw new Error("Browser integration environment is incomplete");
 }
@@ -34,12 +36,14 @@ function sha256(file) {
 }
 
 async function run(command, args) {
-  await new Promise((resolve, reject) => {
-    const child = spawn(command, args, { cwd: repository, stdio: ["ignore", "ignore", "pipe"] });
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { cwd: repository, stdio: ["ignore", "pipe", "pipe"] });
+    const output = [];
     const errors = [];
+    child.stdout.on("data", (chunk) => output.push(chunk));
     child.stderr.on("data", (chunk) => errors.push(chunk));
     child.once("error", reject);
-    child.once("exit", (code) => code === 0 ? resolve() : reject(new Error(`${command} exited with ${code}: ${Buffer.concat(errors).toString("utf8")}`)));
+    child.once("exit", (code) => code === 0 ? resolve(Buffer.concat(output).toString("utf8")) : reject(new Error(`${command} exited with ${code}: ${Buffer.concat(errors).toString("utf8")}`)));
   });
 }
 
@@ -152,7 +156,7 @@ try {
   const episodeOutput = path.join(outputDir, episodeId);
   const master = path.join(episodeOutput, "episode.mp4");
   fs.mkdirSync(episodeOutput, { recursive: true });
-  await run("ffmpeg", [
+  await run(ffmpeg, [
     "-hide_banner", "-loglevel", "error", "-y",
     "-f", "lavfi", "-i", `color=c=0x201126:s=576x1024:r=24:d=${duration}`,
     "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo",
@@ -186,6 +190,14 @@ try {
   expect(fs.existsSync(firstDirectory), "The immutable pack directory does not exist");
   expect(JSON.stringify(fs.readdirSync(firstDirectory).sort()) === JSON.stringify([...requiredFiles].sort()), "Physical pack contents differ from the release contract");
   const firstHashes = Object.fromEntries(requiredFiles.map((name) => [name, sha256(path.join(firstDirectory, name))]));
+  const exportedProbe = JSON.parse(await run(ffprobe, [
+    "-v", "error", "-show_streams", "-show_format", "-of", "json",
+    path.join(firstDirectory, "reel.mp4"),
+  ]));
+  const exportedVideo = exportedProbe.streams.find((stream) => stream.codec_type === "video");
+  const exportedAudio = exportedProbe.streams.find((stream) => stream.codec_type === "audio");
+  expect(exportedVideo?.width === 1080 && exportedVideo?.height === 1920, "Exported Reel does not probe as 1080x1920");
+  expect(exportedVideo?.codec_name === "h264" && exportedAudio?.codec_name, "Exported Reel does not contain H.264 video and audio");
   expect(persisted.source.width === 576 && persisted.source.height === 1024, "Work master provenance did not retain 576x1024");
   expect(persisted.reel.width === 1080 && persisted.reel.height === 1920, "Rendered Reel was not probed at 1080x1920");
   expect(persisted.reel.video_codec === "h264" && persisted.reel.audio_codec, "Rendered Reel is missing H.264 video or audio");
