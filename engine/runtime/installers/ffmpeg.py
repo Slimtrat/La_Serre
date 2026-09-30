@@ -55,9 +55,30 @@ class FFmpegInstallerAdapter:
         ffmpeg = self.managed_cli.resolve(context)
         if ffmpeg is None:
             return None
+        ffprobe = ffmpeg.with_name("ffprobe.exe")
+        cancellation = CancellationToken()
+        try:
+            version = await self.runner.run(
+                [str(ffmpeg), "-version"],
+                cwd=ffmpeg.parent,
+                cancellation=cancellation,
+            )
+            if version.returncode:
+                return None
+            probe_version = await self.runner.run(
+                [str(ffprobe), "-version"],
+                cwd=ffmpeg.parent,
+                cancellation=cancellation,
+            )
+        except (FileNotFoundError, OSError):
+            return None
+        if probe_version.returncode:
+            return None
+        version_output = version.stdout.strip() or version.stderr.strip()
         return InstallOutcome(
             "installed",
-            "FFmpeg et FFprobe gérés détectés",
+            "FFmpeg et FFprobe gérés détectés et exécutables",
+            version=version_output.splitlines()[0] if version_output else None,
             path=str(ffmpeg.parent),
             checksum=self.managed_cli.spec.archive_sha256,
         )

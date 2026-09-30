@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import ctypes
 import hashlib
+import os
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -262,6 +264,22 @@ class CapabilityPackInspector:
                 f"VRAM {hardware.vram_gb:g} Go < minimum {self.pack.hardware.minimum_vram_gb:g} Go."
             )
             actions.append("Utilise un GPU NVIDIA de 12 Go ou plus pour ce pack.")
+        if hardware.system_ram_gb is None:
+            reasons.append(
+                "Impossible de mesurer la mémoire système; vérifie la RAM manuellement."
+            )
+            actions.append(
+                "Vérifie que Windows expose la mémoire physique avant de préparer le pack."
+            )
+        elif hardware.system_ram_gb < self.pack.hardware.minimum_system_ram_gb:
+            incompatible = True
+            reasons.append(
+                f"RAM {hardware.system_ram_gb:g} Go < minimum "
+                f"{self.pack.hardware.minimum_system_ram_gb:g} Go."
+            )
+            actions.append(
+                "Utilise une machine avec suffisamment de mémoire système pour ce pack."
+            )
         required_disk = required_download_bytes + self.pack.hardware.workspace_reserve_bytes
         if hardware.disk_free_bytes < required_disk:
             incompatible = True
@@ -279,7 +297,11 @@ class CapabilityPackInspector:
         if incompatible:
             status: PackState = "incompatible"
             summary = "Le matériel ne satisfait pas le pack Tentafruit 12 Go."
-        elif missing_required or hardware.vram_gb is None:
+        elif (
+            missing_required
+            or hardware.vram_gb is None
+            or hardware.system_ram_gb is None
+        ):
             status = "incomplete"
             summary = "Le matériel est compatible, mais des composants restent à préparer."
         else:
@@ -437,11 +459,42 @@ def inspect_hardware(disk_path: Path) -> HardwareSnapshot:
         pass
     return HardwareSnapshot(
         vram_gb=vram_gb,
+        system_ram_gb=_system_ram_gb(),
         disk_free_bytes=disk_free,
         disk_path=str(resolved),
         gpu_name=gpu_name,
         source=source,
     )
+
+
+def _system_ram_gb() -> float | None:
+    """Return physical RAM without requiring a development-only dependency."""
+
+    if os.name == "nt":
+        class MemoryStatusEx(ctypes.Structure):
+            _fields_ = [
+                ("dwLength", ctypes.c_ulong),
+                ("dwMemoryLoad", ctypes.c_ulong),
+                ("ullTotalPhys", ctypes.c_ulonglong),
+                ("ullAvailPhys", ctypes.c_ulonglong),
+                ("ullTotalPageFile", ctypes.c_ulonglong),
+                ("ullAvailPageFile", ctypes.c_ulonglong),
+                ("ullTotalVirtual", ctypes.c_ulonglong),
+                ("ullAvailVirtual", ctypes.c_ulonglong),
+                ("ullAvailExtendedVirtual", ctypes.c_ulonglong),
+            ]
+
+        status = MemoryStatusEx()
+        status.dwLength = ctypes.sizeof(status)
+        try:
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            if not kernel32.GlobalMemoryStatusEx(ctypes.byref(status)):
+                return None
+        except (AttributeError, OSError):
+            return None
+        return round(float(status.ullTotalPhys) / 1024**3, 1)
+
+    return None
 
 
 def _existing_ancestor(path: Path) -> Path:

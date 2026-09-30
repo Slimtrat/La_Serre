@@ -115,15 +115,27 @@ export function SetupWizard({ locale, api = setupApi, readyContent, onReady }: S
 
   if (phase === 4) {
     const smokeChecks = job?.smokeChecks ?? [];
+    const validationIncomplete =
+      smokeChecks.length === 0 || smokeChecks.some((check) => check.status !== "passed");
     return (
       <main className={styles.root}>
         <SetupStepper current={4} messages={messages} />
         <section className={styles.ready} aria-labelledby="setup-ready-title">
-          <Badge tone="success">{messages.steps[4]}</Badge>
-          <h1 id="setup-ready-title">{messages.readyTitle}</h1>
-          <p>{messages.readyIntro}</p>
+          <Badge tone={validationIncomplete ? "warning" : "success"}>
+            {validationIncomplete ? messages.validationIncomplete : messages.steps[4]}
+          </Badge>
+          <h1 id="setup-ready-title">
+            {validationIncomplete ? messages.readyIncompleteTitle : messages.readyTitle}
+          </h1>
+          <p>
+            {validationIncomplete ? messages.readyIncompleteIntro : messages.readyIntro}
+          </p>
           <div className={styles.readyGrid}>
-            <Card as="section"><h2>{messages.smokeTitle}</h2><ul>{smokeChecks.map((check) => <li key={check.checkId}><Badge tone={check.status === "passed" ? "success" : "danger"}>{check.status === "passed" ? "✓" : "!"}</Badge> {check.message || check.checkId}</li>)}</ul></Card>
+            <Card as="section"><h2>{messages.smokeTitle}</h2><ul>{smokeChecks.map((check) => {
+              const tone = check.status === "passed" ? "success" : check.status === "failed" ? "danger" : "warning";
+              const marker = check.status === "passed" ? "✓" : check.status === "failed" ? "!" : "—";
+              return <li key={check.checkId}><Badge tone={tone}>{marker}</Badge> {check.status === "not_run" ? `${messages.smokeNotRun} — ` : ""}{check.message || check.checkId}</li>;
+            })}</ul></Card>
             <MediaFrame caption={messages.preview}><div className={styles.preview} aria-label={messages.preview} role="img"><span className={styles.previewLabel}>LA SERRE</span><strong>Studio local</strong></div></MediaFrame>
           </div>
           <div className={styles.readyActions}>

@@ -74,7 +74,7 @@ class PackStep(StoredModel):
 
 class SmokeResult(StoredModel):
     check_id: str
-    status: Literal["passed", "failed"]
+    status: Literal["passed", "failed", "not_run"]
     required_components: list[str]
     message: str
 
@@ -238,14 +238,16 @@ class PackPreparationManager:
         hardware: HardwareSnapshot,
     ) -> PackValidationReport:
         job = self.get(job_id)
-        if job.status == "completed" and all(
-            check.status == "passed" for check in job.smoke_checks
-        ):
-            result: Literal["passed", "failed", "incomplete"] = "passed"
-        elif job.status == "failed" or any(
+        if job.status == "failed" or any(
             check.status == "failed" for check in job.smoke_checks
         ):
-            result = "failed"
+            result: Literal["passed", "failed", "incomplete"] = "failed"
+        elif (
+            job.status == "completed"
+            and job.smoke_checks
+            and all(check.status == "passed" for check in job.smoke_checks)
+        ):
+            result = "passed"
         else:
             result = "incomplete"
         warnings = [
@@ -402,7 +404,14 @@ class PackPreparationManager:
             await self._run_smoke_checks(job, token)
             job.status = "completed"
             job.error = None
-            self._log(job, "info", "Pack installé et smoke checks validés")
+            if any(check.status == "not_run" for check in job.smoke_checks):
+                self._log(
+                    job,
+                    "warning",
+                    "Pack installé; smoke checks fonctionnels non exécutés",
+                )
+            else:
+                self._log(job, "info", "Pack installé et smoke checks validés")
         except InstallationCancelled:
             job.status = "cancelled"
             for step in job.steps:
@@ -560,9 +569,12 @@ class PackPreparationManager:
                 job.smoke_checks.append(
                     SmokeResult(
                         check_id=check.id,
-                        status="passed",
+                        status="not_run",
                         required_components=required,
-                        message="Contrôle embarqué des capacités réussi",
+                        message=(
+                            "Smoke check fonctionnel non exécuté dans l’application "
+                            "empaquetée; composants requis inspectés uniquement"
+                        ),
                     )
                 )
                 continue
