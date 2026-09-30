@@ -1,0 +1,47 @@
+.root { display: grid; gap: var(--ui-space-6); margin: 0 auto; max-width: 96rem; padding: var(--ui-space-6); }
+.hero { align-items: end; display: grid; gap: var(--ui-space-5); grid-template-columns: minmax(0, 1fr) minmax(18rem, .45fr); }
+.hero h1, .hero p, .masterPanel h2, .masterPanel p, .shotHeader h3 { margin: 0; }
+.hero > div:first-child { display: grid; gap: var(--ui-space-2); }
+.hero small, .shotHeader small, .masterPanel small { color: var(--ui-color-text-muted); font-size: var(--ui-font-size-xs); font-weight: var(--ui-font-weight-semibold); letter-spacing: .12em; }
+.hero p { color: var(--ui-color-text-muted); max-width: 46rem; }
+.heroProgress { display: grid; gap: var(--ui-space-3); }
+.heroActions, .cardActions, .approvalPanel, .masterLinks { align-items: center; display: flex; flex-wrap: wrap; gap: var(--ui-space-2); }
+.notice { background: var(--ui-color-warning-subtle); border-left: 3px solid var(--ui-color-warning); margin: 0; padding: var(--ui-space-3); }
+.error { color: var(--ui-color-danger); margin: 0; }
+.state { margin: var(--ui-space-7) auto; max-width: 42rem; }
+.shotGrid { align-items: start; display: grid; gap: var(--ui-space-4); grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); }
+.shotCard { display: grid; gap: var(--ui-space-3); min-width: 0; padding: var(--ui-space-4); }
+.shotHeader { align-items: start; display: flex; gap: var(--ui-space-3); justify-content: space-between; }
+.shotHeader h3 { font-size: var(--ui-font-size-lg); }
+.shotCard video, .shotCard img, .masterResult video { height: 100%; object-fit: contain; width: 100%; }
+.emptyPreview { color: var(--ui-color-text-muted); padding: var(--ui-space-7) var(--ui-space-3); text-align: center; }
+.shotAction, .nextAction { margin: 0; }
+.shotAction { color: var(--ui-color-text-muted); min-height: 3rem; }
+.blocker { background: var(--ui-color-warning-subtle); border-radius: var(--ui-radius-sm); margin: 0; padding: var(--ui-space-3); }
+.artifacts { display: grid; gap: var(--ui-space-2); grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.artifacts > div { background: var(--ui-color-surface-subtle); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-sm); display: grid; gap: .2rem; min-width: 0; padding: var(--ui-space-2); }
+.artifacts strong, .artifacts span, .artifacts small { font-size: var(--ui-font-size-xs); overflow-wrap: anywhere; }
+.artifacts small { color: var(--ui-color-text-muted); }
+.approvalPanel { border-top: 1px solid var(--ui-color-border); padding-top: var(--ui-space-3); }
+.importPanel, .technical, .exportSettings { border-top: 1px solid var(--ui-color-border); padding-top: var(--ui-space-3); }
+.importPanel summary, .technical summary, .exportSettings summary { cursor: pointer; font-weight: var(--ui-font-weight-semibold); }
+.importPanel form, .exportSettings > div { display: grid; gap: var(--ui-space-3); margin-top: var(--ui-space-3); }
+.importPanel label, .exportSettings label { display: grid; gap: var(--ui-space-1); }
+.importPanel input, .importPanel select, .exportSettings input, .exportSettings select { background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-sm); color: var(--ui-color-text); min-height: var(--ui-control-height); padding: var(--ui-space-2); }
+.technical > div { display: grid; gap: var(--ui-space-2); margin-top: var(--ui-space-3); }
+.technical p { margin: 0; overflow-wrap: anywhere; }
+.technical code { color: var(--ui-color-text-muted); display: block; font-size: .68rem; margin-top: .2rem; }
+.historyRow { align-items: center; border-top: 1px solid var(--ui-color-border); display: flex; gap: var(--ui-space-2); justify-content: space-between; padding-block: var(--ui-space-2); }
+.historyRow span { color: var(--ui-color-text-muted); font-size: var(--ui-font-size-xs); }
+.masterPanel { background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg); display: grid; gap: var(--ui-space-4); padding: var(--ui-space-5); }
+.exportSettings > div { grid-template-columns: repeat(4, minmax(7rem, 1fr)); }
+.masterPanel > header { align-items: start; display: flex; gap: var(--ui-space-4); justify-content: space-between; }
+.masterPanel > header > div { display: grid; gap: var(--ui-space-2); }
+.masterPanel form { align-items: end; display: grid; gap: var(--ui-space-4); grid-template-columns: minmax(0, 1fr) auto; }
+.exportSettings .check { align-items: center; display: flex; grid-column: 1 / -1; }
+.exportSettings .check input { min-height: auto; }
+.masterResult { display: grid; gap: var(--ui-space-4); grid-template-columns: minmax(12rem, 18rem) minmax(0, 1fr); }
+.masterLinks { align-content: start; }
+.masterLinks a { border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-md); color: var(--ui-color-text); padding: var(--ui-space-2) var(--ui-space-3); text-decoration: none; }
+@media (max-width: 56rem) { .hero, .masterPanel form, .masterResult { grid-template-columns: 1fr; } .exportSettings > div { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 38rem) { .root { padding: var(--ui-space-3); } .shotGrid { grid-template-columns: 1fr; } .exportSettings > div { grid-template-columns: 1fr; } .heroActions > *, .masterPanel form > button { width: 100%; } }

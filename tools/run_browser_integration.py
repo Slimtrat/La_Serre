@@ -27,6 +27,7 @@ class ScenarioResult(TypedDict):
 
 DEFAULT_SCENARIOS = (
     Path("tests/browser/episode_authoring_smoke.mjs"),
+    Path("tests/browser/episode_production_cockpit.mjs"),
     Path("tests/browser/guided_casting_integration.mjs"),
     Path("tests/browser/season_board_smoke.mjs"),
     Path("tests/browser/setup_wizard_smoke.mjs"),
@@ -154,6 +155,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "SERRE_E2E_OUTPUT_DIR": str(output),
             "SERRE_E2E_DOWNLOADS_DIR": str(downloads),
             "SERRE_E2E_ARTIFACT_DIR": str(artifacts),
+            "SERRE_E2E_PYTHON": sys.executable,
             "SERRE_STUDIO_URL": base_url,
         }
         playwright_module = _playwright_module(root)

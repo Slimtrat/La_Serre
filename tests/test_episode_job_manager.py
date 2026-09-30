@@ -91,6 +91,53 @@ async def test_episode_jobs_publish_persistent_completion_notification(
     }
 
 
+def test_episode_jobs_restore_terminal_progress_after_restart(tmp_path: Path) -> None:
+    settings = Settings(_env_file=None, output_dir=tmp_path / "output")
+    first = EpisodeJobManager(lambda: settings)
+    job = EpisodeStudioJob(
+        id="persisted-final",
+        episode_id="S01E001",
+        status="FINAL",
+        message="Episode ready",
+        output_root=settings.output_dir.resolve(),
+    )
+    job.completed_at = job.created_at
+    first.jobs[job.id] = job
+    first._restored_roots.add(settings.output_dir.resolve())
+    first._save(settings)
+
+    restored = EpisodeJobManager(lambda: settings).latest_for_episode("S01E001")
+
+    assert restored is not None
+    assert restored.id == job.id
+    assert restored.status == "FINAL"
+    assert restored.progress()["percent"] == 100
+    assert restored.recovered is False
+
+
+def test_episode_jobs_mark_interrupted_work_recovered_and_failed(tmp_path: Path) -> None:
+    settings = Settings(_env_file=None, output_dir=tmp_path / "output")
+    first = EpisodeJobManager(lambda: settings)
+    job = EpisodeStudioJob(
+        id="interrupted",
+        episode_id="S01E001",
+        status="GENERATING",
+        message="Assembly running",
+        output_root=settings.output_dir.resolve(),
+    )
+    first.jobs[job.id] = job
+    first._restored_roots.add(settings.output_dir.resolve())
+    first._save(settings)
+
+    restored = EpisodeJobManager(lambda: settings).latest_for_episode("S01E001")
+
+    assert restored is not None
+    assert restored.status == "FAILED"
+    assert restored.recovered is True
+    assert "restart" in restored.message
+    assert restored.completed_at is not None
+
+
 async def _wait_for_tasks(manager: EpisodeJobManager) -> None:
     while manager._tasks:
         await next(iter(manager._tasks))

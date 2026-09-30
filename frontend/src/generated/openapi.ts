@@ -99,6 +99,37 @@ export interface ArtDirection {
   visual_style?: string[];
 }
 
+export type ArtifactStateKind = typeof ArtifactStateKind[keyof typeof ArtifactStateKind];
+
+
+export const ArtifactStateKind = {
+  keyframe: 'keyframe',
+  video: 'video',
+  voice: 'voice',
+} as const;
+
+export type ArtifactStateProvenance = { [key: string]: unknown };
+
+export type ArtifactStateSource = typeof ArtifactStateSource[keyof typeof ArtifactStateSource] | null;
+
+
+export const ArtifactStateSource = {
+  generated: 'generated',
+  imported: 'imported',
+} as const;
+
+export interface ArtifactState {
+  approved: boolean;
+  kind: ArtifactStateKind;
+  present: boolean;
+  provenance?: ArtifactStateProvenance;
+  required: boolean;
+  sha256?: string | null;
+  source?: ArtifactStateSource;
+  stale?: boolean;
+  url?: string | null;
+}
+
 export interface AssetReuseRequest {
   /** @pattern ^asset-[a-f0-9]{64}$ */
   asset_id: string;
@@ -571,6 +602,66 @@ export interface CastingGenerateRequest {
   workflow?: string | null;
 }
 
+export type CockpitActionBody = { [key: string]: unknown } | null;
+
+export type CockpitActionMethod = typeof CockpitActionMethod[keyof typeof CockpitActionMethod];
+
+
+export const CockpitActionMethod = {
+  GET: 'GET',
+  POST: 'POST',
+  PUT: 'PUT',
+  PATCH: 'PATCH',
+  DELETE: 'DELETE',
+} as const;
+
+export interface CockpitAction {
+  body?: CockpitActionBody;
+  code: string;
+  enabled?: boolean;
+  label: string;
+  method: CockpitActionMethod;
+  reason?: string | null;
+  target: string;
+}
+
+export interface CockpitBlocker {
+  code: string;
+  message: string;
+  resolutions?: CockpitAction[];
+}
+
+export type CockpitEnqueueRequestTts = typeof CockpitEnqueueRequestTts[keyof typeof CockpitEnqueueRequestTts];
+
+
+export const CockpitEnqueueRequestTts = {
+  auto: 'auto',
+  edge: 'edge',
+  sapi: 'sapi',
+  none: 'none',
+} as const;
+
+export type QueueKind = typeof QueueKind[keyof typeof QueueKind];
+
+
+export const QueueKind = {
+  keyframe: 'keyframe',
+  video: 'video',
+  voice: 'voice',
+  music: 'music',
+} as const;
+
+export interface CockpitEnqueueRequest {
+  confirm_replace_approved?: boolean;
+  kind: QueueKind;
+  /**
+     * @minimum -100
+     * @maximum 100
+     */
+  priority?: number;
+  tts?: CockpitEnqueueRequestTts;
+}
+
 export interface CoherenceApprovalRequest {
   override_reason?: string | null;
 }
@@ -864,6 +955,65 @@ export interface EditorialVersionRequest {
   shot_id?: string | null;
   shot_source?: string | null;
   shots?: EditorialVersionRequestShots;
+}
+
+export type EpisodeCockpitSnapshotCapabilities = {[key: string]: boolean};
+
+export type EpisodeCockpitSnapshotEpisode = { [key: string]: unknown };
+
+export type EpisodeCockpitSnapshotMaster = { [key: string]: unknown };
+
+export type EpisodeCockpitSnapshotQueue = { [key: string]: unknown };
+
+export type EpisodeCockpitSnapshotReadiness = { [key: string]: unknown };
+
+export type ShotCockpitStateStatus = typeof ShotCockpitStateStatus[keyof typeof ShotCockpitStateStatus];
+
+
+export const ShotCockpitStateStatus = {
+  blocked: 'blocked',
+  ready: 'ready',
+  queued: 'queued',
+  running: 'running',
+  awaiting_approval: 'awaiting_approval',
+  failed: 'failed',
+  stale: 'stale',
+  complete: 'complete',
+} as const;
+
+export type ShotCockpitStateHistoryItem = { [key: string]: unknown };
+
+export type ShotCockpitStateQueueItemsItem = { [key: string]: unknown };
+
+export type ShotCockpitStateShot = { [key: string]: unknown };
+
+export interface ShotCockpitState {
+  artifacts: Partial<Record<'keyframe' | 'video' | 'voice', ArtifactState>>;
+  blockers?: CockpitBlocker[];
+  /** @exclusiveMinimum 0 */
+  duration: number;
+  history?: ShotCockpitStateHistoryItem[];
+  id: string;
+  /** @minimum 1 */
+  index: number;
+  next_actions?: CockpitAction[];
+  queue_items?: ShotCockpitStateQueueItemsItem[];
+  shot: ShotCockpitStateShot;
+  stale?: boolean;
+  status: ShotCockpitStateStatus;
+}
+
+export interface EpisodeCockpitSnapshot {
+  blockers?: CockpitBlocker[];
+  capabilities: EpisodeCockpitSnapshotCapabilities;
+  episode: EpisodeCockpitSnapshotEpisode;
+  master: EpisodeCockpitSnapshotMaster;
+  next_actions?: CockpitAction[];
+  queue: EpisodeCockpitSnapshotQueue;
+  readiness: EpisodeCockpitSnapshotReadiness;
+  revision: string;
+  schema_version?: number;
+  shots: ShotCockpitState[];
 }
 
 export interface EpisodeCreateRequest {
@@ -1894,16 +2044,6 @@ export interface ProposedEpisode {
   title: string;
 }
 
-export type QueueKind = typeof QueueKind[keyof typeof QueueKind];
-
-
-export const QueueKind = {
-  keyframe: 'keyframe',
-  video: 'video',
-  voice: 'voice',
-  music: 'music',
-} as const;
-
 export type QueueRequestShot = { [key: string]: unknown };
 
 export type QueueRequestTts = typeof QueueRequestTts[keyof typeof QueueRequestTts];
@@ -2388,9 +2528,14 @@ export type ListAssetsApiAssetsShotIdGet200 = { [key: string]: unknown };
 
 export type PutAssetApiAssetsShotIdSlotPutParams = {
 filename: string;
+confirm_replace_approved?: boolean;
 };
 
 export type PutAssetApiAssetsShotIdSlotPut200 = { [key: string]: unknown };
+
+export type ReuseCatalogAssetApiAssetsShotIdSlotReusePostParams = {
+confirm_replace_approved?: boolean;
+};
 
 export type ReuseCatalogAssetApiAssetsShotIdSlotReusePost200 = { [key: string]: unknown };
 
@@ -2630,6 +2775,10 @@ force?: boolean;
 };
 
 export type ImportMusicApiEpisodesEpisodeIdMusicImportPost200 = { [key: string]: unknown };
+
+export type AssembleApiEpisodesEpisodeIdProductionCockpitAssemblePost202 = { [key: string]: unknown };
+
+export type EnqueueApiEpisodesEpisodeIdProductionCockpitShotsShotIdEnqueuePost202 = { [key: string]: unknown };
 
 export type ReviewEpisodeApiEpisodesEpisodeIdReviewPost200 = { [key: string]: unknown };
 
@@ -3038,12 +3187,20 @@ export const getAssetApiAssetsShotIdSlotContentGet = async (shotId: string,
 
 
 export const getReuseCatalogAssetApiAssetsShotIdSlotReusePostUrl = (shotId: string,
-    slot: 'story' | 'shot' | 'keyframe' | 'audio' | 'video',) => {
+    slot: 'story' | 'shot' | 'keyframe' | 'audio' | 'video',
+    params?: ReuseCatalogAssetApiAssetsShotIdSlotReusePostParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/assets/${shotId}/${slot}/reuse`
+  return stringifiedParams.length > 0 ? `/api/assets/${shotId}/${slot}/reuse?${stringifiedParams}` : `/api/assets/${shotId}/${slot}/reuse`
 }
 
 /**
@@ -3051,7 +3208,8 @@ export const getReuseCatalogAssetApiAssetsShotIdSlotReusePostUrl = (shotId: stri
  */
 export const reuseCatalogAssetApiAssetsShotIdSlotReusePost = async (shotId: string,
     slot: 'story' | 'shot' | 'keyframe' | 'audio' | 'video',
-    assetReuseRequest: AssetReuseRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<ReuseCatalogAssetApiAssetsShotIdSlotReusePost200> => {
+    assetReuseRequest: AssetReuseRequest,
+    params?: ReuseCatalogAssetApiAssetsShotIdSlotReusePostParams, options?: Parameters<typeof orvalFetch>[1]): Promise<ReuseCatalogAssetApiAssetsShotIdSlotReusePost200> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -3067,7 +3225,7 @@ export const reuseCatalogAssetApiAssetsShotIdSlotReusePost = async (shotId: stri
     }
     return headers;
   };
-return orvalFetch<ReuseCatalogAssetApiAssetsShotIdSlotReusePost200>(getReuseCatalogAssetApiAssetsShotIdSlotReusePostUrl(shotId,slot),
+return orvalFetch<ReuseCatalogAssetApiAssetsShotIdSlotReusePost200>(getReuseCatalogAssetApiAssetsShotIdSlotReusePostUrl(shotId,slot,params),
   {
     ...options,
     method: 'POST',
@@ -5433,6 +5591,110 @@ export const importMusicApiEpisodesEpisodeIdMusicImportPost = async (episodeId: 
     method: 'POST'
 
 
+  }
+);}
+
+
+
+export const getSnapshotApiEpisodesEpisodeIdProductionCockpitGetUrl = (episodeId: string,) => {
+
+
+
+
+  return `/api/episodes/${episodeId}/production-cockpit`
+}
+
+/**
+ * @summary Snapshot
+ */
+export const snapshotApiEpisodesEpisodeIdProductionCockpitGet = async (episodeId: string, options?: Parameters<typeof orvalFetch>[1]): Promise<EpisodeCockpitSnapshot> => {
+
+  return orvalFetch<EpisodeCockpitSnapshot>(getSnapshotApiEpisodesEpisodeIdProductionCockpitGetUrl(episodeId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getAssembleApiEpisodesEpisodeIdProductionCockpitAssemblePostUrl = (episodeId: string,) => {
+
+
+
+
+  return `/api/episodes/${episodeId}/production-cockpit/assemble`
+}
+
+/**
+ * @summary Assemble
+ */
+export const assembleApiEpisodesEpisodeIdProductionCockpitAssemblePost = async (episodeId: string,
+    episodeGenerationRequest: EpisodeGenerationRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<AssembleApiEpisodesEpisodeIdProductionCockpitAssemblePost202> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<AssembleApiEpisodesEpisodeIdProductionCockpitAssemblePost202>(getAssembleApiEpisodesEpisodeIdProductionCockpitAssemblePostUrl(episodeId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(episodeGenerationRequest)
+  }
+);}
+
+
+
+export const getEnqueueApiEpisodesEpisodeIdProductionCockpitShotsShotIdEnqueuePostUrl = (episodeId: string,
+    shotId: string,) => {
+
+
+
+
+  return `/api/episodes/${episodeId}/production-cockpit/shots/${shotId}/enqueue`
+}
+
+/**
+ * @summary Enqueue
+ */
+export const enqueueApiEpisodesEpisodeIdProductionCockpitShotsShotIdEnqueuePost = async (episodeId: string,
+    shotId: string,
+    cockpitEnqueueRequest: CockpitEnqueueRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<EnqueueApiEpisodesEpisodeIdProductionCockpitShotsShotIdEnqueuePost202> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<EnqueueApiEpisodesEpisodeIdProductionCockpitShotsShotIdEnqueuePost202>(getEnqueueApiEpisodesEpisodeIdProductionCockpitShotsShotIdEnqueuePostUrl(episodeId,shotId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(cockpitEnqueueRequest)
   }
 );}
 

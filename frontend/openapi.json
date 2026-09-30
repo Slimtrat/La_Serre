@@ -115,6 +115,87 @@
         "title": "ArtDirection",
         "type": "object"
       },
+      "ArtifactState": {
+        "additionalProperties": false,
+        "properties": {
+          "approved": {
+            "title": "Approved",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "keyframe",
+              "video",
+              "voice"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "present": {
+            "title": "Present",
+            "type": "boolean"
+          },
+          "provenance": {
+            "additionalProperties": true,
+            "title": "Provenance",
+            "type": "object"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "generated",
+                  "imported"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "stale": {
+            "default": false,
+            "title": "Stale",
+            "type": "boolean"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "kind",
+          "required",
+          "present",
+          "approved"
+        ],
+        "title": "ArtifactState",
+        "type": "object"
+      },
       "AssetReuseRequest": {
         "additionalProperties": false,
         "properties": {
@@ -722,6 +803,132 @@
           "generation_negative_prompt"
         ],
         "title": "CharacterProfile",
+        "type": "object"
+      },
+      "CockpitAction": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "PATCH",
+              "DELETE"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label",
+          "method",
+          "target"
+        ],
+        "title": "CockpitAction",
+        "type": "object"
+      },
+      "CockpitBlocker": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "resolutions": {
+            "items": {
+              "$ref": "#/components/schemas/CockpitAction"
+            },
+            "title": "Resolutions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "CockpitBlocker",
+        "type": "object"
+      },
+      "CockpitEnqueueRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "confirm_replace_approved": {
+            "default": false,
+            "title": "Confirm Replace Approved",
+            "type": "boolean"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/QueueKind"
+          },
+          "priority": {
+            "default": 0,
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Priority",
+            "type": "integer"
+          },
+          "tts": {
+            "default": "auto",
+            "enum": [
+              "auto",
+              "edge",
+              "sapi",
+              "none"
+            ],
+            "title": "Tts",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "CockpitEnqueueRequest",
         "type": "object"
       },
       "CoherenceApprovalRequest": {
@@ -1513,6 +1720,79 @@
           "shots"
         ],
         "title": "EpisodeBreakdownCandidate",
+        "type": "object"
+      },
+      "EpisodeCockpitSnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "blockers": {
+            "items": {
+              "$ref": "#/components/schemas/CockpitBlocker"
+            },
+            "title": "Blockers",
+            "type": "array"
+          },
+          "capabilities": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "title": "Capabilities",
+            "type": "object"
+          },
+          "episode": {
+            "additionalProperties": true,
+            "title": "Episode",
+            "type": "object"
+          },
+          "master": {
+            "additionalProperties": true,
+            "title": "Master",
+            "type": "object"
+          },
+          "next_actions": {
+            "items": {
+              "$ref": "#/components/schemas/CockpitAction"
+            },
+            "title": "Next Actions",
+            "type": "array"
+          },
+          "queue": {
+            "additionalProperties": true,
+            "title": "Queue",
+            "type": "object"
+          },
+          "readiness": {
+            "additionalProperties": true,
+            "title": "Readiness",
+            "type": "object"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "string"
+          },
+          "schema_version": {
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "shots": {
+            "items": {
+              "$ref": "#/components/schemas/ShotCockpitState"
+            },
+            "title": "Shots",
+            "type": "array"
+          }
+        },
+        "required": [
+          "episode",
+          "revision",
+          "capabilities",
+          "readiness",
+          "master",
+          "queue",
+          "shots"
+        ],
+        "title": "EpisodeCockpitSnapshot",
         "type": "object"
       },
       "EpisodeCreateRequest": {
@@ -5675,6 +5955,103 @@
         "title": "ShotBlueprint",
         "type": "object"
       },
+      "ShotCockpitState": {
+        "additionalProperties": false,
+        "properties": {
+          "artifacts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ArtifactState"
+            },
+            "propertyNames": {
+              "enum": [
+                "keyframe",
+                "video",
+                "voice"
+              ]
+            },
+            "title": "Artifacts",
+            "type": "object"
+          },
+          "blockers": {
+            "items": {
+              "$ref": "#/components/schemas/CockpitBlocker"
+            },
+            "title": "Blockers",
+            "type": "array"
+          },
+          "duration": {
+            "exclusiveMinimum": 0.0,
+            "title": "Duration",
+            "type": "number"
+          },
+          "history": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "index": {
+            "minimum": 1.0,
+            "title": "Index",
+            "type": "integer"
+          },
+          "next_actions": {
+            "items": {
+              "$ref": "#/components/schemas/CockpitAction"
+            },
+            "title": "Next Actions",
+            "type": "array"
+          },
+          "queue_items": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Queue Items",
+            "type": "array"
+          },
+          "shot": {
+            "additionalProperties": true,
+            "title": "Shot",
+            "type": "object"
+          },
+          "stale": {
+            "default": false,
+            "title": "Stale",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "blocked",
+              "ready",
+              "queued",
+              "running",
+              "awaiting_approval",
+              "failed",
+              "stale",
+              "complete"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "index",
+          "duration",
+          "shot",
+          "status",
+          "artifacts"
+        ],
+        "title": "ShotCockpitState",
+        "type": "object"
+      },
       "ShotDialogueBlueprint": {
         "additionalProperties": false,
         "properties": {
@@ -6720,6 +7097,16 @@
               "title": "Filename",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "confirm_replace_approved",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Confirm Replace Approved",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -6829,6 +7216,16 @@
               ],
               "title": "Slot",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "confirm_replace_approved",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Confirm Replace Approved",
+              "type": "boolean"
             }
           }
         ],
@@ -10426,6 +10823,165 @@
         "summary": "Import Music",
         "tags": [
           "music"
+        ]
+      }
+    },
+    "/api/episodes/{episode_id}/production-cockpit": {
+      "get": {
+        "operationId": "snapshot_api_episodes__episode_id__production_cockpit_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "title": "Episode Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EpisodeCockpitSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Snapshot",
+        "tags": [
+          "production-cockpit"
+        ]
+      }
+    },
+    "/api/episodes/{episode_id}/production-cockpit/assemble": {
+      "post": {
+        "operationId": "assemble_api_episodes__episode_id__production_cockpit_assemble_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "title": "Episode Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EpisodeGenerationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Assemble Api Episodes  Episode Id  Production Cockpit Assemble Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Assemble",
+        "tags": [
+          "production-cockpit"
+        ]
+      }
+    },
+    "/api/episodes/{episode_id}/production-cockpit/shots/{shot_id}/enqueue": {
+      "post": {
+        "operationId": "enqueue_api_episodes__episode_id__production_cockpit_shots__shot_id__enqueue_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "title": "Episode Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "shot_id",
+            "required": true,
+            "schema": {
+              "title": "Shot Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CockpitEnqueueRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Enqueue Api Episodes  Episode Id  Production Cockpit Shots  Shot Id  Enqueue Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Enqueue",
+        "tags": [
+          "production-cockpit"
         ]
       }
     },
