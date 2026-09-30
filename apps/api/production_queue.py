@@ -401,6 +401,47 @@ class ProductionQueueManager:
             self._save_locked(state)
         return approval
 
+    def prepare_asset_import(
+        self,
+        shot_id: str,
+        slot: str,
+        *,
+        confirm_replace_approved: bool = False,
+    ) -> None:
+        """Reject a silent replacement before an asset import writes any bytes."""
+
+        if not SHOT_ID.fullmatch(shot_id):
+            raise ValueError("Identifiant de plan invalide")
+        if slot not in {"keyframe", "audio", "video"}:
+            return
+        settings = self.settings_provider()
+        approved = (
+            self._approved_keyframe_source(settings, shot_id) is not None
+            if slot == "keyframe"
+            else self._approved_video_present(settings, shot_id)
+            if slot == "video"
+            else self._has_voice_or_asset(settings, shot_id)
+        )
+        if approved and not confirm_replace_approved:
+            raise PermissionError(
+                f"Le média {slot} courant est approuvé ; confirme explicitement son remplacement"
+            )
+
+    def finalize_asset_import(self, shot_id: str, slot: str) -> str | None:
+        """Archive and invalidate only after a manual asset was stored successfully."""
+
+        if not SHOT_ID.fullmatch(shot_id):
+            raise ValueError("Identifiant de plan invalide")
+        if slot not in {"keyframe", "audio", "video"}:
+            return None
+        settings = self.settings_provider()
+        history = RunHistory(settings.output_dir)
+        if slot == "keyframe":
+            return history.invalidate_shot_after(shot_id, "source")
+        archived = history.archive_current(shot_id)
+        history.invalidate_master(shot_id.rsplit("-S", 1)[0], archive=False)
+        return str(archived["id"]) if archived is not None else None
+
     async def _enqueue_batch(
         self,
         episode_id: str,
@@ -809,6 +850,27 @@ class ProductionQueueManager:
         record = assets.get("audio")
         filename = record.get("filename") if isinstance(record, dict) else None
         return bool(isinstance(filename, str) and (destination / "imports" / filename).is_file())
+
+    @classmethod
+    def _approved_video_present(cls, settings: Settings, shot_id: str) -> bool:
+        imported = AssetStore(settings.output_dir).get(shot_id, "video")
+        if imported is not None:
+            return True
+        clip = settings.output_dir / shot_id / "clip.mp4"
+        if not clip.is_file() or cls._approved_keyframe_source(settings, shot_id) is None:
+            return False
+        manifest = cls._read_mapping(settings.output_dir / shot_id / "generation.json")
+        outputs = manifest.get("outputs")
+        return bool(
+            str(manifest.get("status", "")).upper() == "GENERATED"
+            and isinstance(outputs, list)
+            and any(
+                isinstance(item, dict)
+                and Path(str(item.get("path", ""))).name == clip.name
+                and item.get("sha256") == sha256_file(clip)
+                for item in outputs
+            )
+        )
 
     @staticmethod
     def _keyframe_source(settings: Settings, shot_id: str) -> tuple[str | None, Path | None]:

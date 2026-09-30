@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { GuidedJourney } from "@features/guided-journey";
+import { EpisodeProductionCockpit } from "@features/production";
 import { RelationshipBoard } from "@features/relationships";
 import { SetupWizard } from "@features/setup";
 
@@ -201,6 +202,17 @@ export function StudioShell({
       );
     }
 
+    if (route.name === "produce") {
+      return (
+        <EpisodeProductionCockpit
+          episodeId={context.episodeId}
+          locale={locale}
+          onOpenGraph={() => navigate("graph")}
+          onOpenSetup={() => navigate("settings")}
+        />
+      );
+    }
+
     const workspace = WORKSPACE_BY_ROUTE[route.name];
     const selector = LEGACY_ROOT_BY_WORKSPACE[workspace];
     return (
@@ -266,4 +278,3 @@ export function StudioShell({
     </div>
   );
 }
-

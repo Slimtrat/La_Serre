@@ -29,6 +29,8 @@ from apps.api.guided_routes import create_guided_router
 from apps.api.job_manager import JobManager
 from apps.api.narrative_routes import create_narrative_router
 from apps.api.notifications import StudioNotificationLog
+from apps.api.production_cockpit import ProductionCockpitService
+from apps.api.production_cockpit_routes import create_production_cockpit_router
 from apps.api.production_queue import ProductionQueueManager
 from apps.api.production_queue_routes import create_production_queue_router
 from apps.api.project_storage_routes import create_project_storage_router
@@ -52,7 +54,7 @@ from apps.api.schemas import (
 from apps.api.season_routes import create_season_plan_router
 from apps.api.stage_actions import ShotStageService, StageKind
 from apps.api.studio_routes import create_studio_router
-from apps.api.studio_snapshot import StudioJourneyService
+from apps.api.studio_snapshot import StudioJourneyService, StudioJourneySnapshot
 from apps.api.workflow_graph import WORKFLOW_GRAPH_KINDS, build_workflow_graph
 from apps.api.workflow_setup import WorkflowSetup
 from apps.api.workflow_template_routes import create_workflow_template_router
@@ -189,6 +191,30 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.router.add_event_handler("shutdown", episode_manager.shutdown)
     stage_service = ShotStageService(current_settings)
     production_queue = ProductionQueueManager(current_settings, catalog, manager, stage_service)
+
+    def studio_journey() -> StudioJourneySnapshot:
+        return StudioJourneyService(
+            project_id=project_registry.active_id,
+            private_root=current_settings().private_content_dir,
+            output_root=current_settings().output_dir,
+            runtime_provider=lambda: {
+                **service_supervisor_listing(),
+                "capabilities": local_media_capabilities(current_settings()),
+            },
+            queue_provider=production_queue.listing,
+            jobs_provider=lambda: (
+                *[job.public() for job in manager.jobs.values()],
+                *[job.public() for job in episode_manager.jobs.values()],
+            ),
+        ).build()
+
+    production_cockpit = ProductionCockpitService(
+        current_settings,
+        catalog,
+        production_queue,
+        episode_manager,
+        studio_journey,
+    )
     setup = WorkflowSetup()
     factory = WorkflowFactory()
 
@@ -237,6 +263,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
     )
     app.include_router(create_production_queue_router(production_queue))
+    app.include_router(create_production_cockpit_router(production_cockpit))
     app.include_router(
         create_project_storage_router(
             project_registry,
@@ -270,22 +297,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     app.include_router(
-        create_studio_router(
-            lambda: StudioJourneyService(
-                project_id=project_registry.active_id,
-                private_root=current_settings().private_content_dir,
-                output_root=current_settings().output_dir,
-                runtime_provider=lambda: {
-                    **service_supervisor_listing(),
-                    "capabilities": local_media_capabilities(current_settings()),
-                },
-                queue_provider=production_queue.listing,
-                jobs_provider=lambda: (
-                    *[job.public() for job in manager.jobs.values()],
-                    *[job.public() for job in episode_manager.jobs.values()],
-                ),
-            ).build()
-        )
+        create_studio_router(studio_journey)
     )
 
     @app.get("/api/projects")
@@ -635,9 +647,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         slot: AssetSlot,
         request: Request,
         filename: str,
+        confirm_replace_approved: bool = False,
     ) -> dict[str, object]:
         content = await request.body()
         try:
+            await asyncio.to_thread(
+                production_queue.prepare_asset_import,
+                shot_id,
+                slot,
+                confirm_replace_approved=confirm_replace_approved,
+            )
             record = await asyncio.to_thread(
                 assets().put,
                 shot_id,
@@ -646,11 +665,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 request.headers.get("content-type", "application/octet-stream"),
                 content,
             )
+            archived_run_id = await asyncio.to_thread(
+                production_queue.finalize_asset_import,
+                shot_id,
+                slot,
+            )
+        except PermissionError as exc:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "APPROVED_VARIANT_REPLACEMENT_REQUIRES_CONFIRMATION",
+                    "message": str(exc),
+                },
+            ) from exc
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         return {
             **asdict(record),
             "url": f"/api/assets/{shot_id}/{slot}/content",
+            "archived_run_id": archived_run_id,
         }
 
     @app.get("/api/assets/{shot_id}/{slot}/content")
@@ -708,9 +741,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         shot_id: str,
         slot: AssetSlot,
         payload: AssetReuseRequest,
+        confirm_replace_approved: bool = False,
     ) -> dict[str, object]:
         try:
+            production_queue.prepare_asset_import(
+                shot_id,
+                slot,
+                confirm_replace_approved=confirm_replace_approved,
+            )
             record = asset_catalog().reuse(shot_id, slot, payload.asset_id)
+            archived_run_id = production_queue.finalize_asset_import(shot_id, slot)
+        except PermissionError as exc:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "APPROVED_VARIANT_REPLACEMENT_REQUIRES_CONFIRMATION",
+                    "message": str(exc),
+                },
+            ) from exc
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         except FileNotFoundError as exc:
@@ -718,6 +766,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {
             **asdict(record),
             "url": f"/api/assets/{shot_id}/{slot}/content",
+            "archived_run_id": archived_run_id,
         }
 
     @app.get("/api/jobs/{job_id}")
