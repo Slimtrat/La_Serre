@@ -21,6 +21,7 @@ import { ErrorState, Progress, Skeleton } from "@shared";
 import { continuityApi, EpisodeConsequencesPanel } from "@features/continuity";
 import { EpisodeAuthoring } from "@features/episode-authoring";
 import { EpisodeProductionCockpit } from "@features/production";
+import { ReleaseCandidate } from "@features/release";
 import { SeasonPlanBoard, seasonPlanApi } from "@features/season-plan";
 
 import { JourneyContext } from "./JourneyContext";
@@ -86,6 +87,7 @@ export function GuidedJourney({ locale, onNavigate, slots }: GuidedJourneyProps)
     episode: slots?.episode ?? (guided.activeEpisodeId ? <EpisodeAuthoring episodeId={guided.activeEpisodeId} projectId={journey.data.project_id} locale={locale} initialTab="script" onChanged={refresh} /> : undefined),
     storyboard: slots?.storyboard ?? (guided.activeEpisodeId ? <EpisodeAuthoring episodeId={guided.activeEpisodeId} projectId={journey.data.project_id} locale={locale} initialTab="storyboard" onChanged={refresh} /> : undefined),
     production: slots?.production ?? (guided.activeEpisodeId ? <EpisodeProductionCockpit episodeId={guided.activeEpisodeId} locale={locale} onOpenGraph={() => onNavigate("graph")} onOpenSetup={() => onNavigate("settings")} /> : undefined),
+    release: slots?.release ?? (guided.activeEpisodeId ? <ReleaseCandidate episodeId={guided.activeEpisodeId} locale={locale} /> : undefined),
   };
 
   const propose = async (target: string) => {

@@ -28,6 +28,7 @@ class ScenarioResult(TypedDict):
 DEFAULT_SCENARIOS = (
     Path("tests/browser/episode_authoring_smoke.mjs"),
     Path("tests/browser/episode_production_cockpit.mjs"),
+    Path("tests/browser/episode_release_candidate.mjs"),
     Path("tests/browser/guided_casting_integration.mjs"),
     Path("tests/browser/season_board_smoke.mjs"),
     Path("tests/browser/setup_wizard_smoke.mjs"),

@@ -2118,6 +2118,207 @@ export interface RelationshipSummaryCandidate {
   summary: string;
 }
 
+export type ReleaseCandidateState = typeof ReleaseCandidateState[keyof typeof ReleaseCandidateState];
+
+
+export const ReleaseCandidateState = {
+  draft: 'draft',
+  approved: 'approved',
+  exported: 'exported',
+  stale: 'stale',
+} as const;
+
+export interface ReleaseCover {
+  path: string;
+  /** @pattern ^S\d{2}E\d{3}-S\d{2}$ */
+  shot_id: string;
+  source_path: string;
+  /** @pattern ^[0-9a-f]{64}$ */
+  source_sha256: string;
+  url: string;
+}
+
+export interface ReleaseExportFile {
+  /** @minimum 0 */
+  bytes: number;
+  filename: string;
+  /** @pattern ^[0-9a-f]{64}$ */
+  sha256: string;
+  url: string;
+}
+
+export interface ReleaseExport {
+  created_at: string;
+  files: ReleaseExportFile[];
+  id: string;
+  path: string;
+}
+
+export interface ReleaseReel {
+  audio_codec: string;
+  /** @exclusiveMinimum 0 */
+  duration: number;
+  /** @exclusiveMinimum 0 */
+  fps: number;
+  /** @exclusiveMinimum 0 */
+  height: number;
+  path: string;
+  rendered_at: string;
+  renderer?: 'ffmpeg';
+  /** @pattern ^[0-9a-f]{64}$ */
+  sha256: string;
+  /** @pattern ^[0-9a-f]{64}$ */
+  source_revision: string;
+  url: string;
+  video_codec: string;
+  /** @exclusiveMinimum 0 */
+  width: number;
+}
+
+export interface SafeArea {
+  /** @minimum 0 */
+  bottom?: number;
+  /** @minimum 0 */
+  left?: number;
+  /** @minimum 0 */
+  right?: number;
+  /** @minimum 0 */
+  top?: number;
+  unit?: 'px';
+}
+
+export interface RenderProfile {
+  aspect_ratio?: '9:16';
+  container?: 'mp4';
+  fps?: 24;
+  height?: 1920;
+  id?: 'tentafruit-reel-v1';
+  max_duration?: number;
+  min_duration?: number;
+  name?: string;
+  safe_area?: SafeArea;
+  video_codec?: 'h264';
+  width?: 1080;
+}
+
+export interface ReleaseSource {
+  audio_codec: string;
+  /** @exclusiveMinimum 0 */
+  duration: number;
+  /** @pattern ^[0-9a-f]{64}$ */
+  episode_sha256: string;
+  format: string;
+  /** @exclusiveMinimum 0 */
+  fps: number;
+  /** @exclusiveMinimum 0 */
+  height: number;
+  /** @pattern ^[0-9a-f]{64}$ */
+  manifest_sha256: string;
+  /** @pattern ^[0-9a-f]{64}$ */
+  master_sha256: string;
+  /** @pattern ^[0-9a-f]{64}$ */
+  revision: string;
+  /** @pattern ^[0-9a-f]{64}$ */
+  subtitles_sha256: string;
+  verified_at: string;
+  video_codec: string;
+  /** @exclusiveMinimum 0 */
+  width: number;
+}
+
+export type ReleaseTransitionAction = typeof ReleaseTransitionAction[keyof typeof ReleaseTransitionAction];
+
+
+export const ReleaseTransitionAction = {
+  created: 'created',
+  refreshed: 'refreshed',
+  edited: 'edited',
+  approved: 'approved',
+  exported: 'exported',
+  stale: 'stale',
+} as const;
+
+export type ReleaseTransitionFromState = typeof ReleaseTransitionFromState[keyof typeof ReleaseTransitionFromState] | null;
+
+
+export const ReleaseTransitionFromState = {
+  draft: 'draft',
+  approved: 'approved',
+  exported: 'exported',
+  stale: 'stale',
+} as const;
+
+export type ReleaseTransitionToState = typeof ReleaseTransitionToState[keyof typeof ReleaseTransitionToState];
+
+
+export const ReleaseTransitionToState = {
+  draft: 'draft',
+  approved: 'approved',
+  exported: 'exported',
+  stale: 'stale',
+} as const;
+
+export interface ReleaseTransition {
+  action: ReleaseTransitionAction;
+  at: string;
+  from_state?: ReleaseTransitionFromState;
+  /** @minimum 1 */
+  revision: number;
+  to_state: ReleaseTransitionToState;
+}
+
+export interface ReleaseCandidate {
+  approved_at?: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 5000
+     */
+  caption: string;
+  /**
+     * @minLength 1
+     * @maxLength 5000
+     */
+  caption_template: string;
+  cover: ReleaseCover;
+  created_at: string;
+  /** @pattern ^S\d{2}E\d{3}$ */
+  episode_id: string;
+  export?: ReleaseExport | null;
+  exported_at?: string | null;
+  exports?: ReleaseExport[];
+  id: string;
+  master_url: string;
+  reel: ReleaseReel;
+  render_profile: RenderProfile;
+  /** @minimum 1 */
+  revision: number;
+  schema_version?: 1;
+  source: ReleaseSource;
+  source_master_url: string;
+  stale_reasons?: string[];
+  state: ReleaseCandidateState;
+  subtitles_url: string;
+  transitions?: ReleaseTransition[];
+  updated_at: string;
+}
+
+export interface ReleaseCandidateCommand {
+  /** @minimum 1 */
+  expected_revision: number;
+}
+
+export interface ReleaseCandidateCreate {
+  caption_template?: string | null;
+  cover_shot_id?: string | null;
+}
+
+export interface ReleaseCandidateEdit {
+  caption_template?: string | null;
+  cover_shot_id?: string | null;
+  /** @minimum 1 */
+  expected_revision: number;
+}
+
 export interface ReorderImpactRequest {
   /** @minimum 0 */
   expected_plan_revision: number;
@@ -5695,6 +5896,240 @@ return orvalFetch<EnqueueApiEpisodesEpisodeIdProductionCockpitShotsShotIdEnqueue
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(cockpitEnqueueRequest)
+  }
+);}
+
+
+
+export const getGetCandidateApiEpisodesEpisodeIdReleaseCandidateGetUrl = (episodeId: string,) => {
+
+
+
+
+  return `/api/episodes/${episodeId}/release-candidate`
+}
+
+/**
+ * @summary Get Candidate
+ */
+export const getCandidateApiEpisodesEpisodeIdReleaseCandidateGet = async (episodeId: string, options?: Parameters<typeof orvalFetch>[1]): Promise<ReleaseCandidate> => {
+
+  return orvalFetch<ReleaseCandidate>(getGetCandidateApiEpisodesEpisodeIdReleaseCandidateGetUrl(episodeId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getEditCandidateApiEpisodesEpisodeIdReleaseCandidatePatchUrl = (episodeId: string,) => {
+
+
+
+
+  return `/api/episodes/${episodeId}/release-candidate`
+}
+
+/**
+ * @summary Edit Candidate
+ */
+export const editCandidateApiEpisodesEpisodeIdReleaseCandidatePatch = async (episodeId: string,
+    releaseCandidateEdit: ReleaseCandidateEdit, options?: Parameters<typeof orvalFetch>[1]): Promise<ReleaseCandidate> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<ReleaseCandidate>(getEditCandidateApiEpisodesEpisodeIdReleaseCandidatePatchUrl(episodeId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(releaseCandidateEdit)
+  }
+);}
+
+
+
+export const getCreateCandidateApiEpisodesEpisodeIdReleaseCandidatePostUrl = (episodeId: string,) => {
+
+
+
+
+  return `/api/episodes/${episodeId}/release-candidate`
+}
+
+/**
+ * @summary Create Candidate
+ */
+export const createCandidateApiEpisodesEpisodeIdReleaseCandidatePost = async (episodeId: string,
+    releaseCandidateCreate: ReleaseCandidateCreate, options?: Parameters<typeof orvalFetch>[1]): Promise<ReleaseCandidate> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<ReleaseCandidate>(getCreateCandidateApiEpisodesEpisodeIdReleaseCandidatePostUrl(episodeId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(releaseCandidateCreate)
+  }
+);}
+
+
+
+export const getApproveCandidateApiEpisodesEpisodeIdReleaseCandidateApprovePostUrl = (episodeId: string,) => {
+
+
+
+
+  return `/api/episodes/${episodeId}/release-candidate/approve`
+}
+
+/**
+ * @summary Approve Candidate
+ */
+export const approveCandidateApiEpisodesEpisodeIdReleaseCandidateApprovePost = async (episodeId: string,
+    releaseCandidateCommand: ReleaseCandidateCommand, options?: Parameters<typeof orvalFetch>[1]): Promise<ReleaseCandidate> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<ReleaseCandidate>(getApproveCandidateApiEpisodesEpisodeIdReleaseCandidateApprovePostUrl(episodeId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(releaseCandidateCommand)
+  }
+);}
+
+
+
+export const getExportCandidateApiEpisodesEpisodeIdReleaseCandidateExportPostUrl = (episodeId: string,) => {
+
+
+
+
+  return `/api/episodes/${episodeId}/release-candidate/export`
+}
+
+/**
+ * @summary Export Candidate
+ */
+export const exportCandidateApiEpisodesEpisodeIdReleaseCandidateExportPost = async (episodeId: string,
+    releaseCandidateCommand: ReleaseCandidateCommand, options?: Parameters<typeof orvalFetch>[1]): Promise<ReleaseCandidate> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<ReleaseCandidate>(getExportCandidateApiEpisodesEpisodeIdReleaseCandidateExportPostUrl(episodeId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(releaseCandidateCommand)
+  }
+);}
+
+
+
+export const getExportFileApiEpisodesEpisodeIdReleaseCandidateExportsExportIdFilenameGetUrl = (episodeId: string,
+    exportId: string,
+    filename: string,) => {
+
+
+
+
+  return `/api/episodes/${episodeId}/release-candidate/exports/${exportId}/${filename}`
+}
+
+/**
+ * @summary Export File
+ */
+export const exportFileApiEpisodesEpisodeIdReleaseCandidateExportsExportIdFilenameGet = async (episodeId: string,
+    exportId: string,
+    filename: string, options?: Parameters<typeof orvalFetch>[1]): Promise<void> => {
+
+  return orvalFetch<void>(getExportFileApiEpisodesEpisodeIdReleaseCandidateExportsExportIdFilenameGetUrl(episodeId,exportId,filename),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getCandidateMediaApiEpisodesEpisodeIdReleaseCandidateMediaFilenameGetUrl = (episodeId: string,
+    filename: string,) => {
+
+
+
+
+  return `/api/episodes/${episodeId}/release-candidate/media/${filename}`
+}
+
+/**
+ * @summary Candidate Media
+ */
+export const candidateMediaApiEpisodesEpisodeIdReleaseCandidateMediaFilenameGet = async (episodeId: string,
+    filename: string, options?: Parameters<typeof orvalFetch>[1]): Promise<void> => {
+
+  return orvalFetch<void>(getCandidateMediaApiEpisodesEpisodeIdReleaseCandidateMediaFilenameGetUrl(episodeId,filename),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 
