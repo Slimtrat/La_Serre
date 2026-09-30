@@ -3,8 +3,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from engine.runtime.installers.ffmpeg import FFMPEG_WINDOWS_X64
-
 WORKFLOW = Path(".github/workflows/windows-desktop.yml")
 HARNESS = Path("tools/run_browser_integration.py")
 
@@ -71,11 +69,10 @@ def test_browser_gate_runs_real_fastapi_and_publishes_failure_evidence() -> None
     assert "npm --prefix frontend run build" in browser
     assert "uses: actions/cache@v4" in browser
     assert "path: .la-serre-runtime/tools/ffmpeg" in browser
-    expected_cache_key = (
-        "la-serre-ffmpeg-${{ runner.os }}-"
-        f"{FFMPEG_WINDOWS_X64.version}-{FFMPEG_WINDOWS_X64.archive_sha256}"
+    assert (
+        "key: la-serre-ffmpeg-${{ runner.os }}-"
+        "${{ hashFiles('engine/runtime/installers/ffmpeg.py') }}" in browser
     )
-    assert expected_cache_key in browser
     assert (
         "python -m tools.prepare_managed_ffmpeg --root .la-serre-runtime" in browser
     )
