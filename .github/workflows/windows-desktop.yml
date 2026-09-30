@@ -148,6 +148,15 @@ jobs:
           python -m pip install -e ".[dev,desktop]"
           npm --prefix frontend ci
 
+      - name: Cache checksum-pinned managed FFmpeg
+        uses: actions/cache@v4
+        with:
+          path: .la-serre-runtime/tools/ffmpeg
+          key: la-serre-ffmpeg-${{ runner.os }}-${{ hashFiles('engine/runtime/installers/ffmpeg.py') }}
+
+      - name: Prepare checksum-pinned managed FFmpeg
+        run: python -m tools.prepare_managed_ffmpeg --root .la-serre-runtime
+
       - name: Build the frontend served by FastAPI
         run: npm --prefix frontend run build
 

@@ -67,6 +67,15 @@ def test_browser_gate_runs_real_fastapi_and_publishes_failure_evidence() -> None
 
     assert "Browser integration (FastAPI + persistence)" in browser
     assert "npm --prefix frontend run build" in browser
+    assert "uses: actions/cache@v4" in browser
+    assert "path: .la-serre-runtime/tools/ffmpeg" in browser
+    assert (
+        "key: la-serre-ffmpeg-${{ runner.os }}-"
+        "${{ hashFiles('engine/runtime/installers/ffmpeg.py') }}" in browser
+    )
+    assert (
+        "python -m tools.prepare_managed_ffmpeg --root .la-serre-runtime" in browser
+    )
     assert "python -m tools.run_browser_integration --timeout 120" in browser
     assert "Publish browser traces, screenshots and logs\n        if: always()" in browser
     assert "artifacts/browser-integration" in browser

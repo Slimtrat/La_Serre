@@ -40,6 +40,26 @@ def test_local_playwright_module_uses_override_or_frontend_install(
     assert runner._playwright_module(tmp_path) == str(local_entry.resolve())
 
 
+def test_managed_ffmpeg_environment_exposes_verified_pair(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ffmpeg = tmp_path / "tools/ffmpeg/bin/ffmpeg.exe"
+    ffprobe = ffmpeg.with_name("ffprobe.exe")
+    monkeypatch.setattr(
+        runner,
+        "resolve_managed_ffmpeg",
+        lambda root: (ffmpeg, ffprobe) if root == tmp_path / ".la-serre-runtime" else None,
+    )
+
+    assert runner._managed_ffmpeg_environment(tmp_path) == {
+        "SERRE_E2E_FFMPEG": str(ffmpeg.resolve()),
+        "SERRE_E2E_FFPROBE": str(ffprobe.resolve()),
+    }
+
+    monkeypatch.setattr(runner, "resolve_managed_ffmpeg", lambda root: None)
+    assert runner._managed_ffmpeg_environment(tmp_path) == {}
+
+
 def _run(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

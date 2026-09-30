@@ -5020,6 +5020,638 @@
         "title": "RelationshipSummaryCandidate",
         "type": "object"
       },
+      "ReleaseCandidate": {
+        "additionalProperties": false,
+        "properties": {
+          "approved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "caption": {
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Caption",
+            "type": "string"
+          },
+          "caption_template": {
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Caption Template",
+            "type": "string"
+          },
+          "cover": {
+            "$ref": "#/components/schemas/ReleaseCover"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "episode_id": {
+            "pattern": "^S\\d{2}E\\d{3}$",
+            "title": "Episode Id",
+            "type": "string"
+          },
+          "export": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReleaseExport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "exported_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exported At"
+          },
+          "exports": {
+            "items": {
+              "$ref": "#/components/schemas/ReleaseExport"
+            },
+            "title": "Exports",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "master_url": {
+            "title": "Master Url",
+            "type": "string"
+          },
+          "reel": {
+            "$ref": "#/components/schemas/ReleaseReel"
+          },
+          "render_profile": {
+            "$ref": "#/components/schemas/RenderProfile"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ReleaseSource"
+          },
+          "source_master_url": {
+            "title": "Source Master Url",
+            "type": "string"
+          },
+          "stale_reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Stale Reasons",
+            "type": "array"
+          },
+          "state": {
+            "enum": [
+              "draft",
+              "approved",
+              "exported",
+              "stale"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "subtitles_url": {
+            "title": "Subtitles Url",
+            "type": "string"
+          },
+          "transitions": {
+            "items": {
+              "$ref": "#/components/schemas/ReleaseTransition"
+            },
+            "title": "Transitions",
+            "type": "array"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "episode_id",
+          "revision",
+          "state",
+          "render_profile",
+          "source",
+          "reel",
+          "cover",
+          "caption_template",
+          "caption",
+          "master_url",
+          "source_master_url",
+          "subtitles_url",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ReleaseCandidate",
+        "type": "object"
+      },
+      "ReleaseCandidateCommand": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "ReleaseCandidateCommand",
+        "type": "object"
+      },
+      "ReleaseCandidateCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "caption_template": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caption Template"
+          },
+          "cover_shot_id": {
+            "anyOf": [
+              {
+                "pattern": "^S\\d{2}E\\d{3}-S\\d{2}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Shot Id"
+          }
+        },
+        "title": "ReleaseCandidateCreate",
+        "type": "object"
+      },
+      "ReleaseCandidateEdit": {
+        "additionalProperties": false,
+        "properties": {
+          "caption_template": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caption Template"
+          },
+          "cover_shot_id": {
+            "anyOf": [
+              {
+                "pattern": "^S\\d{2}E\\d{3}-S\\d{2}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Shot Id"
+          },
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "ReleaseCandidateEdit",
+        "type": "object"
+      },
+      "ReleaseCover": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "shot_id": {
+            "pattern": "^S\\d{2}E\\d{3}-S\\d{2}$",
+            "title": "Shot Id",
+            "type": "string"
+          },
+          "source_path": {
+            "title": "Source Path",
+            "type": "string"
+          },
+          "source_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Source Sha256",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "shot_id",
+          "source_sha256",
+          "source_path",
+          "path",
+          "url"
+        ],
+        "title": "ReleaseCover",
+        "type": "object"
+      },
+      "ReleaseExport": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/ReleaseExportFile"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "path",
+          "files"
+        ],
+        "title": "ReleaseExport",
+        "type": "object"
+      },
+      "ReleaseExportFile": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "minimum": 0.0,
+            "title": "Bytes",
+            "type": "integer"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Sha256",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "filename",
+          "sha256",
+          "bytes",
+          "url"
+        ],
+        "title": "ReleaseExportFile",
+        "type": "object"
+      },
+      "ReleaseReel": {
+        "additionalProperties": false,
+        "properties": {
+          "audio_codec": {
+            "title": "Audio Codec",
+            "type": "string"
+          },
+          "duration": {
+            "exclusiveMinimum": 0.0,
+            "title": "Duration",
+            "type": "number"
+          },
+          "fps": {
+            "exclusiveMinimum": 0.0,
+            "title": "Fps",
+            "type": "number"
+          },
+          "height": {
+            "exclusiveMinimum": 0.0,
+            "title": "Height",
+            "type": "integer"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "rendered_at": {
+            "format": "date-time",
+            "title": "Rendered At",
+            "type": "string"
+          },
+          "renderer": {
+            "const": "ffmpeg",
+            "default": "ffmpeg",
+            "title": "Renderer",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Sha256",
+            "type": "string"
+          },
+          "source_revision": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Source Revision",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "video_codec": {
+            "title": "Video Codec",
+            "type": "string"
+          },
+          "width": {
+            "exclusiveMinimum": 0.0,
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "source_revision",
+          "path",
+          "url",
+          "sha256",
+          "duration",
+          "width",
+          "height",
+          "fps",
+          "video_codec",
+          "audio_codec",
+          "rendered_at"
+        ],
+        "title": "ReleaseReel",
+        "type": "object"
+      },
+      "ReleaseSource": {
+        "additionalProperties": false,
+        "properties": {
+          "audio_codec": {
+            "title": "Audio Codec",
+            "type": "string"
+          },
+          "duration": {
+            "exclusiveMinimum": 0.0,
+            "title": "Duration",
+            "type": "number"
+          },
+          "episode_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Episode Sha256",
+            "type": "string"
+          },
+          "format": {
+            "title": "Format",
+            "type": "string"
+          },
+          "fps": {
+            "exclusiveMinimum": 0.0,
+            "title": "Fps",
+            "type": "number"
+          },
+          "height": {
+            "exclusiveMinimum": 0.0,
+            "title": "Height",
+            "type": "integer"
+          },
+          "manifest_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Manifest Sha256",
+            "type": "string"
+          },
+          "master_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Master Sha256",
+            "type": "string"
+          },
+          "revision": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Revision",
+            "type": "string"
+          },
+          "subtitles_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Subtitles Sha256",
+            "type": "string"
+          },
+          "verified_at": {
+            "format": "date-time",
+            "title": "Verified At",
+            "type": "string"
+          },
+          "video_codec": {
+            "title": "Video Codec",
+            "type": "string"
+          },
+          "width": {
+            "exclusiveMinimum": 0.0,
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision",
+          "master_sha256",
+          "manifest_sha256",
+          "episode_sha256",
+          "subtitles_sha256",
+          "duration",
+          "width",
+          "height",
+          "fps",
+          "format",
+          "video_codec",
+          "audio_codec",
+          "verified_at"
+        ],
+        "title": "ReleaseSource",
+        "type": "object"
+      },
+      "ReleaseTransition": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "created",
+              "refreshed",
+              "edited",
+              "approved",
+              "exported",
+              "stale"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "from_state": {
+            "anyOf": [
+              {
+                "enum": [
+                  "draft",
+                  "approved",
+                  "exported",
+                  "stale"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From State"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "to_state": {
+            "enum": [
+              "draft",
+              "approved",
+              "exported",
+              "stale"
+            ],
+            "title": "To State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision",
+          "action",
+          "to_state",
+          "at"
+        ],
+        "title": "ReleaseTransition",
+        "type": "object"
+      },
+      "RenderProfile": {
+        "additionalProperties": false,
+        "properties": {
+          "aspect_ratio": {
+            "const": "9:16",
+            "default": "9:16",
+            "title": "Aspect Ratio",
+            "type": "string"
+          },
+          "container": {
+            "const": "mp4",
+            "default": "mp4",
+            "title": "Container",
+            "type": "string"
+          },
+          "fps": {
+            "const": 24,
+            "default": 24,
+            "title": "Fps",
+            "type": "integer"
+          },
+          "height": {
+            "const": 1920,
+            "default": 1920,
+            "title": "Height",
+            "type": "integer"
+          },
+          "id": {
+            "const": "tentafruit-reel-v1",
+            "default": "tentafruit-reel-v1",
+            "title": "Id",
+            "type": "string"
+          },
+          "max_duration": {
+            "default": 60.0,
+            "title": "Max Duration",
+            "type": "number"
+          },
+          "min_duration": {
+            "default": 30.0,
+            "title": "Min Duration",
+            "type": "number"
+          },
+          "name": {
+            "default": "Tentafruit Reel",
+            "title": "Name",
+            "type": "string"
+          },
+          "safe_area": {
+            "$ref": "#/components/schemas/SafeArea"
+          },
+          "video_codec": {
+            "const": "h264",
+            "default": "h264",
+            "title": "Video Codec",
+            "type": "string"
+          },
+          "width": {
+            "const": 1080,
+            "default": 1080,
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "title": "RenderProfile",
+        "type": "object"
+      },
       "ReorderImpactRequest": {
         "additionalProperties": false,
         "properties": {
@@ -5085,6 +5717,43 @@
           }
         },
         "title": "RuntimeCapabilities",
+        "type": "object"
+      },
+      "SafeArea": {
+        "additionalProperties": false,
+        "properties": {
+          "bottom": {
+            "default": 420,
+            "minimum": 0.0,
+            "title": "Bottom",
+            "type": "integer"
+          },
+          "left": {
+            "default": 90,
+            "minimum": 0.0,
+            "title": "Left",
+            "type": "integer"
+          },
+          "right": {
+            "default": 180,
+            "minimum": 0.0,
+            "title": "Right",
+            "type": "integer"
+          },
+          "top": {
+            "default": 240,
+            "minimum": 0.0,
+            "title": "Top",
+            "type": "integer"
+          },
+          "unit": {
+            "const": "px",
+            "default": "px",
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "title": "SafeArea",
         "type": "object"
       },
       "ScreenwriterPlan": {
@@ -10982,6 +11651,349 @@
         "summary": "Enqueue",
         "tags": [
           "production-cockpit"
+        ]
+      }
+    },
+    "/api/episodes/{episode_id}/release-candidate": {
+      "get": {
+        "operationId": "get_candidate_api_episodes__episode_id__release_candidate_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "title": "Episode Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseCandidate"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Candidate",
+        "tags": [
+          "release-candidate"
+        ]
+      },
+      "patch": {
+        "operationId": "edit_candidate_api_episodes__episode_id__release_candidate_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "title": "Episode Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseCandidateEdit"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseCandidate"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Edit Candidate",
+        "tags": [
+          "release-candidate"
+        ]
+      },
+      "post": {
+        "operationId": "create_candidate_api_episodes__episode_id__release_candidate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "title": "Episode Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseCandidateCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseCandidate"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Candidate",
+        "tags": [
+          "release-candidate"
+        ]
+      }
+    },
+    "/api/episodes/{episode_id}/release-candidate/approve": {
+      "post": {
+        "operationId": "approve_candidate_api_episodes__episode_id__release_candidate_approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "title": "Episode Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseCandidateCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseCandidate"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Approve Candidate",
+        "tags": [
+          "release-candidate"
+        ]
+      }
+    },
+    "/api/episodes/{episode_id}/release-candidate/export": {
+      "post": {
+        "operationId": "export_candidate_api_episodes__episode_id__release_candidate_export_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "title": "Episode Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseCandidateCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseCandidate"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Candidate",
+        "tags": [
+          "release-candidate"
+        ]
+      }
+    },
+    "/api/episodes/{episode_id}/release-candidate/exports/{export_id}/{filename}": {
+      "get": {
+        "operationId": "export_file_api_episodes__episode_id__release_candidate_exports__export_id___filename__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "title": "Episode Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "export_id",
+            "required": true,
+            "schema": {
+              "title": "Export Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "filename",
+            "required": true,
+            "schema": {
+              "title": "Filename",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export File",
+        "tags": [
+          "release-candidate"
+        ]
+      }
+    },
+    "/api/episodes/{episode_id}/release-candidate/media/{filename}": {
+      "get": {
+        "operationId": "candidate_media_api_episodes__episode_id__release_candidate_media__filename__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "title": "Episode Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "filename",
+            "required": true,
+            "schema": {
+              "title": "Filename",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Candidate Media",
+        "tags": [
+          "release-candidate"
         ]
       }
     },

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { GuidedJourney } from "@features/guided-journey";
 import { EpisodeProductionCockpit } from "@features/production";
+import { ReleaseCandidate } from "@features/release";
 import { RelationshipBoard } from "@features/relationships";
 import { SetupWizard } from "@features/setup";
 
@@ -211,6 +212,10 @@ export function StudioShell({
           onOpenSetup={() => navigate("settings")}
         />
       );
+    }
+
+    if (route.name === "results") {
+      return <ReleaseCandidate episodeId={context.episodeId} locale={locale} />;
     }
 
     const workspace = WORKSPACE_BY_ROUTE[route.name];

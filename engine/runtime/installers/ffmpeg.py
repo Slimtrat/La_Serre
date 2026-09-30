@@ -18,17 +18,17 @@ from engine.runtime.managed_tools import (
 
 FFMPEG_WINDOWS_X64 = ManagedToolSpec(
     name="ffmpeg",
-    version="9.0.1-essentials",
+    version="8.1.2-essentials",
     source=(
         "https://www.gyan.dev/ffmpeg/builds/packages/"
-        "ffmpeg-9.0.1-essentials_build.zip"
+        "ffmpeg-8.1.2-essentials_build.zip"
     ),
-    archive_sha256="fec81ae03971d9dd4be3ebe02e263bd2ec1d789483f931bdba5f5715e65da2e9",
-    executable="ffmpeg-9.0.1-essentials_build/bin/ffmpeg.exe",
-    required_files=("ffmpeg-9.0.1-essentials_build/bin/ffprobe.exe",),
+    archive_sha256="db580001caa24ac104c8cb856cd113a87b0a443f7bdf47d8c12b1d740584a2ec",
+    executable="ffmpeg-8.1.2-essentials_build/bin/ffmpeg.exe",
+    required_files=("ffmpeg-8.1.2-essentials_build/bin/ffprobe.exe",),
     license_name="GNU GPL v3",
     license_url="https://www.gyan.dev/ffmpeg/builds/#licensing",
-    size_bytes=111_253_802,
+    size_bytes=109_728_040,
 )
 
 

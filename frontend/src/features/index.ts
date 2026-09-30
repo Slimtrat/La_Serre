@@ -14,3 +14,4 @@ export * from "./relationships";
 export * from "./season-plan";
 export * from "./continuity";
 export * from "./production";
+export * from "./release";

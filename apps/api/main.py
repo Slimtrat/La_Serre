@@ -36,6 +36,7 @@ from apps.api.production_queue_routes import create_production_queue_router
 from apps.api.project_storage_routes import create_project_storage_router
 from apps.api.projects import ProjectRegistry
 from apps.api.relationship_board_routes import create_relationship_board_router
+from apps.api.release_candidate_routes import create_release_candidate_router
 from apps.api.run_history import RUN_FILES, RunHistory
 from apps.api.runtime_pack_routes import create_runtime_pack_router, local_media_capabilities
 from apps.api.schemas import (
@@ -85,6 +86,7 @@ from engine.narrative.tasks.continuity_delta import (
 )
 from engine.narrative.tasks.provider import OllamaTaskProvider
 from engine.observability.studio_activity import StudioActivityStore
+from engine.production.release import ReleaseCandidateService
 from engine.world.bible import BibleRegistry
 from engine.world.catalog import EpisodeCatalog
 
@@ -215,6 +217,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         episode_manager,
         studio_journey,
     )
+    release_candidates = ReleaseCandidateService(
+        catalog,
+        lambda: current_settings().output_dir,
+    )
     setup = WorkflowSetup()
     factory = WorkflowFactory()
 
@@ -264,6 +270,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.include_router(create_production_queue_router(production_queue))
     app.include_router(create_production_cockpit_router(production_cockpit))
+    app.include_router(create_release_candidate_router(release_candidates))
     app.include_router(
         create_project_storage_router(
             project_registry,
