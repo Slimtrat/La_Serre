@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -23,9 +24,16 @@ async def test_episode_job_endpoint_exposes_graph_stages(tmp_path: Path) -> None
             "/api/episodes/S01E001/jobs",
             json={"tts": "none", "allow_stills": True},
         )
+        payload = response.json()
+        for _attempt in range(100):
+            current = await client.get(f"/api/episode-jobs/{payload['id']}")
+            if current.json()["status"] in {"ANIMATIC", "PREVIEW", "FINAL", "FAILED"}:
+                break
+            await asyncio.sleep(0.01)
+        else:
+            raise AssertionError("Le job d’épisode de test n’a pas atteint un état terminal")
 
     assert response.status_code == 202
-    payload = response.json()
     assert payload["episode_id"] == "S01E001"
     assert [stage["id"] for stage in payload["stages"]] == [
         "voice",
@@ -64,6 +72,8 @@ async def test_episode_media_status_reports_optional_master_without_404(
             "exists": False,
             "video": False,
             "manifest": False,
+            "status": None,
+            "release_eligible": False,
             "subtitles": False,
         }
 
@@ -81,6 +91,8 @@ async def test_episode_media_status_reports_optional_master_without_404(
             "exists": True,
             "video": True,
             "manifest": True,
+            "status": None,
+            "release_eligible": False,
             "subtitles": True,
         }
 

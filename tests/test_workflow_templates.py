@@ -10,22 +10,26 @@ def test_catalogue_defines_the_complete_continuity_chain() -> None:
     catalogue = WorkflowTemplateCatalogue()
     templates = catalogue.build()
 
-    assert tuple(template.spec.id for template in templates) == catalogue.chain
+    assert (
+        tuple(template.spec.id for template in templates if template.spec.id in catalogue.chain)
+        == catalogue.chain
+    )
     assert [template.spec.stage for template in templates] == [
+        "character_master",
         "character_master",
         "scene_anchor",
         "pose_continuation",
         "video_triptych",
     ]
     assert templates[0].spec.next_templates == ["sdxl-scene-anchor-v1"]
-    anchor = templates[1]
+    anchor = templates[2]
     anchor_sources = {binding.source for binding in anchor.profile.bindings}
     assert "reference_image" in anchor_sources
     assert anchor.workflow["4"]["class_type"] == "LoadImage"
     assert anchor.workflow["7"]["inputs"]["denoise"] == 0.68
     assert anchor.workflow["9"]["inputs"]["filename_prefix"].endswith("scene-anchor")
-    assert templates[2].spec.receives == ["previous_pose_image", "next_pose_direction"]
-    assert templates[3].spec.receives[:3] == [
+    assert templates[3].spec.receives == ["previous_pose_image", "next_pose_direction"]
+    assert templates[4].spec.receives[:3] == [
         "scene_anchor_image",
         "middle_pose_image",
         "end_pose_image",
@@ -33,7 +37,7 @@ def test_catalogue_defines_the_complete_continuity_chain() -> None:
 
 
 def test_flux_template_preserves_the_validated_portrait_recipe() -> None:
-    flux = WorkflowTemplateCatalogue().build()[0]
+    flux = WorkflowTemplateCatalogue().build()[1]
 
     assert flux.workflow["1"]["inputs"]["ckpt_name"] == "flux1-dev-fp8.safetensors"
     assert flux.workflow["8"]["inputs"]["lora_name"] == "FLUX_3Dcartoon.safetensors"
@@ -50,13 +54,26 @@ def test_flux_template_preserves_the_validated_portrait_recipe() -> None:
     assert "negative_prompt" not in {binding.source for binding in flux.profile.bindings}
 
 
+def test_flux_schnell_template_uses_commercially_usable_single_checkpoint() -> None:
+    schnell = WorkflowTemplateCatalogue().build()[0]
+    assert schnell.spec.id == "flux-schnell-character-master-v1"
+    assert [item.filename for item in schnell.spec.models] == ["flux1-schnell-fp8.safetensors"]
+    assert schnell.workflow["4"]["class_type"] == "EmptySD3LatentImage"
+    assert schnell.workflow["5"]["inputs"]["steps"] == 4
+    assert schnell.workflow["5"]["inputs"]["cfg"] == 1.0
+    assert "LoraLoader" not in schnell.spec.required_nodes
+    assert schnell.spec.models[0].size_bytes == 17_236_328_572
+    assert schnell.spec.models[0].license_id == "Apache-2.0"
+    assert len(schnell.spec.models[0].sha256 or "") == 64
+
+
 def test_catalogue_writes_loadable_profiles_and_manifest(tmp_path: Path) -> None:
     catalogue = WorkflowTemplateCatalogue()
 
     manifests = catalogue.write(tmp_path)
     root_manifest = json.loads((tmp_path / "catalogue.json").read_text(encoding="utf-8"))
 
-    assert len(manifests) == 4
+    assert len(manifests) == 5
     assert root_manifest["continuity_chain"] == list(catalogue.chain)
     for manifest in manifests:
         loaded_manifest = json.loads(manifest.read_text(encoding="utf-8"))
@@ -69,7 +86,7 @@ def test_catalogue_writes_loadable_profiles_and_manifest(tmp_path: Path) -> None
 def test_flux_profile_maps_dynamic_generation_settings(tmp_path: Path) -> None:
     catalogue = WorkflowTemplateCatalogue()
     catalogue.write(tmp_path)
-    loaded = WorkflowLoader().load(tmp_path / catalogue.chain[0] / "profile.json")
+    loaded = WorkflowLoader().load(tmp_path / "flux-character-master-v1" / "profile.json")
 
     mapped = WorkflowMapper().map(
         loaded,
@@ -97,11 +114,14 @@ def test_flux_profile_maps_dynamic_generation_settings(tmp_path: Path) -> None:
 def test_optional_flux_models_do_not_pollute_the_default_readiness_check() -> None:
     catalogue = WorkflowTemplateCatalogue()
     default_models = {item.filename for item in catalogue.factory.requirements}
-    flux_models = {item.filename for item in catalogue.build()[0].spec.models}
+    flux_models = {
+        item.filename for template in catalogue.build()[:2] for item in template.spec.models
+    }
 
     assert "flux1-dev-fp8.safetensors" not in default_models
     assert "FLUX_3Dcartoon.safetensors" not in default_models
     assert flux_models == {
+        "flux1-schnell-fp8.safetensors",
         "flux1-dev-fp8.safetensors",
         "FLUX_3Dcartoon.safetensors",
     }

@@ -65,8 +65,25 @@ au moteur de voix :
 SAPI sous Windows. Le backend neural est volontaire (`--tts edge`) car il transmet le
 texte au service de synthèse correspondant ; il n’est jamais sélectionné automatiquement.
 Les voix trop longues sont accélérées sans modifier leur hauteur, jusqu’à la limite qualité
-`max_time_fit_speed` du plan audio (1,65× par défaut). Au-delà, le build échoue et demande
+`max_time_fit_speed` du plan audio (1,10× par défaut). Au-delà, le build échoue et demande
 un retiming au lieu de livrer une voix précipitée.
+
+Deux répliques d’un même plan ne peuvent pas se chevaucher implicitement. Leurs offsets et
+silences doivent créer des fenêtres distinctes ; sinon le montage échoue avant FFmpeg.
+
+## Statuts de sortie vérifiables
+
+Le fichier `episode-generation.json` distingue trois résultats :
+
+- `ANIMATIC` lorsqu’au moins un plan utilise une image fixe ;
+- `PREVIEW` lorsque les clips existent mais que l’épisode narratif ou leur provenance ne
+  permet pas une release ;
+- `FINAL` uniquement avec un épisode approuvé, des vidéos importées ou reliées à un
+  manifeste `GENERATED`, et un contrôle média satisfaisant.
+
+Seul `FINAL` porte `quality.release_eligible=true`. Un master figé sur au moins 90 % de sa
+durée est refusé comme `FINAL`. Les hashes du scénario, de sa source narrative, des médias
+et des sorties rendent les corrections manuelles visibles au lieu de les masquer.
 
 ## Cadre fantasy et cartons
 
@@ -95,3 +112,25 @@ Si `music.wav` manque, le pipeline compose localement une valse botanique sombre
 déterministe et calée à la durée de l’épisode. La musique est duckée sous les dialogues.
 Les sous-titres SRT sont à la fois gravés dans l’image, donc visibles par défaut, et conservés
 comme piste `mov_text` désactivable.
+
+### Musique d’ambiance choisie
+
+Dans « Assembler l’épisode », l’utilisateur peut conserver la piste actuelle, produire une
+piste instrumentale avec ACE-Step 1.5 ou importer un fichier WAV, MP3, FLAC, OGG ou M4A.
+L’import est normalisé en WAV stéréo 48 kHz par FFmpeg. Une confirmation explicite des
+droits commerciaux et une origine/licence sont obligatoires pour chaque import.
+
+Le Studio conserve `output/<episode>/music.wav` et `music-source.json` (source, licence,
+empreinte SHA-256, date, et pour ACE-Step prompt/seed/identifiant de tâche). Une nouvelle
+piste invalide le master antérieur ; celui-ci et sa provenance sont archivés avant
+remplacement. La piste peut être préécoutée dans la fenêtre de finalisation.
+
+ACE-Step tourne dans un processus local distinct sur `http://127.0.0.1:8001` par défaut
+(`ACE_STEP_URL` pour changer l’adresse). Le Studio n’effectue aucun téléchargement caché :
+installer ACE-Step séparément selon son [guide officiel](https://github.com/ace-step/ACE-Step-1.5/blob/main/docs/en/INSTALL.md),
+lancer son serveur REST avec `uv run acestep-api`, puis vérifier `/health` et `/v1/models`.
+Le dossier de modèles ACE-Step peut être défini avec `ACESTEP_CHECKPOINTS_DIR`. Garder
+le service lié à `127.0.0.1` ; l’intégration n’accepte pas d’adresse distante.
+
+Les modèles audio ne suffisent pas, à eux seuls, à autoriser la vente d’un épisode : les
+voix de référence, musiques importées et autres médias doivent avoir leurs droits propres.

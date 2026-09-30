@@ -20,6 +20,7 @@ class GeneratedWorkflows:
     preset: str
     keyframe: dict[str, Any]
     keyframe_guide: dict[str, Any]
+    keyframe_reference_guide: dict[str, Any]
     video: dict[str, Any]
     requirements: tuple[ModelRequirement, ...]
 
@@ -43,12 +44,16 @@ class WorkflowFactory:
             preset=self.preset,
             keyframe=self._keyframe_workflow(),
             keyframe_guide=self._keyframe_guide_workflow(),
+            keyframe_reference_guide=self._keyframe_reference_guide_workflow(),
             video=self._video_workflow(),
             requirements=self.requirements,
         )
         WorkflowLoader.validate_api_format(result.keyframe, "generated keyframe")
         WorkflowLoader.validate_api_format(
             result.keyframe_guide, "generated keyframe guide"
+        )
+        WorkflowLoader.validate_api_format(
+            result.keyframe_reference_guide, "generated referenced keyframe guide"
         )
         WorkflowLoader.validate_api_format(result.video, "generated video")
         return result
@@ -57,15 +62,30 @@ class WorkflowFactory:
         generated = self.build()
         root.mkdir(parents=True, exist_ok=True)
         self._write_json(root / "keyframe.api.json", generated.keyframe)
+        self._write_json(
+            root / "keyframe-reference.api.json", self._keyframe_reference_workflow()
+        )
         self._write_json(root / "keyframe-guide.api.json", generated.keyframe_guide)
+        self._write_json(
+            root / "keyframe-reference-guide.api.json",
+            generated.keyframe_reference_guide,
+        )
         self._write_json(root / "video.api.json", generated.video)
         self._write_json(
             root / "keyframe.profile.json",
             self._keyframe_profile().model_dump(mode="json"),
         )
         self._write_json(
+            root / "keyframe-reference.profile.json",
+            self._keyframe_reference_profile().model_dump(mode="json"),
+        )
+        self._write_json(
             root / "keyframe-guide.profile.json",
             self._keyframe_guide_profile().model_dump(mode="json"),
+        )
+        self._write_json(
+            root / "keyframe-reference-guide.profile.json",
+            self._keyframe_reference_guide_profile().model_dump(mode="json"),
         )
         self._write_json(
             root / "video.profile.json",
@@ -180,6 +200,178 @@ class WorkflowFactory:
             "9": {
                 "class_type": "SaveImage",
                 "inputs": {"images": ["8", 0], "filename_prefix": "Serre/keyframe-guide"},
+            },
+        }
+
+    @staticmethod
+    def _keyframe_reference_workflow() -> dict[str, Any]:
+        workflow = WorkflowFactory._keyframe_workflow()
+        workflow.update(WorkflowFactory._ipadapter_chain("1"))
+        workflow["5"]["inputs"]["model"] = ["14", 0]
+        workflow["5"]["inputs"]["positive"] = ["38", 0]
+        return workflow
+
+    @staticmethod
+    def _keyframe_reference_guide_workflow() -> dict[str, Any]:
+        workflow = WorkflowFactory._keyframe_guide_workflow()
+        workflow.update(WorkflowFactory._ipadapter_chain("1", first_node=10))
+        workflow["7"]["inputs"]["model"] = ["16", 0]
+        workflow["7"]["inputs"]["positive"] = ["38", 0]
+        return workflow
+
+    @staticmethod
+    def _ipadapter_chain(
+        checkpoint_node: str,
+        *,
+        first_node: int = 8,
+    ) -> dict[str, Any]:
+        image_1 = str(first_node)
+        loader = str(first_node + 1)
+        adapter_1 = str(first_node + 2)
+        image_2 = str(first_node + 3)
+        adapter_2 = str(first_node + 4)
+        image_3 = str(first_node + 5)
+        adapter_3 = str(first_node + 6)
+
+        def image_node(label: str) -> dict[str, Any]:
+            return {
+                "class_type": "LoadImage",
+                "inputs": {"image": "character-master.png"},
+                "_meta": {"title": label},
+            }
+
+        def adapter_node(
+            model: str, image: str, mask: str, weight: float
+        ) -> dict[str, Any]:
+            return {
+                "class_type": "IPAdapterAdvanced",
+                "inputs": {
+                    "model": [model, 0],
+                    "ipadapter": [loader, 1],
+                    "image": [image, 0],
+                    "attn_mask": [mask, 0],
+                    "weight": weight,
+                    "weight_type": "linear",
+                    "combine_embeds": "average",
+                    "start_at": 0.0,
+                    "end_at": 0.82,
+                    "embeds_scaling": "K+mean(V) w/ C penalty",
+                },
+            }
+
+        return {
+            image_1: image_node("Approved character reference 1"),
+            loader: {
+                "class_type": "IPAdapterUnifiedLoader",
+                "inputs": {
+                    "model": [checkpoint_node, 0],
+                    "preset": "PLUS (high strength)",
+                },
+            },
+            adapter_1: adapter_node(loader, image_1, "22", 0.72),
+            image_2: image_node("Approved character reference 2"),
+            adapter_2: adapter_node(adapter_1, image_2, "24", 0.68),
+            image_3: image_node("Approved character reference 3"),
+            adapter_3: adapter_node(adapter_2, image_3, "26", 0.58),
+            "20": {
+                "class_type": "SolidMask",
+                "inputs": {"value": 0.0, "width": 576, "height": 1024},
+            },
+            "21": {
+                "class_type": "SolidMask",
+                "inputs": {"value": 1.0, "width": 576, "height": 1024},
+            },
+            "22": {
+                "class_type": "MaskComposite",
+                "inputs": {
+                    "destination": ["20", 0],
+                    "source": ["21", 0],
+                    "x": 0,
+                    "y": 0,
+                    "operation": "add",
+                },
+            },
+            "23": {
+                "class_type": "SolidMask",
+                "inputs": {"value": 1.0, "width": 1, "height": 1024},
+            },
+            "24": {
+                "class_type": "MaskComposite",
+                "inputs": {
+                    "destination": ["20", 0],
+                    "source": ["23", 0],
+                    "x": 0,
+                    "y": 0,
+                    "operation": "add",
+                },
+            },
+            "25": {
+                "class_type": "SolidMask",
+                "inputs": {"value": 1.0, "width": 1, "height": 1024},
+            },
+            "26": {
+                "class_type": "MaskComposite",
+                "inputs": {
+                    "destination": ["20", 0],
+                    "source": ["25", 0],
+                    "x": 0,
+                    "y": 0,
+                    "operation": "add",
+                },
+            },
+            "30": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {"text": "", "clip": [checkpoint_node, 1]},
+                "_meta": {"title": "Regional character prompt 1"},
+            },
+            "31": {
+                "class_type": "ConditioningSetMask",
+                "inputs": {
+                    "conditioning": ["30", 0],
+                    "mask": ["22", 0],
+                    "strength": 1.35,
+                    "set_cond_area": "mask bounds",
+                },
+            },
+            "32": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {"text": "", "clip": [checkpoint_node, 1]},
+                "_meta": {"title": "Regional character prompt 2"},
+            },
+            "33": {
+                "class_type": "ConditioningSetMask",
+                "inputs": {
+                    "conditioning": ["32", 0],
+                    "mask": ["24", 0],
+                    "strength": 1.35,
+                    "set_cond_area": "mask bounds",
+                },
+            },
+            "34": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {"text": "", "clip": [checkpoint_node, 1]},
+                "_meta": {"title": "Regional character prompt 3"},
+            },
+            "35": {
+                "class_type": "ConditioningSetMask",
+                "inputs": {
+                    "conditioning": ["34", 0],
+                    "mask": ["26", 0],
+                    "strength": 1.35,
+                    "set_cond_area": "mask bounds",
+                },
+            },
+            "36": {
+                "class_type": "ConditioningCombine",
+                "inputs": {"conditioning_1": ["2", 0], "conditioning_2": ["31", 0]},
+            },
+            "37": {
+                "class_type": "ConditioningCombine",
+                "inputs": {"conditioning_1": ["36", 0], "conditioning_2": ["33", 0]},
+            },
+            "38": {
+                "class_type": "ConditioningCombine",
+                "inputs": {"conditioning_1": ["37", 0], "conditioning_2": ["35", 0]},
             },
         }
 
@@ -326,6 +518,23 @@ class WorkflowFactory:
         )
 
     @staticmethod
+    def _keyframe_reference_profile() -> WorkflowProfile:
+        return WorkflowProfile(
+            id="generated-sdxl-ipadapter-keyframe-v2",
+            workflow=Path("keyframe-reference.api.json"),
+            bindings=[
+                WorkflowBinding(source="prompt", node_id="2", input="text"),
+                WorkflowBinding(source="negative_prompt", node_id="3", input="text"),
+                WorkflowBinding(source="width", node_id="4", input="width"),
+                WorkflowBinding(source="height", node_id="4", input="height"),
+                WorkflowBinding(source="seed", node_id="5", input="seed"),
+                WorkflowBinding(source="output_prefix", node_id="7", input="filename_prefix"),
+                *WorkflowFactory._ipadapter_bindings(first_node=8),
+            ],
+            output_node_ids=["7"],
+        )
+
+    @staticmethod
     def _keyframe_guide_profile() -> WorkflowProfile:
         return WorkflowProfile(
             id="generated-sdxl-continuity-guide-v2",
@@ -341,6 +550,84 @@ class WorkflowFactory:
             ],
             output_node_ids=["9"],
         )
+
+    @staticmethod
+    def _keyframe_reference_guide_profile() -> WorkflowProfile:
+        return WorkflowProfile(
+            id="generated-sdxl-ipadapter-continuity-guide-v1",
+            workflow=Path("keyframe-reference-guide.api.json"),
+            bindings=[
+                WorkflowBinding(source="prompt", node_id="2", input="text"),
+                WorkflowBinding(source="negative_prompt", node_id="3", input="text"),
+                WorkflowBinding(source="reference_image", node_id="4", input="image"),
+                WorkflowBinding(source="width", node_id="5", input="width"),
+                WorkflowBinding(source="height", node_id="5", input="height"),
+                WorkflowBinding(source="seed", node_id="7", input="seed"),
+                WorkflowBinding(source="output_prefix", node_id="9", input="filename_prefix"),
+                *WorkflowFactory._ipadapter_bindings(first_node=10),
+            ],
+            output_node_ids=["9"],
+        )
+
+    @staticmethod
+    def _ipadapter_bindings(*, first_node: int) -> list[WorkflowBinding]:
+        image_nodes = (first_node, first_node + 3, first_node + 5)
+        adapter_nodes = (first_node + 2, first_node + 4, first_node + 6)
+        mask_bindings = [
+            WorkflowBinding(source="width", node_id="20", input="width"),
+            WorkflowBinding(source="height", node_id="20", input="height"),
+        ]
+        for index, (solid_node, composite_node) in enumerate(
+            (("21", "22"), ("23", "24"), ("25", "26")), start=1
+        ):
+            mask_bindings.extend(
+                [
+                    WorkflowBinding(
+                        source=f"character_reference_mask_width_{index}",
+                        node_id=solid_node,
+                        input="width",
+                    ),
+                    WorkflowBinding(source="height", node_id=solid_node, input="height"),
+                    WorkflowBinding(
+                        source=f"character_reference_mask_x_{index}",
+                        node_id=composite_node,
+                        input="x",
+                    ),
+                ]
+            )
+        regional_prompt_bindings = []
+        for index, (prompt_node, conditioning_node) in enumerate(
+            (("30", "31"), ("32", "33"), ("34", "35")), start=1
+        ):
+            regional_prompt_bindings.extend(
+                [
+                    WorkflowBinding(
+                        source=f"character_reference_prompt_{index}",
+                        node_id=prompt_node,
+                        input="text",
+                    ),
+                    WorkflowBinding(
+                        source=f"character_reference_prompt_strength_{index}",
+                        node_id=conditioning_node,
+                        input="strength",
+                    ),
+                ]
+            )
+        return [
+            WorkflowBinding(
+                source=f"character_reference_image_{index}",
+                node_id=str(node_id),
+                input="image",
+            )
+            for index, node_id in enumerate(image_nodes, start=1)
+        ] + [
+            WorkflowBinding(
+                source=f"character_reference_weight_{index}",
+                node_id=str(node_id),
+                input="weight",
+            )
+            for index, node_id in enumerate(adapter_nodes, start=1)
+        ] + mask_bindings + regional_prompt_bindings
 
     @staticmethod
     def _video_profile() -> WorkflowProfile:

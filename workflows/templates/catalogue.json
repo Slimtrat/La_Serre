@@ -1,12 +1,18 @@
 {
   "schema_version": 1,
   "continuity_chain": [
-    "flux-character-master-v1",
+    "flux-schnell-character-master-v1",
     "sdxl-scene-anchor-v1",
     "sdxl-adjacent-pose-v1",
     "ltx-triptych-animation-v1"
   ],
   "templates": [
+    {
+      "id": "flux-schnell-character-master-v1",
+      "label": "Référence personnage FLUX Schnell",
+      "stage": "character_master",
+      "manifest": "flux-schnell-character-master-v1/template.json"
+    },
     {
       "id": "flux-character-master-v1",
       "label": "Référence personnage FLUX",

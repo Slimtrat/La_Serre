@@ -182,5 +182,7 @@ def _inline_schema(value: Any, definitions: dict[str, Any], *, property_map: boo
             item, definitions, property_map=key in {"properties", "patternProperties"}
         )
         for key, item in value.items()
-        if property_map or key not in {"title", "default"}
+        # Ollama's grammar compiler rejects some maxLength values (notably 2000).
+        # Keep Pydantic limits for validation after generation.
+        if property_map or key not in {"title", "default", "maxLength"}
     }

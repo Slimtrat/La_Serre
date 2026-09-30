@@ -16,6 +16,7 @@ from engine.media.ffmpeg import FFmpegToolchain
 from engine.production.episode_pipeline import EpisodePipeline, EpisodePipelineOptions
 
 EPISODE_STAGES = ("voice", "mix", "montage", "export")
+TERMINAL_STATUSES = {"ANIMATIC", "PREVIEW", "FINAL", "FAILED"}
 
 
 @dataclass(slots=True)
@@ -75,7 +76,7 @@ class EpisodeStudioJob:
             ),
             None,
         )
-        terminal = self.status == "FINAL"
+        terminal = self.status in TERMINAL_STATUSES
         elapsed_until = self.completed_at or datetime.now(UTC)
         return {
             "percent": 100 if terminal else round(100 * completed / total),
@@ -133,6 +134,15 @@ class EpisodeJobManager:
         ]
         return max(active, key=lambda job: job.created_at, default=None)
 
+    async def shutdown(self) -> None:
+        """Cancel outstanding montage work before the server event loop stops."""
+
+        tasks = tuple(self._tasks)
+        for task in tasks:
+            task.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+
     async def _execute(
         self,
         job: EpisodeStudioJob,
@@ -171,8 +181,12 @@ class EpisodeJobManager:
                         force=request.force or archived_master is not None,
                     ),
                 )
-                job.status = "FINAL"
-                job.message = "Épisode final vérifié"
+                job.status = result.status
+                job.message = {
+                    "ANIMATIC": "Animatique assemblée — des plans fixes restent à remplacer",
+                    "PREVIEW": "Prévisualisation assemblée — approuve l’épisode avant la release",
+                    "FINAL": "Épisode final vérifié",
+                }[result.status]
                 job.media = {
                     "video": f"/api/episode-media/{job.episode_id}/episode.mp4",
                     "manifest": (
@@ -183,6 +197,10 @@ class EpisodeJobManager:
                     job.media["subtitles"] = (
                         f"/api/episode-media/{job.episode_id}/subtitles.fr.srt"
                     )
+            except asyncio.CancelledError:
+                job.status = "FAILED"
+                job.message = "Production interrompue pendant l’arrêt du Studio"
+                raise
             except Exception as exc:
                 job.status = "FAILED"
                 job.message = str(exc)
@@ -209,7 +227,11 @@ class EpisodeJobManager:
         failed = job.status == "FAILED"
         job.notification_log.publish(
             "error" if failed else "success",
-            "Échec du montage" if failed else "Épisode finalisé",
+            "Échec du montage" if failed else {
+                "ANIMATIC": "Animatique prête",
+                "PREVIEW": "Prévisualisation prête",
+                "FINAL": "Épisode finalisé",
+            }.get(job.status, "Montage terminé"),
             job.message,
             source="episode-job",
             context={

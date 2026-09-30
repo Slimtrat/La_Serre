@@ -1147,6 +1147,20 @@ export interface GeneralValidation {
   verdict: GeneralValidationVerdict;
 }
 
+export interface GenerateMusicRequest {
+  force?: boolean;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  prompt: string;
+  /**
+     * @minimum 0
+     * @maximum 2147483647
+     */
+  seed?: number;
+}
+
 export type GenerationRequestKeyframeSource = typeof GenerationRequestKeyframeSource[keyof typeof GenerationRequestKeyframeSource];
 
 
@@ -2603,6 +2617,19 @@ export type GenerateEpisodeDraftApiEpisodesEpisodeIdDraftGeneratePost200 = { [ke
 export type StartEpisodeJobApiEpisodesEpisodeIdJobsPost202 = { [key: string]: unknown };
 
 export type EpisodeMediaStatusApiEpisodesEpisodeIdMediaStatusGet200 = { [key: string]: unknown };
+
+export type InspectApiEpisodesEpisodeIdMusicGet200 = { [key: string]: unknown };
+
+export type GenerateApiEpisodesEpisodeIdMusicGeneratePost200 = { [key: string]: unknown };
+
+export type ImportMusicApiEpisodesEpisodeIdMusicImportPostParams = {
+filename: string;
+license_id: string;
+rights_confirmed?: boolean;
+force?: boolean;
+};
+
+export type ImportMusicApiEpisodesEpisodeIdMusicImportPost200 = { [key: string]: unknown };
 
 export type ReviewEpisodeApiEpisodesEpisodeIdReviewPost200 = { [key: string]: unknown };
 
@@ -5308,6 +5335,102 @@ export const episodeMediaStatusApiEpisodesEpisodeIdMediaStatusGet = async (episo
   {
     ...options,
     method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getInspectApiEpisodesEpisodeIdMusicGetUrl = (episodeId: string,) => {
+
+
+
+
+  return `/api/episodes/${episodeId}/music`
+}
+
+/**
+ * @summary Inspect
+ */
+export const inspectApiEpisodesEpisodeIdMusicGet = async (episodeId: string, options?: Parameters<typeof orvalFetch>[1]): Promise<InspectApiEpisodesEpisodeIdMusicGet200> => {
+
+  return orvalFetch<InspectApiEpisodesEpisodeIdMusicGet200>(getInspectApiEpisodesEpisodeIdMusicGetUrl(episodeId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGenerateApiEpisodesEpisodeIdMusicGeneratePostUrl = (episodeId: string,) => {
+
+
+
+
+  return `/api/episodes/${episodeId}/music/generate`
+}
+
+/**
+ * @summary Generate
+ */
+export const generateApiEpisodesEpisodeIdMusicGeneratePost = async (episodeId: string,
+    generateMusicRequest: GenerateMusicRequest, options?: Parameters<typeof orvalFetch>[1]): Promise<GenerateApiEpisodesEpisodeIdMusicGeneratePost200> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return orvalFetch<GenerateApiEpisodesEpisodeIdMusicGeneratePost200>(getGenerateApiEpisodesEpisodeIdMusicGeneratePostUrl(episodeId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(generateMusicRequest)
+  }
+);}
+
+
+
+export const getImportMusicApiEpisodesEpisodeIdMusicImportPostUrl = (episodeId: string,
+    params: ImportMusicApiEpisodesEpisodeIdMusicImportPostParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/episodes/${episodeId}/music/import?${stringifiedParams}` : `/api/episodes/${episodeId}/music/import`
+}
+
+/**
+ * @summary Import Music
+ */
+export const importMusicApiEpisodesEpisodeIdMusicImportPost = async (episodeId: string,
+    params: ImportMusicApiEpisodesEpisodeIdMusicImportPostParams, options?: Parameters<typeof orvalFetch>[1]): Promise<ImportMusicApiEpisodesEpisodeIdMusicImportPost200> => {
+
+  return orvalFetch<ImportMusicApiEpisodesEpisodeIdMusicImportPost200>(getImportMusicApiEpisodesEpisodeIdMusicImportPostUrl(episodeId,params),
+  {
+    ...options,
+    method: 'POST'
 
 
   }

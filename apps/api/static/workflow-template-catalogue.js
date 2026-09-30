@@ -19,6 +19,7 @@ const workflowTemplateCatalogue = (() => {
       models: "Modèles requis",
       noModels: "Aucun modèle déclaré",
       manual: "Source manuelle",
+      sizeUnit: "Go",
       settings: "Préparer les modèles",
       input: "Entrée",
       output: "Sortie",
@@ -39,6 +40,7 @@ const workflowTemplateCatalogue = (() => {
       models: "Required models",
       noModels: "No declared model",
       manual: "Manual source",
+      sizeUnit: "GB",
       settings: "Prepare models",
       input: "Input",
       output: "Output",
@@ -71,10 +73,16 @@ const workflowTemplateCatalogue = (() => {
   function modelMarkup(model) {
     const c = copy();
     const status = model.installed ? c.ready : c.missing;
+    const metadata = [
+      model.size_bytes ? `${(model.size_bytes / 1e9).toLocaleString(language(), { maximumFractionDigits: 1 })} ${c.sizeUnit}` : "",
+      model.license_id ? (model.license_url
+        ? `<a href="${h(model.license_url)}" target="_blank" rel="noreferrer">${h(model.license_id)}</a>`
+        : h(model.license_id)) : "",
+    ].filter(Boolean).join(" · ");
     const source = model.url
       ? `<a href="${h(model.url)}" target="_blank" rel="noreferrer">${c.settings} ↗</a>`
       : `<span title="${h(model.source_note || c.manual)}">${c.manual}</span>`;
-    return `<li><strong class="${model.installed ? "workflow-template-ready" : "workflow-template-missing"}">${h(status)} · ${h(model.role)}</strong><code>models/${h(model.folder)}/${h(model.filename)}</code>${model.installed ? "" : source}</li>`;
+    return `<li><strong class="${model.installed ? "workflow-template-ready" : "workflow-template-missing"}">${h(status)} · ${h(model.role)}</strong><code>models/${h(model.folder)}/${h(model.filename)}</code>${metadata ? `<small>${metadata}</small>` : ""}${model.installed ? "" : source}</li>`;
   }
   function nodeMarkup(template, index, selections, inSettings) {
     const c = copy();

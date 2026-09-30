@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "id": "flux-schnell-character-master-v1",
+  "version": 1,
+  "label": "Référence personnage FLUX Schnell",
+  "description": "Crée une référence de personnage avec un checkpoint FP8 Apache 2.0.",
+  "stage": "character_master",
+  "model_family": "FLUX.1-schnell FP8",
+  "workflow": "workflow.api.json",
+  "profile": "profile.json",
+  "required_nodes": [
+    "CLIPTextEncode",
+    "CheckpointLoaderSimple",
+    "EmptySD3LatentImage",
+    "KSampler",
+    "SaveImage",
+    "VAEDecode"
+  ],
+  "models": [
+    {
+      "role": "Référence personnage FLUX Schnell",
+      "capability_role": "character.flux-schnell-fp8",
+      "filename": "flux1-schnell-fp8.safetensors",
+      "folder": "checkpoints",
+      "url": "https://huggingface.co/Comfy-Org/flux1-schnell/resolve/main/flux1-schnell-fp8.safetensors?download=true",
+      "source_note": "Checkpoint Comfy-Org, licence Apache 2.0, 17,2 Go.",
+      "size_bytes": 17236328572,
+      "license_id": "Apache-2.0",
+      "license_url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell",
+      "sha256": "ead426278b49030e9da5df862994f25ce94ab2ee4df38b556ddddb3db093bf72"
+    }
+  ],
+  "defaults": {
+    "width": 768,
+    "height": 1024,
+    "steps": 4,
+    "cfg": 1.0
+  },
+  "prompt_sections": [
+    "age_and_anatomy",
+    "signature_details",
+    "wardrobe",
+    "neutral_reference_pose",
+    "lighting"
+  ],
+  "receives": [
+    "character_bible",
+    "style_direction"
+  ],
+  "produces": [
+    "approved_character_reference"
+  ],
+  "next_templates": [
+    "sdxl-scene-anchor-v1"
+  ],
+  "limitations": [
+    "La référence doit être approuvée avant les plans; le modèle seul ne verrouille pas l'identité entre générations.",
+    "CFG 1 neutralise la consigne négative; exprimer les contraintes importantes dans le prompt positif."
+  ],
+  "provenance": [
+    "Adapté du workflow FLUX Schnell FP8 officiel de Comfy-Org.",
+    "Poids FLUX.1-schnell publiés sous Apache 2.0."
+  ]
+}

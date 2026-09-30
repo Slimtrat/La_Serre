@@ -142,8 +142,8 @@ def create_runtime_pack_router(
     ) -> dict[str, object]:
         try:
             job = manager(use_personal_comfy_models).latest()
-        except ValueError as exc:
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except ValueError:
+            return {"job": None}
         return {"job": job.model_dump(mode="json") if job else None}
 
     @router.get("/jobs/{job_id}")
@@ -288,6 +288,38 @@ def _workflow_root(settings: Settings) -> Path:
     )
     configured = next((path for path in profiles if path is not None), None)
     return configured.parent if configured is not None else Path("workflows/local")
+
+
+def local_media_capabilities(settings: Settings) -> dict[str, bool]:
+    """Return offline evidence for media capabilities; service reachability is checked elsewhere."""
+
+    roots = _model_roots(settings)
+
+    def component_present(component_id: str) -> bool:
+        component = DEFAULT_CAPABILITY_PACK.component(component_id)
+        candidates = (component.destination, *component.detection.aliases)
+        return any(
+            (root / relative).is_file() and (root / relative).stat().st_size > 0
+            for root in roots
+            for relative in candidates
+        )
+
+    image_profile = settings.keyframe_workflow_profile
+    video_profile = settings.video_workflow_profile
+    return {
+        "narrative": False,
+        "image": bool(
+            image_profile
+            and image_profile.is_file()
+            and component_present("keyframe-sdxl")
+        ),
+        "video": bool(
+            video_profile
+            and video_profile.is_file()
+            and component_present("video-ltx-2b")
+            and component_present("text-encoder-t5-fp8")
+        ),
+    }
 
 
 async def _inspect_ollama(settings: Settings) -> tuple[bool, set[str]]:

@@ -175,7 +175,9 @@ async def test_successful_shot_job_publishes_persistent_success_notification(
         _env_file=None,
         output_dir=output,
         keyframe_workflow_profile=profile,
+        keyframe_reference_workflow_profile=None,
         keyframe_guide_workflow_profile=profile,
+        keyframe_reference_guide_workflow_profile=profile,
         video_workflow_profile=profile,
     )
     monkeypatch.setattr("apps.api.job_manager.ComfyClient", FakeComfyClient)

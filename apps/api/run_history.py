@@ -30,6 +30,7 @@ MASTER_FILES = (
     "episode-generation.json",
     "subtitles.fr.srt",
     "music.wav",
+    "music-source.json",
 )
 
 

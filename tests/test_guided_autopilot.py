@@ -13,6 +13,10 @@ from engine.narrative.guided_authoring import (
 )
 from engine.narrative.guided_autopilot import (
     GuidedAutopilotRegistry,
+    _generation_prompt,
+    _production_quality_issues,
+    _repair_prompt,
+    _unique,
     execute_guided_autopilot,
 )
 from engine.narrative.workflow_models import (
@@ -37,6 +41,62 @@ class _FakeClient:
 
     async def list_models(self) -> list[SimpleNamespace]:
         return [SimpleNamespace(name="story:local")]
+
+
+def test_autopilot_normalizes_duplicate_model_identifiers() -> None:
+    assert _unique(["serre", "serre", "cave", "serre"]) == ["serre", "cave"]
+
+
+def test_production_gate_rejects_lossy_two_shot_summary() -> None:
+    brief = GuidedProjectBrief(
+        idea=(
+            "Format de 50 secondes. Dialogue : « Reste ici. »\n"
+            + "\n".join(f"{index}. {index * 5}-{index * 5 + 5} s : action" for index in range(10))
+            + "\n"
+            + ("matière narrative " * 150)
+        ),
+    )
+    breakdown = EpisodeBreakdownCandidate(
+        shots=[
+            ShotBlueprint(
+                source_text="Une action très générique sans le dialogue verrouillé.",
+                duration=5,
+                location_id="serre",
+                shot_type="wide",
+                camera_movement="fixed",
+                action="Quelque chose arrive.",
+                lighting="nuit",
+                mood="mystère",
+                style=["fantasy"],
+            )
+            for _ in range(2)
+        ]
+    )
+    issues = _production_quality_issues(brief, "Résumé très court.", breakdown)
+    assert any("2 plans" in issue for issue in issues)
+    assert any("Durée proposée 10 s" in issue for issue in issues)
+    assert any("Scénario appauvri" in issue for issue in issues)
+    assert any("dialogues verrouillés" in issue for issue in issues)
+
+
+def test_repair_prompt_contains_machine_gate_failures() -> None:
+    prompt = _repair_prompt("Source verrouillée", ["Durée 10 s.", "Deux plans."], 2)
+    assert "RÉÉCRITURE OBLIGATOIRE 2/3" in prompt
+    assert "Durée 10 s." in prompt
+    assert "Deux plans." in prompt
+
+
+def test_generation_prompt_reinjects_locked_story_at_every_stage() -> None:
+    brief = GuidedProjectBrief(
+        idea="Belladone reçoit la graine interdite avec dix plans imposés.",
+        episode_concept="Aconit se pétrifie puis Belladone prononce la dernière pique.",
+    )
+
+    prompt = _generation_prompt(brief, "Mode production")
+
+    assert "SOURCE NARRATIVE VERROUILLÉE" in prompt
+    assert brief.idea in prompt
+    assert brief.episode_concept in prompt
 
 
 class _FakeAuthor:

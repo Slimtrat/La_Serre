@@ -47,6 +47,13 @@ def test_ollama_schemas_keep_required_fields_named_title() -> None:
         _assert_required_properties_exist(schema)
 
 
+def test_ollama_schema_omits_unsupported_length_grammar_but_validates_it() -> None:
+    schema = DirectorBrief.ollama_schema()
+    assert "maxLength" not in schema["properties"]["visual_direction"]
+    with pytest.raises(ValueError):
+        DirectorBrief.model_validate({**_director_output(), "visual_direction": "x" * 2001})
+
+
 def _assert_required_properties_exist(value: object) -> None:
     if isinstance(value, list):
         for item in value:

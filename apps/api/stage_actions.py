@@ -9,6 +9,7 @@ from typing import Literal
 from apps.api.notifications import StudioNotificationLog
 from apps.api.run_history import RunHistory
 from engine.audio.models import EpisodeAudioPlan
+from engine.audio.music_assets import EpisodeMusicStore
 from engine.audio.score import ProceduralScoreComposer
 from engine.audio.speech import (
     SpeechSynthesizer,
@@ -160,11 +161,12 @@ class ShotStageService:
         episode_id = self._episode_id(shot.id)
         package = self._episode_package(settings, episode_id)
         RunHistory(settings.output_dir).invalidate_master(episode_id)
-        destination = settings.output_dir / episode_id / "music.wav"
-        self.score.compose(
-            destination,
-            package.episode.duration_target,
+        EpisodeMusicStore(settings.output_dir).compose(
+            episode_id,
+            duration=package.episode.duration_target,
             seed=package.episode.season * 10_000 + package.episode.episode,
+            composer=self.score,
+            force=True,
         )
         event = self._event(
             settings,

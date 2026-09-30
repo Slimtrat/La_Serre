@@ -4,6 +4,7 @@ import asyncio
 import json
 import re
 from dataclasses import asdict
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -21,6 +22,7 @@ from apps.api.continuity_routes import create_continuity_router
 from apps.api.demo_routes import create_demo_router
 from apps.api.editorial_routes import create_editorial_router
 from apps.api.episode_job_manager import EpisodeJobManager
+from apps.api.episode_music_routes import create_episode_music_router
 from apps.api.episode_routes import create_episode_router
 from apps.api.guided_autopilot_routes import create_guided_autopilot_router
 from apps.api.guided_routes import create_guided_router
@@ -33,7 +35,7 @@ from apps.api.project_storage_routes import create_project_storage_router
 from apps.api.projects import ProjectRegistry
 from apps.api.relationship_board_routes import create_relationship_board_router
 from apps.api.run_history import RUN_FILES, RunHistory
-from apps.api.runtime_pack_routes import create_runtime_pack_router
+from apps.api.runtime_pack_routes import create_runtime_pack_router, local_media_capabilities
 from apps.api.schemas import (
     AssetReuseRequest,
     EpisodeGenerationRequest,
@@ -80,6 +82,7 @@ from engine.narrative.tasks.continuity_delta import (
     build_continuity_delta_context,
 )
 from engine.narrative.tasks.provider import OllamaTaskProvider
+from engine.observability.studio_activity import StudioActivityStore
 from engine.world.bible import BibleRegistry
 from engine.world.catalog import EpisodeCatalog
 
@@ -183,6 +186,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="La Serre", version=__version__)
     manager = JobManager(current_settings, assets)
     episode_manager = EpisodeJobManager(current_settings)
+    app.router.add_event_handler("shutdown", episode_manager.shutdown)
     stage_service = ShotStageService(current_settings)
     production_queue = ProductionQueueManager(current_settings, catalog, manager, stage_service)
     setup = WorkflowSetup()
@@ -200,6 +204,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(
         create_episode_router(catalog, lambda: current_settings().output_dir, current_settings)
     )
+    app.include_router(create_episode_music_router(catalog, current_settings))
     app.include_router(create_context_graph_router(catalog, lambda: current_settings().output_dir))
     app.include_router(
         create_continuity_router(
@@ -270,7 +275,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 project_id=project_registry.active_id,
                 private_root=current_settings().private_content_dir,
                 output_root=current_settings().output_dir,
-                runtime_provider=service_supervisor_listing,
+                runtime_provider=lambda: {
+                    **service_supervisor_listing(),
+                    "capabilities": local_media_capabilities(current_settings()),
+                },
                 queue_provider=production_queue.listing,
                 jobs_provider=lambda: (
                     *[job.public() for job in manager.jobs.values()],
@@ -497,6 +505,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 resolved.keyframe_guide_workflow_profile
                 and resolved.keyframe_guide_workflow_profile.is_file()
             ),
+            "keyframe_reference_guide_profile": bool(
+                resolved.keyframe_reference_guide_workflow_profile
+                and resolved.keyframe_reference_guide_workflow_profile.is_file()
+            ),
             "video_profile": bool(
                 resolved.video_workflow_profile and resolved.video_workflow_profile.is_file()
             ),
@@ -719,19 +731,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def current_activity() -> dict[str, object]:
         shot_job = manager.latest_active()
         episode_job = episode_manager.latest_active()
-        candidates = [
-            (shot_job.created_at, "shot", shot_job)
+        candidates: list[tuple[datetime, dict[str, object]]] = [
+            (shot_job.created_at, {"kind": "shot", **shot_job.public()})
             for shot_job in [shot_job]
             if shot_job is not None
         ] + [
-            (episode_job.created_at, "episode", episode_job)
+            (episode_job.created_at, {"kind": "episode", **episode_job.public()})
             for episode_job in [episode_job]
             if episode_job is not None
         ]
+        activity_store = StudioActivityStore(current_settings().output_dir)
+        external = activity_store.active()
+        if external is not None:
+            candidates.append((external.created_at, external.public()))
+        elif not candidates:
+            recent = activity_store.recent()
+            if recent is not None:
+                candidates.append((recent.created_at, recent.public()))
         if not candidates:
             return {"activity": None}
-        _created_at, kind, job = max(candidates, key=lambda candidate: candidate[0])
-        return {"activity": {"kind": kind, **job.public()}}
+        _created_at, activity = max(candidates, key=lambda candidate: candidate[0])
+        return {"activity": activity}
 
     @app.get("/api/history/{shot_id}")
     def generation_history(shot_id: str) -> dict[str, object]:
@@ -841,6 +861,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "exists": manifest_path.is_file(),
             "video": (output_dir / "episode.mp4").is_file(),
             "manifest": manifest_path.is_file(),
+            "status": manifest.get("status"),
+            "release_eligible": manifest.get("status") == "FINAL",
             "subtitles": bool(manifest.get("subtitles"))
             and (output_dir / "subtitles.fr.srt").is_file(),
         }

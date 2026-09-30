@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 import tempfile
@@ -13,9 +14,9 @@ from typing import Literal
 from engine.audio.models import EpisodeAudioPlan
 from engine.audio.score import ProceduralScoreComposer
 from engine.audio.speech import SpeechSynthesizer, voice_preset_for_performance
-from engine.director.models import DialoguePerformance
-from engine.media.ffmpeg import AssemblyRequest, MediaToolchain, SegmentInput
-from engine.narrative.episode_models import EpisodePackage
+from engine.director.models import DialoguePerformance, Shot
+from engine.media.ffmpeg import AssemblyRequest, AudioTrack, MediaToolchain, SegmentInput
+from engine.narrative.episode_models import EpisodePackage, EpisodeStatus
 from engine.production.artifacts import sha256_file, write_text_atomic
 from engine.production.presentation import EpisodePresentationPlan
 from engine.world.catalog import EpisodeCatalog
@@ -24,6 +25,7 @@ VIDEO_SUFFIXES = {".mp4", ".webm", ".mov", ".mkv"}
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
 AUDIO_SUFFIXES = {".wav", ".mp3", ".flac", ".ogg", ".m4a"}
 ProgressCallback = Callable[[str, str, str], None]
+EpisodeArtifactStatus = Literal["ANIMATIC", "PREVIEW", "FINAL"]
 
 
 def _episode_canonical_context(package: EpisodePackage) -> dict[str, object]:
@@ -37,9 +39,7 @@ def _episode_canonical_context(package: EpisodePackage) -> dict[str, object]:
             (context.revision for context in contexts.values()),
             default=0,
         ),
-        "shots": {
-            shot_id: context.fingerprint for shot_id, context in contexts.items()
-        },
+        "shots": {shot_id: context.fingerprint for shot_id, context in contexts.items()},
     }
 
 
@@ -69,6 +69,7 @@ class EpisodePipelineResult:
     subtitles: Path | None
     duration: float
     verification: dict[str, object]
+    status: EpisodeArtifactStatus
 
 
 class EpisodePipeline:
@@ -134,64 +135,84 @@ class EpisodePipeline:
                     shot.id,
                     allow_stills=options.allow_stills,
                 )
-                audio, audio_source = self._resolve_audio(
-                    options,
-                    plan,
-                    shot.id,
-                    shot.dialogue.speaker if shot.dialogue else None,
-                    shot.dialogue.text if shot.dialogue else None,
-                    shot.dialogue.performance if shot.dialogue else None,
-                    workspace,
-                )
+                dialogues = shot.dialogues
                 cue = plan.cue_for(shot.id)
-                performance_delay = (
-                    shot.dialogue.performance.pause_before_seconds
-                    if shot.dialogue and shot.dialogue.performance
-                    else 0
-                )
-                audio_offset = cue.offset_seconds + performance_delay
-                audio_fit_speed = 1.0
-                generated_voice = bool(
-                    audio
-                    and self.speech is not None
-                    and audio_source in {self.speech.name, "studio-voice"}
-                )
-                if audio:
-                    audio_duration = self.media.duration(audio)
-                    pause_after = (
-                        shot.dialogue.performance.pause_after_seconds
-                        if shot.dialogue and shot.dialogue.performance
-                        else 0
+                audio: Path | None
+                audio_source: str | None
+                audio_fit_speed: float
+                audio_offset: float
+                if len(dialogues) > 1:
+                    audio, audio_source, audio_fit_speed = self._resolve_dialogue_mix(
+                        options,
+                        plan,
+                        shot,
+                        workspace,
                     )
-                    available_duration = shot.duration - audio_offset - pause_after
-                    if available_duration <= 0:
-                        raise ValueError(
-                            f"Aucune place pour la voix de {shot.id} après les silences imposés."
-                        )
-                    if (
-                        audio_duration > available_duration + 0.05
-                        and generated_voice
-                    ):
-                        fitted = workspace / "voices" / f"{shot.id}.fitted.wav"
-                        audio_fit_speed = self.media.fit_audio(
-                            audio,
-                            fitted,
-                            available_duration,
-                        )
-                        if audio_fit_speed > plan.max_time_fit_speed + 0.01:
-                            raise ValueError(
-                                f"La voix de {shot.id} exige un time-fit de "
-                                f"{audio_fit_speed:.2f}x, au-dessus de la limite qualité "
-                                f"{plan.max_time_fit_speed:.2f}x. Retime le plan ou la réplique."
-                            )
-                        audio = fitted
+                    audio_offset = 0.0
+                    generated_voice = True
+                else:
+                    dialogue = dialogues[0] if dialogues else None
+                    audio, audio_source = self._resolve_audio(
+                        options,
+                        plan,
+                        shot.id,
+                        dialogue.speaker if dialogue else None,
+                        dialogue.text if dialogue else None,
+                        dialogue.performance if dialogue else None,
+                        workspace,
+                    )
+                    performance_delay = (
+                        dialogue.performance.pause_before_seconds
+                        if dialogue and dialogue.performance
+                        else 0.0
+                    )
+                    audio_offset = (
+                        cue.offset_seconds
+                        + (dialogue.offset_seconds if dialogue else 0)
+                        + performance_delay
+                    )
+                    audio_fit_speed = 1.0
+                    generated_voice = bool(
+                        audio
+                        and self.speech is not None
+                        and audio_source in {self.speech.name, "studio-voice"}
+                    )
+                    if audio:
                         audio_duration = self.media.duration(audio)
-                    if audio_duration > available_duration + 0.05:
-                        raise ValueError(
-                            f"La voix de {shot.id} dure {audio_duration:.2f}s et dépasse le plan "
-                            f"de {shot.duration:.2f}s (fenêtre disponible : "
-                            f"{available_duration:.2f}s)."
+                        pause_after = (
+                            dialogue.performance.pause_after_seconds
+                            if dialogue and dialogue.performance
+                            else 0
                         )
+                        available_duration = shot.duration - audio_offset - pause_after
+                        if available_duration <= 0:
+                            raise ValueError(
+                                f"Aucune place pour la voix de {shot.id} après "
+                                "les silences imposés."
+                            )
+                        if audio_duration > available_duration + 0.05 and generated_voice:
+                            fitted = workspace / "voices" / f"{shot.id}.fitted.wav"
+                            audio_fit_speed = self.media.fit_audio(
+                                audio,
+                                fitted,
+                                available_duration,
+                            )
+                            if audio_fit_speed > plan.max_time_fit_speed + 0.01:
+                                raise ValueError(
+                                    f"La voix de {shot.id} exige un time-fit de "
+                                    f"{audio_fit_speed:.2f}x, au-dessus de la limite qualité "
+                                    f"{plan.max_time_fit_speed:.2f}x. Retime le plan "
+                                    "ou la réplique."
+                                )
+                            audio = fitted
+                            audio_duration = self.media.duration(audio)
+                        if audio_duration > available_duration + 0.05:
+                            raise ValueError(
+                                f"La voix de {shot.id} dure {audio_duration:.2f}s "
+                                "et dépasse le plan "
+                                f"de {shot.duration:.2f}s (fenêtre disponible : "
+                                f"{available_duration:.2f}s)."
+                            )
                 if audio and generated_voice:
                     generated_voices.append((shot.id, audio))
                 segments.append(
@@ -211,11 +232,7 @@ class EpisodePipeline:
                 audio_record = self._source_record(audio, audio_source) if audio else None
                 if audio_record is not None:
                     audio_record["fit_speed"] = audio_fit_speed
-                if (
-                    audio_record is not None
-                    and audio is not None
-                    and generated_voice
-                ):
+                if audio_record is not None and audio is not None and generated_voice:
                     audio_record["path"] = str(
                         (destination / "voices" / f"{shot.id}{audio.suffix}").resolve()
                     )
@@ -226,6 +243,9 @@ class EpisodePipeline:
                         "dialogue": (
                             shot.dialogue.model_dump(mode="json") if shot.dialogue else None
                         ),
+                        "dialogue_cues": [
+                            dialogue.model_dump(mode="json") for dialogue in shot.dialogue_cues
+                        ],
                         "visual": self._source_record(visual, visual_source),
                         "audio": audio_record,
                     }
@@ -252,6 +272,7 @@ class EpisodePipeline:
                 ambience_gain_db=plan.ambience_gain_db,
             )
             self._notify("mix", "completed", "Plan de mix synchronisé")
+            artifact_status = self._artifact_status(package, segments, source_records)
             self._notify("montage", "running", "Assemblage déterministe des plans")
             self.media.assemble(request)
             self._notify("montage", "completed", "Montage vidéo et mixage terminés")
@@ -262,6 +283,16 @@ class EpisodePipeline:
                 width=options.width,
                 height=options.height,
             )
+            frozen_ratio = verification.get("frozen_ratio")
+            if (
+                artifact_status == "FINAL"
+                and isinstance(frozen_ratio, (int, float))
+                and frozen_ratio >= 0.9
+            ):
+                raise ValueError(
+                    "Le master est figé sur au moins 90 % de sa durée. "
+                    "Il reste une prévisualisation et ne peut pas devenir FINAL."
+                )
             temporary_video.replace(final_video)
             final_music: Path | None = None
             if generated_music and music is not None:
@@ -281,7 +312,7 @@ class EpisodePipeline:
                 "id": f"episode_{uuid.uuid4().hex}",
                 "type": "episode",
                 "episode_id": package.episode.id,
-                "status": "FINAL",
+                "status": artifact_status,
                 "created_at": created_at.isoformat(),
                 "completed_at": datetime.now(UTC).isoformat(),
                 "duration": package.episode.duration_target,
@@ -296,14 +327,27 @@ class EpisodePipeline:
                     "speech": self.speech.name if self.speech else None,
                 },
                 "inputs": {
-                    "episode": str((episode_dir / "episode.json").resolve()),
+                    "episode": {
+                        "path": str((episode_dir / "episode.json").resolve()),
+                        "sha256": sha256_file(episode_dir / "episode.json"),
+                        "status": package.episode.status.value,
+                        "narrative_source_sha256": (
+                            self._text_sha256(package.episode.narrative_source)
+                        ),
+                        "provenance": [
+                            item.model_dump(mode="json")
+                            for item in package.episode.provenance
+                        ],
+                    },
                     "canonical_context": _episode_canonical_context(package),
                     "shots": source_records,
                     "subtitles": self._source_record(subtitles, "episode") if subtitles else None,
                     "music": (
                         self._source_record(final_music, self.score.name)
                         if final_music
-                        else self._source_record(music, "episode") if music else None
+                        else self._source_record(music, "episode")
+                        if music
+                        else None
                     ),
                     "ambience": self._source_record(ambience, "episode") if ambience else None,
                     "audio_plan": (
@@ -318,6 +362,16 @@ class EpisodePipeline:
                     ),
                 },
                 "verification": verification,
+                "quality": {
+                    "release_eligible": artifact_status == "FINAL",
+                    "uses_stills": any(segment.visual_kind == "image" for segment in segments),
+                    "visual_kinds": [segment.visual_kind for segment in segments],
+                    "verified_visual_sources": all(
+                        self._visual_source(item) != "unverified-local"
+                        for item in source_records
+                    ),
+                    "narrative_provenance_recorded": bool(package.episode.provenance),
+                },
                 "outputs": [
                     {
                         "path": final_video.name,
@@ -348,11 +402,80 @@ class EpisodePipeline:
             subtitles=final_subtitles,
             duration=package.episode.duration_target,
             verification=verification,
+            status=artifact_status,
         )
 
     def _notify(self, stage: str, status: str, message: str) -> None:
         if self.on_progress:
             self.on_progress(stage, status, message)
+
+    def _resolve_dialogue_mix(
+        self,
+        options: EpisodePipelineOptions,
+        plan: EpisodeAudioPlan,
+        shot: Shot,
+        workspace: Path,
+    ) -> tuple[Path, str, float]:
+        if not options.tts_enabled:
+            raise FileNotFoundError(
+                f"Dialogue multi-répliques sans audio pour {shot.id}. Active la synthèse vocale."
+            )
+        if self.speech is None:
+            raise RuntimeError(f"Dialogue multi-répliques sans synthétiseur pour {shot.id}.")
+        cue = plan.cue_for(shot.id)
+        tracks: list[AudioTrack] = []
+        fit_speeds: list[float] = []
+        occupied: list[tuple[float, float, int]] = []
+        suffix = getattr(self.speech, "output_suffix", ".wav")
+        for index, dialogue in enumerate(shot.dialogues, start=1):
+            voice = workspace / "voices" / f"{shot.id}-{index}{suffix}"
+            preset = voice_preset_for_performance(
+                plan.voice_for(dialogue.speaker), dialogue.performance
+            )
+            self.speech.synthesize(dialogue.text, voice, preset)
+            pause_before = (
+                dialogue.performance.pause_before_seconds if dialogue.performance is not None else 0
+            )
+            pause_after = (
+                dialogue.performance.pause_after_seconds if dialogue.performance is not None else 0
+            )
+            offset = cue.offset_seconds + dialogue.offset_seconds + pause_before
+            available_duration = shot.duration - offset - pause_after
+            if available_duration <= 0:
+                raise ValueError(f"Aucune place pour la réplique {index} de {shot.id}.")
+            duration = self.media.duration(voice)
+            fit_speed = 1.0
+            if duration > available_duration + 0.05:
+                fitted = workspace / "voices" / f"{shot.id}-{index}.fitted.wav"
+                fit_speed = self.media.fit_audio(voice, fitted, available_duration)
+                if fit_speed > plan.max_time_fit_speed + 0.01:
+                    raise ValueError(
+                        f"La réplique {index} de {shot.id} exige un time-fit de "
+                        f"{fit_speed:.2f}x, au-dessus de la limite qualité "
+                        f"{plan.max_time_fit_speed:.2f}x."
+                    )
+                voice = fitted
+                duration = self.media.duration(voice)
+            end = offset + duration
+            overlapping = next(
+                (
+                    previous
+                    for previous in occupied
+                    if offset < previous[1] - 0.05 and end > previous[0] + 0.05
+                ),
+                None,
+            )
+            if overlapping is not None:
+                raise ValueError(
+                    f"Les répliques {overlapping[2]} et {index} de {shot.id} se chevauchent. "
+                    "Décale les cues ou raccourcis les dialogues avant le montage."
+                )
+            occupied.append((offset, end, index))
+            tracks.append(AudioTrack(source=voice, offset_seconds=offset))
+            fit_speeds.append(fit_speed)
+        destination = workspace / "voices" / f"{shot.id}.wav"
+        self.media.mix_audio_tracks(tracks, destination, shot.duration)
+        return destination, self.speech.name, max(fit_speeds, default=1.0)
 
     def _resolve_audio(
         self,
@@ -412,7 +535,12 @@ class EpisodePipeline:
             return imported_video, "video", "manual"
         generated_video = output_root / shot_id / "clip.mp4"
         if generated_video.is_file():
-            return generated_video, "video", "model"
+            return generated_video, "video", cls._verified_generation_source(
+                output_root / shot_id,
+                generated_video,
+                "model-video",
+                required_status="GENERATED",
+            )
         if allow_stills:
             imported_image = cls._first_media(
                 output_root / shot_id / "imports",
@@ -423,12 +551,98 @@ class EpisodePipeline:
                 return imported_image, "image", "manual-keyframe"
             generated_image = output_root / shot_id / "keyframe.png"
             if generated_image.is_file():
-                return generated_image, "image", "model-keyframe"
+                composition = output_root / shot_id / "animatic-composition.json"
+                if cls._record_matches(composition, generated_image):
+                    return generated_image, "image", "layered-animatic"
+                return generated_image, "image", cls._verified_generation_source(
+                    output_root / shot_id, generated_image, "model-keyframe"
+                )
         suffix = " ou une keyframe avec --allow-stills" if allow_stills else ""
         raise FileNotFoundError(
             f"Vidéo introuvable pour {shot_id}: attends output/{shot_id}/clip.mp4 "
             f"ou importe output/{shot_id}/imports/video.*{suffix}."
         )
+
+    @staticmethod
+    def _artifact_status(
+        package: EpisodePackage,
+        segments: list[SegmentInput],
+        source_records: list[dict[str, object]],
+    ) -> EpisodeArtifactStatus:
+        if any(segment.visual_kind == "image" for segment in segments):
+            return "ANIMATIC"
+        if any(
+            EpisodePipeline._visual_source(item) == "unverified-local"
+            for item in source_records
+        ):
+            return "PREVIEW"
+        if package.episode.status not in {
+            EpisodeStatus.APPROVED,
+            EpisodeStatus.BREAKDOWN,
+            EpisodeStatus.PRODUCTION,
+            EpisodeStatus.FINAL,
+        }:
+            return "PREVIEW"
+        return "FINAL"
+
+    @classmethod
+    def _verified_generation_source(
+        cls,
+        directory: Path,
+        media: Path,
+        verified_label: str,
+        *,
+        required_status: str | None = None,
+    ) -> str:
+        manifest = directory / "generation.json"
+        return (
+            verified_label
+            if cls._record_matches(manifest, media, required_status=required_status)
+            else "unverified-local"
+        )
+
+    @staticmethod
+    def _record_matches(
+        record_path: Path,
+        media: Path,
+        *,
+        required_status: str | None = None,
+    ) -> bool:
+        try:
+            payload = json.loads(record_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return False
+        if not isinstance(payload, dict):
+            return False
+        if (
+            required_status is not None
+            and str(payload.get("status", "")).upper() != required_status
+        ):
+            return False
+        digest = sha256_file(media)
+        if payload.get("sha256") == digest:
+            return True
+        outputs = payload.get("outputs")
+        if not isinstance(outputs, list):
+            return False
+        return any(
+            isinstance(item, dict)
+            and item.get("sha256") == digest
+            and Path(str(item.get("path", ""))).name == media.name
+            for item in outputs
+        )
+
+    @staticmethod
+    def _text_sha256(value: str) -> str:
+        return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _visual_source(record: dict[str, object]) -> str | None:
+        visual = record.get("visual")
+        if not isinstance(visual, dict):
+            return None
+        source = visual.get("source")
+        return source if isinstance(source, str) else None
 
     @staticmethod
     def _first_media(directory: Path, stem: str, suffixes: set[str]) -> Path | None:

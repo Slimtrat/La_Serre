@@ -7,6 +7,11 @@ from apps.api.job_manager import JobManager
 from apps.api.main import create_app
 from apps.version import __version__
 from engine.config import Settings
+from engine.observability.studio_activity import (
+    ActivityGraphTarget,
+    StageStatus,
+    StudioActivityStore,
+)
 
 
 async def test_health() -> None:
@@ -28,6 +33,36 @@ async def test_activity_endpoint_is_empty_without_active_jobs(tmp_path: Path) ->
 
     assert response.status_code == 200
     assert response.json() == {"activity": None}
+
+
+async def test_activity_endpoint_exposes_local_engine_work_on_the_product_graph(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "output"
+    store = StudioActivityStore(output)
+    activity = store.start(
+        title="Casting · belladone",
+        message="Préparation",
+        graph=ActivityGraphTarget(scope="series", id="series", node_id="series:cast"),
+        stages=["prepare", "generate"],
+    )
+    store.update(
+        activity.id,
+        stage="generate",
+        status=StageStatus.RUNNING,
+        message="ComfyUI calcule le master cartoon",
+    )
+    app = create_app(Settings(_env_file=None, output_dir=output))
+    transport = httpx.ASGITransport(app=app)
+
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/activity")
+
+    assert response.status_code == 200
+    payload = response.json()["activity"]
+    assert payload["kind"] == "external"
+    assert payload["graph"]["node_id"] == "series:cast"
+    assert payload["progress"]["active_stage"] == "generate"
 
 
 async def test_hybrid_asset_upload(tmp_path: Path) -> None:
@@ -140,9 +175,7 @@ async def test_generation_history_endpoint_serves_archived_media(tmp_path: Path)
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         listing = await client.get("/api/history/S01E001-S01")
-        media = await client.get(
-            "/api/history-media/S01E001-S01/gen_first/keyframe.png"
-        )
+        media = await client.get("/api/history-media/S01E001-S01/gen_first/keyframe.png")
 
     assert listing.status_code == 200
     assert listing.json()["runs"][0]["id"] == "current"
@@ -199,14 +232,10 @@ async def test_project_switch_isolates_outputs_assets_and_notifications(
     assert created.status_code == 201
     assert empty_assets.json() == {}
     assert empty_output.json()["keyframe"] is None
-    assert [item["title"] for item in project_b_notices.json()["notifications"]] == [
-        "Projet créé"
-    ]
+    assert [item["title"] for item in project_b_notices.json()["notifications"]] == ["Projet créé"]
     assert default_audio.content == b"default-audio"
     assert default_output.json()["keyframe"] == "/api/media/S01E001-S01/keyframe.png"
-    assert "Default" in {
-        item["title"] for item in default_notices.json()["notifications"]
-    }
+    assert "Default" in {item["title"] for item in default_notices.json()["notifications"]}
     assert second_audio.content == b"second-audio"
 
 

@@ -45,3 +45,13 @@ def test_renderer_exposes_progress_and_dynamic_viewport() -> None:
     assert "graph-node-progress" in css
     assert "graph-context-crumb" in css
     assert "graph-loading" in css
+
+
+def test_renderer_follows_persisted_external_activity() -> None:
+    graph = (STATIC / "graph.js").read_text(encoding="utf-8")
+    activity = (STATIC / "activity-bar.js").read_text(encoding="utf-8")
+
+    assert 'new CustomEvent("studio:activity"' in activity
+    assert 'window.addEventListener("studio:activity"' in graph
+    assert "focusActivityNode(target.node_id)" in graph
+    assert "centerNode(activityNodeId)" in graph

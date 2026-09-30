@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -103,6 +104,10 @@ class FakeMedia:
         destination.write_bytes(source.read_bytes())
         return 1.5
 
+    def mix_audio_tracks(self, tracks: list[object], destination: Path, duration: float) -> None:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(b"mixed-voices")
+
     def assemble(self, request: AssemblyRequest) -> None:
         self.request = request
         request.output.write_bytes(b"final-video")
@@ -166,9 +171,13 @@ def test_episode_pipeline_resolves_media_synthesizes_voice_and_writes_manifest(
     assert media.request.segments[0].visual_kind == "image"
     assert media.request.segments[0].audio_offset == 0.5
     manifest = json.loads(result.manifest.read_text(encoding="utf-8"))
-    assert manifest["status"] == "FINAL"
+    assert result.status == "ANIMATIC"
+    assert manifest["status"] == "ANIMATIC"
+    assert manifest["quality"]["release_eligible"] is False
+    assert manifest["quality"]["uses_stills"] is True
     assert manifest["toolchain"]["speech"] == "fake-speech"
-    assert manifest["inputs"]["shots"][0]["visual"]["source"] == "model-keyframe"
+    assert manifest["inputs"]["shots"][0]["visual"]["source"] == "unverified-local"
+    assert manifest["inputs"]["episode"]["status"] == "draft"
     recorded_voice = manifest["inputs"]["shots"][0]["audio"]["path"]
     assert recorded_voice == str(
         (output / "S01E001/voices/S01E001-S01.wav").resolve()
@@ -221,7 +230,10 @@ def test_generated_voice_is_time_fitted_to_the_shot(tmp_path: Path) -> None:
     keyframe.write_bytes(b"image")
     write_json(
         private / "episodes/season-01/S01E001/audio-plan.json",
-        {"cues": {"S01E001-S01": {"offset_seconds": 0.5}}},
+        {
+            "cues": {"S01E001-S01": {"offset_seconds": 0.5}},
+            "max_time_fit_speed": 1.5,
+        },
     )
     media = SlowVoiceMedia()
 
@@ -264,5 +276,173 @@ def test_voice_time_fit_above_quality_limit_is_rejected(tmp_path: Path) -> None:
                 private_root=private,
                 output_root=output,
                 allow_stills=True,
+            )
+        )
+
+
+def test_episode_pipeline_mixes_multiple_timed_dialogues(tmp_path: Path) -> None:
+    private = tmp_path / "private"
+    output = tmp_path / "output"
+    seed_episode(private)
+    shot_path = private / "episodes/season-01/S01E001/shots/S01E001-S01.json"
+    payload = json.loads(shot_path.read_text(encoding="utf-8"))
+    payload["dialogue_cues"] = [
+        {"speaker": "iris", "text": "Je suis là.", "offset_seconds": 2.0}
+    ]
+    write_json(shot_path, payload)
+    keyframe = output / "S01E001-S01/keyframe.png"
+    keyframe.parent.mkdir(parents=True)
+    keyframe.write_bytes(b"image")
+    media = FakeMedia()
+
+    result = EpisodePipeline(media, FakeSpeech()).run(
+        EpisodePipelineOptions(
+            episode_id="S01E001",
+            private_root=private,
+            output_root=output,
+            allow_stills=True,
+        )
+    )
+
+    assert (output / "S01E001/voices/S01E001-S01.wav").read_bytes() == b"mixed-voices"
+    manifest = json.loads(result.manifest.read_text(encoding="utf-8"))
+    assert manifest["inputs"]["shots"][0]["dialogue_cues"][0]["text"] == "Je suis là."
+
+
+def test_episode_pipeline_rejects_overlapping_dialogues(tmp_path: Path) -> None:
+    private = tmp_path / "private"
+    output = tmp_path / "output"
+    seed_episode(private)
+    shot_path = private / "episodes/season-01/S01E001/shots/S01E001-S01.json"
+    payload = json.loads(shot_path.read_text(encoding="utf-8"))
+    payload["dialogue_cues"] = [
+        {"speaker": "iris", "text": "Je coupe la parole.", "offset_seconds": 0.5}
+    ]
+    write_json(shot_path, payload)
+    keyframe = output / "S01E001-S01/keyframe.png"
+    keyframe.parent.mkdir(parents=True)
+    keyframe.write_bytes(b"image")
+
+    with pytest.raises(ValueError, match="se chevauchent"):
+        EpisodePipeline(FakeMedia(), FakeSpeech()).run(
+            EpisodePipelineOptions(
+                episode_id="S01E001",
+                private_root=private,
+                output_root=output,
+                allow_stills=True,
+            )
+        )
+
+
+def test_unverified_clip_can_only_produce_a_preview(tmp_path: Path) -> None:
+    private = tmp_path / "private"
+    output = tmp_path / "output"
+    seed_episode(private, dialogue=False)
+    episode_path = private / "episodes/season-01/S01E001/episode.json"
+    episode = json.loads(episode_path.read_text(encoding="utf-8"))
+    episode["status"] = "approved"
+    write_json(episode_path, episode)
+    clip = output / "S01E001-S01/clip.mp4"
+    clip.parent.mkdir(parents=True)
+    clip.write_bytes(b"video-without-manifest")
+
+    result = EpisodePipeline(FakeMedia()).run(
+        EpisodePipelineOptions(
+            episode_id="S01E001",
+            private_root=private,
+            output_root=output,
+            tts_enabled=False,
+        )
+    )
+
+    manifest = json.loads(result.manifest.read_text(encoding="utf-8"))
+    assert result.status == "PREVIEW"
+    assert manifest["quality"]["verified_visual_sources"] is False
+    assert manifest["inputs"]["shots"][0]["visual"]["source"] == "unverified-local"
+
+
+def test_approved_episode_with_verified_video_can_be_final(tmp_path: Path) -> None:
+    private = tmp_path / "private"
+    output = tmp_path / "output"
+    seed_episode(private, dialogue=False)
+    episode_path = private / "episodes/season-01/S01E001/episode.json"
+    episode = json.loads(episode_path.read_text(encoding="utf-8"))
+    episode["status"] = "approved"
+    write_json(episode_path, episode)
+    clip = output / "S01E001-S01/clip.mp4"
+    clip.parent.mkdir(parents=True)
+    clip.write_bytes(b"verified-video")
+    write_json(
+        clip.parent / "generation.json",
+        {
+            "status": "GENERATED",
+            "outputs": [
+                {
+                    "path": "clip.mp4",
+                    "sha256": sha256(clip.read_bytes()).hexdigest(),
+                }
+            ],
+        },
+    )
+
+    result = EpisodePipeline(FakeMedia()).run(
+        EpisodePipelineOptions(
+            episode_id="S01E001",
+            private_root=private,
+            output_root=output,
+            tts_enabled=False,
+        )
+    )
+
+    manifest = json.loads(result.manifest.read_text(encoding="utf-8"))
+    assert result.status == "FINAL"
+    assert manifest["quality"]["release_eligible"] is True
+    assert manifest["inputs"]["shots"][0]["visual"]["source"] == "model-video"
+
+
+def test_frozen_verified_video_is_rejected_as_final(tmp_path: Path) -> None:
+    class FrozenMedia(FakeMedia):
+        def verify(
+            self,
+            path: Path,
+            *,
+            duration: float,
+            width: int,
+            height: int,
+        ) -> dict[str, object]:
+            report = super().verify(path, duration=duration, width=width, height=height)
+            report["frozen_ratio"] = 0.95
+            return report
+
+    private = tmp_path / "private"
+    output = tmp_path / "output"
+    seed_episode(private, dialogue=False)
+    episode_path = private / "episodes/season-01/S01E001/episode.json"
+    episode = json.loads(episode_path.read_text(encoding="utf-8"))
+    episode["status"] = "approved"
+    write_json(episode_path, episode)
+    clip = output / "S01E001-S01/clip.mp4"
+    clip.parent.mkdir(parents=True)
+    clip.write_bytes(b"frozen-video")
+    write_json(
+        clip.parent / "generation.json",
+        {
+            "status": "GENERATED",
+            "outputs": [
+                {
+                    "path": "clip.mp4",
+                    "sha256": sha256(clip.read_bytes()).hexdigest(),
+                }
+            ],
+        },
+    )
+
+    with pytest.raises(ValueError, match="figé"):
+        EpisodePipeline(FrozenMedia()).run(
+            EpisodePipelineOptions(
+                episode_id="S01E001",
+                private_root=private,
+                output_root=output,
+                tts_enabled=False,
             )
         )

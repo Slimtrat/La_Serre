@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from engine.director.models import Shot
@@ -32,3 +33,24 @@ def test_visual_beat_prompt_puts_the_exact_pose_first() -> None:
     assert result.index("Belladone catches the black ring") < result.index(
         "CHARACTERS VISIBLE IN FRAME:"
     )
+    assert "SHOT TIMELINE" not in result
+    assert "multiple panels" in result
+
+
+def test_regional_scene_prompt_keeps_cast_out_of_global_conditioning() -> None:
+    payload = json.loads(Path("examples/shot.json").read_text(encoding="utf-8"))
+    second = {**payload["characters"][0], "id": "aconit", "name": "Aconit"}
+    payload["characters"].append(second)
+    shot = Shot.model_validate(payload)
+
+    result = PromptBuilder.regional_scene_prompt(
+        shot, "Belladone leans toward Aconit without touching"
+    )
+    negative = PromptBuilder().build(shot).negative
+
+    assert "exactly 2 separate full botanical character bodies" in result
+    assert "Belladone" not in result
+    assert "Aconit" not in result
+    assert "the assigned regional character" in result
+    assert "third character" in negative
+    assert "floating head" in negative

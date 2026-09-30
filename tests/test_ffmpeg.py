@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 from engine.media.ffmpeg import AssemblyRequest, FFmpegToolchain, SegmentInput
@@ -74,3 +75,23 @@ def test_audio_fit_preserves_pitch_with_chained_atempo(tmp_path: Path) -> None:
     assert "atempo=2,atempo=1.25" in rendered
     assert "atrim=duration=2.5" in rendered
     assert "pcm_s16le" in rendered
+
+
+def test_freeze_report_parses_and_caps_detected_freezes(monkeypatch: object) -> None:
+    seen: list[str] = []
+
+    def fake_run(command: list[str]) -> subprocess.CompletedProcess[str]:
+        seen.extend(command)
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            "",
+            "freeze_duration: 1.25\nfreeze_duration: 4.5\n",
+        )
+
+    monkeypatch.setattr(FFmpegToolchain, "_run", staticmethod(fake_run))
+
+    report = toolchain()._freeze_report(Path("episode.mp4"), 5.0)
+
+    assert "freezedetect=n=-50dB:d=0.75" in seen
+    assert report == {"frozen_seconds": 5.0, "frozen_ratio": 1.0}

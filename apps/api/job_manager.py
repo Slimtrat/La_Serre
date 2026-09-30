@@ -17,6 +17,7 @@ from engine.director.models import Shot
 from engine.generation.comfy.client import ComfyClient
 from engine.production.shot_pipeline import ShotPipeline, ShotPipelineOptions
 from engine.world.bible import BibleRegistry
+from engine.world.visual_identity import VisualIdentityRegistry
 
 STAGES = ("input", "prompt", "references", "keyframe", "video", "artifacts")
 
@@ -78,15 +79,9 @@ class StudioJob:
             if self.stages[stage_id]["status"] != "skipped"
         ]
         total = len(stages)
-        completed = sum(
-            stage["status"] == "completed" for _stage_id, stage in stages
-        )
+        completed = sum(stage["status"] == "completed" for _stage_id, stage in stages)
         active_stage = next(
-            (
-                stage_id
-                for stage_id, stage in stages
-                if stage["status"] in {"running", "failed"}
-            ),
+            (stage_id for stage_id, stage in stages if stage["status"] in {"running", "failed"}),
             None,
         )
         equivalent = float(completed)
@@ -160,6 +155,13 @@ class JobManager:
                     BibleRegistry(settings.private_content_dir).resolve_shot,
                     shot,
                 )
+            shot = await asyncio.to_thread(
+                VisualIdentityRegistry(
+                    settings.private_content_dir,
+                    settings.output_dir,
+                ).resolve_shot_references,
+                shot,
+            )
         except Exception:
             job.status = "FAILED"
             job.message = "Impossible de résoudre le projet actif"
@@ -216,11 +218,7 @@ class JobManager:
         return any(job.status in {"QUEUED", "GENERATING"} for job in self.jobs.values())
 
     def latest_active(self) -> StudioJob | None:
-        active = [
-            job
-            for job in self.jobs.values()
-            if job.status in {"QUEUED", "GENERATING"}
-        ]
+        active = [job for job in self.jobs.values() if job.status in {"QUEUED", "GENERATING"}]
         return max(active, key=lambda job: job.created_at, default=None)
 
     async def _execute(
@@ -244,6 +242,7 @@ class JobManager:
                     )
                 assert settings.keyframe_workflow_profile is not None
                 assert settings.keyframe_guide_workflow_profile is not None
+                assert settings.keyframe_reference_guide_workflow_profile is not None
                 assert settings.video_workflow_profile is not None
                 archived = await asyncio.to_thread(history.archive_current, job.shot_id)
                 if archived is not None:
@@ -299,15 +298,20 @@ class JobManager:
                             shot_path=shot_path,
                             output_root=settings.output_dir,
                             keyframe_profile=settings.keyframe_workflow_profile,
+                            keyframe_reference_profile=(
+                                settings.keyframe_reference_workflow_profile
+                            ),
                             keyframe_guide_profile=settings.keyframe_guide_workflow_profile,
+                            keyframe_reference_guide_profile=(
+                                settings.keyframe_reference_guide_workflow_profile
+                            ),
                             video_profile=settings.video_workflow_profile,
                             keyframe_only=mode == "keyframe",
                             from_keyframe=from_keyframe,
                             guide_keyframes=guide_keyframes,
                             continuity_keyframe=(
                                 self._previous_shot_pose(settings.output_dir, job.shot_id)
-                                if mode in {"all", "keyframe"}
-                                and keyframe_source == "model"
+                                if mode in {"all", "keyframe"} and keyframe_source == "model"
                                 else None
                             ),
                             force=force or archived is not None,

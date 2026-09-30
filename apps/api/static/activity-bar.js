@@ -37,6 +37,7 @@ const serreActivity = (() => {
     music: "Musique",
     demo: "Démo express",
     setup: "Préparation du Studio",
+    external: "Moteur local",
   };
 
   const overlay = document.createElement("aside");
@@ -121,13 +122,16 @@ const serreActivity = (() => {
   }
 
   function normalizeJob(job, kind) {
-    const subject = kind === "episode" ? job.episode_id : job.shot_id;
+    const subject = kind === "episode"
+      ? job.episode_id
+      : kind === "shot" ? job.shot_id : null;
     return {
       id: job.id,
       kind,
-      title: (KIND_LABELS[kind] || "Activité") + (subject ? " · " + subject : ""),
+      title: job.title || (KIND_LABELS[kind] || "Activité") + (subject ? " · " + subject : ""),
       status: job.status || "GENERATING",
       message: job.message || "Traitement en cours",
+      graph: job.graph || null,
       createdAt: job.created_at || current?.createdAt || new Date().toISOString(),
       completedAt: job.completed_at || null,
       progress: calculateProgress(job),
@@ -344,6 +348,9 @@ const serreActivity = (() => {
     renderEvents(activity.events);
     window.SerreGraph?.focusActivityStage(activity.progress.active_stage);
     logToggle.textContent = "Journal · " + activity.events.length;
+    window.dispatchEvent(
+      new CustomEvent("studio:activity", { detail: { activity } }),
+    );
   }
 
   function updateClock() {
@@ -440,7 +447,7 @@ const serreActivity = (() => {
         render(normalizeJob(job, current.kind));
       } else {
         const payload = await request("/api/activity");
-        if (payload.activity && payload.activity.id !== current?.id) {
+        if (payload.activity) {
           render(normalizeJob(payload.activity, payload.activity.kind));
         }
       }

@@ -13,6 +13,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from engine.director.models import Shot
 from engine.production.artifacts import write_text_atomic
 
 MEDIA_TYPES = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}
@@ -231,6 +232,21 @@ class VisualIdentityRegistry:
                 variant = self._variant(identity, identity.active_master_id)
                 result[identity.character_id] = self.root / variant.media_path
         return result
+
+    def resolve_shot_references(self, shot: Shot) -> Shot:
+        """Replace stale storyboard references with approved character masters."""
+
+        active = self.active_references()
+        return shot.model_copy(
+            update={
+                "characters": [
+                    character.model_copy(update={"reference_images": [active[character.id]]})
+                    if character.id in active
+                    else character
+                    for character in shot.characters
+                ]
+            }
+        )
 
     def dependencies(self, character_id: str) -> VisualDependencies:
         shot_ids: set[str] = set()

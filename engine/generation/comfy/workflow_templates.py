@@ -32,6 +32,10 @@ class TemplateModelRequirement(BaseModel):
     folder: str = Field(min_length=1)
     url: str | None = None
     source_note: str | None = None
+    size_bytes: int | None = Field(default=None, ge=0)
+    license_id: str | None = None
+    license_url: str | None = None
+    sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
     @classmethod
     def from_factory(cls, requirement: ModelRequirement) -> TemplateModelRequirement:
@@ -78,7 +82,7 @@ class WorkflowTemplateCatalogue:
     """Build versioned ComfyUI templates for the visual continuity chain."""
 
     chain = (
-        "flux-character-master-v1",
+        "flux-schnell-character-master-v1",
         "sdxl-scene-anchor-v1",
         "sdxl-adjacent-pose-v1",
         "ltx-triptych-animation-v1",
@@ -91,6 +95,7 @@ class WorkflowTemplateCatalogue:
         generated = self.factory.build()
         scene_anchor = self._scene_anchor_workflow(generated.keyframe_guide)
         templates = (
+            self._flux_schnell_character_master(),
             self._flux_character_master(),
             self._template(
                 id="sdxl-scene-anchor-v1",
@@ -227,7 +232,12 @@ class WorkflowTemplateCatalogue:
                 template.profile.model_dump(mode="json"),
             )
             manifest = template_root / "template.json"
-            self._write_json(manifest, template.spec.model_dump(mode="json"))
+            manifest_payload = template.spec.model_dump(mode="json")
+            for model in manifest_payload["models"]:
+                for field in ("size_bytes", "license_id", "license_url", "sha256"):
+                    if model[field] is None:
+                        del model[field]
+            self._write_json(manifest, manifest_payload)
             written.append(manifest)
         self._write_json(
             root / "catalogue.json",
@@ -246,6 +256,113 @@ class WorkflowTemplateCatalogue:
             },
         )
         return tuple(written)
+
+    def _flux_schnell_character_master(self) -> BuiltWorkflowTemplate:
+        """Commercially usable, single-file FLUX character reference recipe."""
+        workflow: dict[str, Any] = {
+            "1": {
+                "class_type": "CheckpointLoaderSimple",
+                "inputs": {"ckpt_name": "flux1-schnell-fp8.safetensors"},
+            },
+            "2": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {"text": "", "clip": ["1", 1]},
+            },
+            "3": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {"text": "", "clip": ["1", 1]},
+            },
+            "4": {
+                "class_type": "EmptySD3LatentImage",
+                "inputs": {"width": 768, "height": 1024, "batch_size": 1},
+            },
+            "5": {
+                "class_type": "KSampler",
+                "inputs": {
+                    "model": ["1", 0],
+                    "seed": 0,
+                    "steps": 4,
+                    "cfg": 1.0,
+                    "sampler_name": "euler",
+                    "scheduler": "simple",
+                    "positive": ["2", 0],
+                    "negative": ["3", 0],
+                    "latent_image": ["4", 0],
+                    "denoise": 1.0,
+                },
+            },
+            "6": {
+                "class_type": "VAEDecode",
+                "inputs": {"samples": ["5", 0], "vae": ["1", 2]},
+            },
+            "7": {
+                "class_type": "SaveImage",
+                "inputs": {"images": ["6", 0], "filename_prefix": "Serre/flux-schnell-master"},
+            },
+        }
+        profile = WorkflowProfile(
+            id="template-flux-schnell-character-master-v1",
+            workflow=Path("workflow.api.json"),
+            bindings=[
+                WorkflowBinding(source="prompt", node_id="2", input="text"),
+                WorkflowBinding(source="seed", node_id="5", input="seed"),
+                WorkflowBinding(source="width", node_id="4", input="width"),
+                WorkflowBinding(source="height", node_id="4", input="height"),
+                WorkflowBinding(source="steps", node_id="5", input="steps", required=False),
+                WorkflowBinding(source="output_prefix", node_id="7", input="filename_prefix"),
+            ],
+            output_node_ids=["7"],
+        )
+        return self._template(
+            id="flux-schnell-character-master-v1",
+            label="Référence personnage FLUX Schnell",
+            description="Crée une référence de personnage avec un checkpoint FP8 Apache 2.0.",
+            stage="character_master",
+            model_family="FLUX.1-schnell FP8",
+            workflow=workflow,
+            profile=profile,
+            models=(
+                TemplateModelRequirement(
+                    role="Référence personnage FLUX Schnell",
+                    capability_role="character.flux-schnell-fp8",
+                    filename="flux1-schnell-fp8.safetensors",
+                    folder="checkpoints",
+                    url=(
+                        "https://huggingface.co/Comfy-Org/flux1-schnell/resolve/main/"
+                        "flux1-schnell-fp8.safetensors?download=true"
+                    ),
+                    source_note="Checkpoint Comfy-Org, licence Apache 2.0, 17,2 Go.",
+                    size_bytes=17_236_328_572,
+                    license_id="Apache-2.0",
+                    license_url="https://huggingface.co/black-forest-labs/FLUX.1-schnell",
+                    sha256=(
+                        "ead426278b49030e9da5df862994f25ce94ab2ee4df38"
+                        "b556ddddb3db093bf72"
+                    ),
+                ),
+            ),
+            defaults={"width": 768, "height": 1024, "steps": 4, "cfg": 1.0},
+            prompt_sections=[
+                "age_and_anatomy",
+                "signature_details",
+                "wardrobe",
+                "neutral_reference_pose",
+                "lighting",
+            ],
+            receives=["character_bible", "style_direction"],
+            produces=["approved_character_reference"],
+            next_templates=["sdxl-scene-anchor-v1"],
+            limitations=[
+                "La référence doit être approuvée avant les plans; le modèle seul "
+                "ne verrouille pas l'identité entre générations.",
+                "CFG 1 neutralise la consigne négative; exprimer les contraintes "
+                "importantes dans le prompt positif.",
+            ],
+            provenance=[
+                "Adapté du workflow FLUX Schnell FP8 officiel de Comfy-Org.",
+                "Poids FLUX.1-schnell publiés sous Apache 2.0.",
+            ],
+        )
 
     def _flux_character_master(self) -> BuiltWorkflowTemplate:
         workflow = self._flux_workflow()

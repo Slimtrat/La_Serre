@@ -7,7 +7,12 @@ from os import PathLike
 from pathlib import Path
 
 from engine.audio.models import VoicePreset
-from engine.audio.speech import EdgeNeuralSpeechSynthesizer, WindowsSapiSpeechSynthesizer
+from engine.audio.speech import (
+    EdgeNeuralSpeechSynthesizer,
+    WindowsSapiSpeechSynthesizer,
+    voice_preset_for_performance,
+)
+from engine.director.models import DialoguePerformance
 
 
 def test_sapi_passes_dialogue_through_a_json_request(tmp_path: Path) -> None:
@@ -46,6 +51,8 @@ def test_sapi_passes_dialogue_through_a_json_request(tmp_path: Path) -> None:
     arguments = seen["args"]
     assert isinstance(arguments, Sequence)
     assert "apostrophes" not in " ".join(str(item) for item in arguments)
+    assert "+$($ratePercent)%" in WindowsSapiSpeechSynthesizer._SCRIPT
+    assert "rate='$rateValue'" in WindowsSapiSpeechSynthesizer._SCRIPT
     assert not destination.with_suffix(".wav.request.json").exists()
 
 
@@ -82,3 +89,39 @@ def test_edge_tts_passes_text_as_a_safe_process_argument(tmp_path: Path) -> None
     assert "--volume=-6%" in arguments
     assert "--pitch=-4Hz" in arguments
     assert "Moi aussi. Présente-nous." in arguments
+
+
+def test_edge_tts_falls_back_to_the_installed_python_module(tmp_path: Path) -> None:
+    seen: dict[str, object] = {}
+
+    def fake_runner(
+        args: Sequence[str | bytes | PathLike[str] | PathLike[bytes]],
+        **kwargs: object,
+    ) -> subprocess.CompletedProcess[str]:
+        Path(str(args[-1])).write_bytes(b"module-mp3")
+        seen["args"] = args
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    destination = tmp_path / "voice.mp3"
+    synthesizer = EdgeNeuralSpeechSynthesizer(
+        runner=fake_runner,
+        module_available=True,
+    )
+    synthesizer.synthesize("Essai.", destination, VoicePreset(backend="edge"))
+
+    arguments = [str(item) for item in seen["args"]]
+    assert arguments[:3] == [__import__("sys").executable, "-m", "edge_tts"]
+    assert destination.read_bytes() == b"module-mp3"
+
+
+def test_performance_pace_cannot_turn_acting_into_time_compression() -> None:
+    adjusted = voice_preset_for_performance(
+        VoicePreset(rate=3),
+        DialoguePerformance(
+            intention="presser sans perdre l’articulation",
+            emotion="urgence",
+            pace=1,
+        ),
+    )
+
+    assert adjusted.rate == 4

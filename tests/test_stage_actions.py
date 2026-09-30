@@ -52,7 +52,7 @@ def test_prompt_and_voice_are_independently_generated(tmp_path: Path) -> None:
     assert prompt["stage"] == "prompt"
     assert "CHARACTERS" in (destination / "prompt.txt").read_text(encoding="utf-8")
     assert voice["media"] == {"audio": "/api/media/S01E001-S01/voice.wav"}
-    assert (destination / "voice.wav").read_bytes().endswith(b"rate=-2")
+    assert (destination / "voice.wav").read_bytes().endswith(b"rate=-1")
     events = (destination / "studio-log.jsonl").read_text(encoding="utf-8")
     assert '"stage": "prompt"' in events
     assert '"stage": "voice"' in events

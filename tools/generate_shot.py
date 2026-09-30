@@ -22,6 +22,8 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--keyframe-guide-profile", type=Path)
     result.add_argument("--video-profile", type=Path)
     result.add_argument("--output-dir", type=Path)
+    result.add_argument("--keyframe-width", type=int)
+    result.add_argument("--keyframe-height", type=int)
     result.add_argument("--keyframe-only", action="store_true")
     result.add_argument("--from-keyframe", type=Path)
     result.add_argument("--continuity-keyframe", type=Path)
@@ -132,6 +134,8 @@ async def _run(args: argparse.Namespace) -> None:
                 guide_keyframes=tuple(args.guide_keyframe),
                 force=args.force,
                 timeout_seconds=settings.comfyui_timeout_seconds,
+                keyframe_width=args.keyframe_width,
+                keyframe_height=args.keyframe_height,
             )
         )
     print(f"{record.status}: {output_dir / record.shot_id}")
