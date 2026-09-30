@@ -140,6 +140,38 @@ describe("SetupWizard", () => {
     expect(screen.getByText("Golden path unlocked")).toBeTruthy();
   });
 
+  it("keeps the studio usable while reporting frozen smoke checks as incomplete", async () => {
+    const completed: SetupJob = {
+      ...runningJob,
+      status: "completed",
+      smokeChecks: [{
+        checkId: "image",
+        status: "not_run",
+        requiredComponents: ["keyframe-sdxl"],
+        message: "Functional smoke check was not run",
+      }],
+    };
+    const api = fakeApi({
+      latest: vi.fn().mockResolvedValue(completed),
+      getJob: vi.fn().mockResolvedValue(completed),
+    });
+    renderWithStudio(
+      <SetupWizard
+        api={api}
+        locale="en"
+        readyContent={<p>Manual creation remains available</p>}
+      />,
+    );
+
+    expect(await screen.findByText("Validation incomplete")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Your studio is usable" })).toBeTruthy();
+    expect(screen.getByText(/functional smoke tests were not run/i)).toBeTruthy();
+    expect(screen.queryByText("Local checks passed. You can start your first creation.")).toBeNull();
+    expect(screen.getByText(/Not run.*Functional smoke check was not run/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Start creating" }));
+    expect(screen.getByText("Manual creation remains available")).toBeTruthy();
+  });
+
   it("keeps manual creation available when runtime diagnosis fails", async () => {
     const api = fakeApi({ diagnose: vi.fn().mockRejectedValue(new Error("offline")) });
     const first = renderWithStudio(

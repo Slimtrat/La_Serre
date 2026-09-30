@@ -1870,6 +1870,7 @@ export type SmokeResultStatus = typeof SmokeResultStatus[keyof typeof SmokeResul
 export const SmokeResultStatus = {
   passed: 'passed',
   failed: 'failed',
+  not_run: 'not_run',
 } as const;
 
 export interface SmokeResult {

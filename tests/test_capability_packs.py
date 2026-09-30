@@ -16,10 +16,14 @@ from engine.runtime.capability_packs import (
 )
 
 
-def _hardware(vram_gb: float, disk_free_bytes: int = 100_000_000_000) -> HardwareSnapshot:
+def _hardware(
+    vram_gb: float,
+    disk_free_bytes: int = 100_000_000_000,
+    system_ram_gb: float | None = 32,
+) -> HardwareSnapshot:
     return HardwareSnapshot(
         vram_gb=vram_gb,
-        system_ram_gb=32,
+        system_ram_gb=system_ram_gb,
         disk_free_bytes=disk_free_bytes,
         disk_path="D:/models",
         gpu_name=f"Fake NVIDIA {vram_gb:g}GB",
@@ -93,6 +97,28 @@ def test_eight_gb_hardware_is_explained_as_incompatible(tmp_path: Path) -> None:
     assert diagnosis.status == "incompatible"
     assert any("VRAM 8 Go < minimum 12 Go" in reason for reason in diagnosis.reasons)
     assert any("12 Go ou plus" in action for action in diagnosis.actions)
+
+
+def test_insufficient_system_ram_is_explained_as_incompatible(tmp_path: Path) -> None:
+    diagnosis = CapabilityPackInspector().inspect(
+        hardware=_hardware(12, system_ram_gb=16),
+        model_roots=(tmp_path / "models",),
+        workflow_root=tmp_path / "workflows",
+    )
+
+    assert diagnosis.status == "incompatible"
+    assert any("RAM 16 Go < minimum 32 Go" in reason for reason in diagnosis.reasons)
+
+
+def test_unknown_system_ram_never_reports_pack_ready(tmp_path: Path) -> None:
+    diagnosis = CapabilityPackInspector().inspect(
+        hardware=_hardware(12, system_ram_gb=None),
+        model_roots=(tmp_path / "models",),
+        workflow_root=tmp_path / "workflows",
+    )
+
+    assert diagnosis.status == "incomplete"
+    assert any("Impossible de mesurer la mémoire système" in reason for reason in diagnosis.reasons)
 
 
 def test_insufficient_disk_reports_required_space(tmp_path: Path) -> None:

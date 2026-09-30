@@ -72,9 +72,9 @@
       "id": "ffmpeg-engine",
       "role": "Montage et validation média",
       "kind": "engine",
-      "size_bytes": 111253802,
-      "source": "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-9.0.1-essentials_build.zip",
-      "destination": ".la-serre-runtime/tools/ffmpeg/9.0.1-essentials",
+      "size_bytes": 109728040,
+      "source": "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-8.1.2-essentials_build.zip",
+      "destination": ".la-serre-runtime/tools/ffmpeg/8.1.2-essentials",
       "license": {
         "id": "gpl-3.0-ffmpeg-gyan",
         "name": "GNU GPL v3",
@@ -84,7 +84,7 @@
       },
       "checksum": {
         "algorithm": "sha256",
-        "value": "fec81ae03971d9dd4be3ebe02e263bd2ec1d789483f931bdba5f5715e65da2e9"
+        "value": "db580001caa24ac104c8cb856cd113a87b0a443f7bdf47d8c12b1d740584a2ec"
       },
       "detection": {"kind": "ffmpeg", "value": "ffmpeg+ffprobe"},
       "action": "Télécharge et vérifie FFmpeg et FFprobe dans l’espace géré La Serre."

@@ -10,7 +10,7 @@ Le parcours supporté part de `SerreStudio.exe`. Node.js est requis uniquement p
 | ComfyUI | workspace possédé par La Serre et préparé par le CLI isolé | `.la-serre-runtime/comfyui` |
 | Modèles ComfyUI | téléchargements atomiques contrôlés par le manifeste du pack | dossier géré, ou dossier personnel uniquement après choix explicite |
 | Ollama | archive Windows x64 officielle 0.34.0 vérifiée par SHA-256, exécutable et modèles isolés | `.la-serre-runtime/tools/ollama`, sans installateur système |
-| FFmpeg + FFprobe | build Windows essentials 9.0.1 recommandé depuis ffmpeg.org, archive Gyan vérifiée par SHA-256 | `.la-serre-runtime/tools/ffmpeg`, sans modification du `PATH` |
+| FFmpeg + FFprobe | build Windows essentials 8.1.2 recommandé depuis ffmpeg.org, archive Gyan vérifiée par SHA-256 | `.la-serre-runtime/tools/ffmpeg/8.1.2-essentials`, sans modification du `PATH` |
 
 Après une installation de ComfyUI dans l’espace géré, fermer puis rouvrir La Serre permet au superviseur de découvrir le nouveau workspace. Il utilise alors le `uv.exe` vérifié par reçu et SHA-256 pour lancer `comfy-cli==1.20.0` sur ce workspace, avec le cache et Python dans `.la-serre-runtime/tools`. Le lancement est hors ligne : une dépendance absente du cache échoue visiblement, sans téléchargement implicite au démarrage. Une installation ComfyUI personnelle configurée garde la priorité ; aucun dossier personnel n’est modifié par cette découverte.
 

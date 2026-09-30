@@ -61,7 +61,7 @@ export interface SetupJobStep {
 
 export interface SetupSmokeResult {
   readonly checkId: string;
-  readonly status: "passed" | "failed";
+  readonly status: "passed" | "failed" | "not_run";
   readonly requiredComponents: readonly string[];
   readonly message: string;
 }
@@ -193,9 +193,10 @@ export function decodeJobEnvelope(value: unknown): SetupJob | null {
     }),
     smokeChecks: smoke.map((item) => {
       const check = record(item);
+      const status = text(check.status);
       return {
         checkId: text(check.check_id),
-        status: check.status === "passed" ? "passed" : "failed",
+        status: status === "passed" ? "passed" : status === "not_run" ? "not_run" : "failed",
         requiredComponents: Array.isArray(check.required_components)
           ? check.required_components.map(String)
           : [],

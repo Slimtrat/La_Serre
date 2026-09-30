@@ -16972,10 +16972,10 @@ function ts(e) {
 			};
 		}),
 		smokeChecks: a.map((e) => {
-			let t = Qo(e);
+			let t = Qo(e), n = q(t.status);
 			return {
 				checkId: q(t.check_id),
-				status: t.status === "passed" ? "passed" : "failed",
+				status: n === "passed" ? "passed" : n === "not_run" ? "not_run" : "failed",
 				requiredComponents: Array.isArray(t.required_components) ? t.required_components.map(String) : [],
 				message: q(t.message)
 			};
@@ -17131,7 +17131,11 @@ var is = {
 		awaitingManual: "Une intervention guidée est requise. Suivez l’étape ci-dessous, puis reprenez la préparation.",
 		readyTitle: "Votre studio est prêt",
 		readyIntro: "Les vérifications locales sont réussies. Vous pouvez démarrer votre première création.",
+		validationIncomplete: "Validation incomplète",
+		readyIncompleteTitle: "Votre studio est utilisable",
+		readyIncompleteIntro: "Les composants requis sont installés, mais les essais fonctionnels n’ont pas été exécutés. Vous pouvez continuer à créer ; le rapport reste incomplet.",
 		smokeTitle: "Essai final",
+		smokeNotRun: "Non exécuté",
 		preview: "Aperçu de validation généré localement",
 		downloadReport: "Télécharger le rapport de validation",
 		continue: "Commencer à créer"
@@ -17223,7 +17227,11 @@ var is = {
 		awaitingManual: "A guided intervention is required. Follow the step below, then resume setup.",
 		readyTitle: "Your studio is ready",
 		readyIntro: "Local checks passed. You can start your first creation.",
+		validationIncomplete: "Validation incomplete",
+		readyIncompleteTitle: "Your studio is usable",
+		readyIncompleteIntro: "Required components are installed, but functional smoke tests were not run. You can continue creating; the report remains incomplete.",
 		smokeTitle: "Final test",
+		smokeNotRun: "Not run",
 		preview: "Validation preview generated locally",
 		downloadReport: "Download validation report",
 		continue: "Start creating"
@@ -17363,7 +17371,7 @@ function fs({ locale: e, api: t = is, readyContent: n, onReady: r }) {
 	});
 	let se = D?.status === "completed" || S.data.status === "ready" ? 4 : D ? D.status === "queued" || D.status === "running" || D.status === "paused" ? 2 : 3 : +!!o, O = [.../* @__PURE__ */ new Set([...D?.acceptedLicenseIds ?? [], ...c])], k = u && te.every((e) => c.has(e.id)), A = (e) => ie.mutate(e);
 	if (se === 4) {
-		let e = D?.smokeChecks ?? [];
+		let e = D?.smokeChecks ?? [], t = e.length === 0 || e.some((e) => e.status !== "passed");
 		return /* @__PURE__ */ (0, b.jsxs)("main", {
 			className: ss.root,
 			children: [/* @__PURE__ */ (0, b.jsx)(cs, {
@@ -17374,26 +17382,30 @@ function fs({ locale: e, api: t = is, readyContent: n, onReady: r }) {
 				"aria-labelledby": "setup-ready-title",
 				children: [
 					/* @__PURE__ */ (0, b.jsx)(C, {
-						tone: "success",
-						children: i.steps[4]
+						tone: t ? "warning" : "success",
+						children: t ? i.validationIncomplete : i.steps[4]
 					}),
 					/* @__PURE__ */ (0, b.jsx)("h1", {
 						id: "setup-ready-title",
-						children: i.readyTitle
+						children: t ? i.readyIncompleteTitle : i.readyTitle
 					}),
-					/* @__PURE__ */ (0, b.jsx)("p", { children: i.readyIntro }),
+					/* @__PURE__ */ (0, b.jsx)("p", { children: t ? i.readyIncompleteIntro : i.readyIntro }),
 					/* @__PURE__ */ (0, b.jsxs)("div", {
 						className: ss.readyGrid,
 						children: [/* @__PURE__ */ (0, b.jsxs)(ee, {
 							as: "section",
-							children: [/* @__PURE__ */ (0, b.jsx)("h2", { children: i.smokeTitle }), /* @__PURE__ */ (0, b.jsx)("ul", { children: e.map((e) => /* @__PURE__ */ (0, b.jsxs)("li", { children: [
-								/* @__PURE__ */ (0, b.jsx)(C, {
-									tone: e.status === "passed" ? "success" : "danger",
-									children: e.status === "passed" ? "✓" : "!"
-								}),
-								" ",
-								e.message || e.checkId
-							] }, e.checkId)) })]
+							children: [/* @__PURE__ */ (0, b.jsx)("h2", { children: i.smokeTitle }), /* @__PURE__ */ (0, b.jsx)("ul", { children: e.map((e) => {
+								let t = e.status === "passed" ? "success" : e.status === "failed" ? "danger" : "warning", n = e.status === "passed" ? "✓" : e.status === "failed" ? "!" : "—";
+								return /* @__PURE__ */ (0, b.jsxs)("li", { children: [
+									/* @__PURE__ */ (0, b.jsx)(C, {
+										tone: t,
+										children: n
+									}),
+									" ",
+									e.status === "not_run" ? `${i.smokeNotRun} — ` : "",
+									e.message || e.checkId
+								] }, e.checkId);
+							}) })]
 						}), /* @__PURE__ */ (0, b.jsx)(j, {
 							caption: i.preview,
 							children: /* @__PURE__ */ (0, b.jsxs)("div", {

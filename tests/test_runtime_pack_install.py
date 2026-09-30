@@ -373,7 +373,7 @@ async def test_smoke_failure_names_exact_components_and_redacts_logs(tmp_path: P
 
 
 @pytest.mark.asyncio
-async def test_packaged_smoke_uses_embedded_capability_checks_without_dev_tools(
+async def test_packaged_smoke_records_not_run_without_dev_tools(
     tmp_path: Path,
 ) -> None:
     pack = make_pack()
@@ -389,8 +389,21 @@ async def test_packaged_smoke_uses_embedded_capability_checks_without_dev_tools(
     job = await manager.wait(manager.start().id)
 
     assert job.status == "completed"
-    assert job.smoke_checks[0].message == "Contrôle embarqué des capacités réussi"
+    assert job.smoke_checks[0].status == "not_run"
+    assert "non exécuté" in job.smoke_checks[0].message
     assert runner.calls == []
+    report = manager.validation_report(
+        job.id,
+        application_version="0.2.13",
+        hardware=HardwareSnapshot(
+            gpu_name="Fake NVIDIA 12GB",
+            vram_gb=12,
+            disk_free_bytes=80 * 1024**3,
+            disk_path="C:/managed-runtime",
+        ),
+    )
+    assert report.result == "incomplete"
+    assert report.smoke_checks[0].status == "not_run"
 
 
 def test_path_and_log_safety_helpers(tmp_path: Path) -> None:
@@ -636,7 +649,7 @@ async def test_managed_comfy_job_resumes_after_graphical_restart(tmp_path: Path)
     restarted_manager = make_manager()
     resumed = await restarted_manager.wait(restarted_manager.resume(initial.id).id)
     assert resumed.status == "completed"
-    assert resumed.smoke_checks[0].status == "passed"
+    assert resumed.smoke_checks[0].status == "not_run"
     assert cli.calls == 1
 
 
